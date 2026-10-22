@@ -83,7 +83,9 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .loader small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .bar{height:5px;background:var(--line);border-radius:5px;overflow:hidden;margin-top:10px}
 .bar i{display:block;height:100%;width:35%;background:var(--accent);border-radius:5px;animation:bar 1.4s ease-in-out infinite}
-.sign .sp img{height:68px;max-width:100%;object-fit:contain;mix-blend-mode:multiply}
+.sign>div{position:relative}
+.sign .sp{position:relative}
+.sign .sp img{position:absolute;left:4px;top:-30px;height:124px;width:auto;max-width:none;object-fit:contain;mix-blend-mode:multiply;z-index:3;pointer-events:none}
 [hidden]{display:none!important}
 @media screen{#doc,#lkpd,#asesmen{max-width:var(--pw,210mm);margin-left:auto;margin-right:auto;padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
 /* ===== Dokumen RPM & LKPD: satu gaya (hijau sekolah + aksen emas) ===== */
@@ -854,7 +856,7 @@ $('sigg').addEventListener('change',e=>loadSig(1,e.target.files[0]));
 function docForWord(el){
   const c=el.cloneNode(true), s=c.querySelector('.sign');
   if(s){
-    const [a,b]=s.children, fix=h=>h.replace(/<span class="sp">([\s\S]*?)<\/span>/g,(m,im)=>im?im+'<br>':'<br><br><br>');
+    const [a,b]=s.children, fix=h=>h.replace(/<span class="sp">([\s\S]*?)<\/span>/g,(m,im)=>im?im.replace(/height="68"/,'height="100"')+'<br>':'<br><br><br>');
     const td='width:50%;border:none;text-align:left;background:#fff';
     s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td}">${fix(b.innerHTML)}</td></tr></table>`;
   }
