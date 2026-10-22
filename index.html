@@ -120,6 +120,7 @@ button:disabled{opacity:.55;cursor:wait}
   #lkpd h1:not(:first-child){break-before:page;margin-top:0}
   body[data-p="lkpd"] #doc{display:none!important}
   body[data-p="doc"] #lkpd{display:none!important}
+  body[data-p="both"] #lkpd{break-before:page;margin-top:0}
 }
 
 button.sm{padding:4px 10px;font-size:12px;margin-top:6px}
@@ -318,6 +319,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
     <button type="button" class="ghost" id="lkpdword" disabled>LKPD ke Word</button>
     <button type="button" class="ghost" id="lkpdprint" disabled>Cetak LKPD / PDF</button>
+    <button type="button" id="printboth" disabled>Cetak RPM + LKPD / PDF</button>
     <span class="sep"></span>
     <button type="button" class="ghost" id="savedb" disabled>Simpan ke database</button>
     <button type="button" class="ghost" id="histbtn">Riwayat tersimpan</button>
@@ -539,7 +541,7 @@ async function generate(){
     lastText=text.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
     const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); doc.hidden=false; $('empty').hidden=true;
     ['copy','word','print','regen','lkpdbtn','savedb'].forEach(id=>$(id).disabled=false);
-    $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true;
+    $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true;
     curId=null;
     setStatus('Selesai. Anda bisa menyunting teks langsung di dokumen sebelum mengunduh.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
@@ -561,6 +563,7 @@ function printOnly(w){ document.body.dataset.p=w; window.print(); }
 window.addEventListener('afterprint',()=>{ delete document.body.dataset.p; });
 $('print').addEventListener('click',()=>printOnly('doc'));
 $('lkpdprint').addEventListener('click',()=>printOnly('lkpd'));
+$('printboth').addEventListener('click',()=>{ if($('lkpd').hidden||!$('lkpd').innerText.trim()){ setStatus('LKPD belum dibuat. Tekan Buat LKPD dulu.',true); return; } printOnly('both'); });
 $('word').addEventListener('click',()=>{
   const css=DOC_CSS+wordPage();
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${docForWord($('doc'))}</div></body></html>`;
@@ -697,7 +700,7 @@ $('lkpdbtn').addEventListener('click',async()=>{
   try{
     const t=await ask(lkpdPrompt());
     const el=$('lkpd'); el.innerHTML=md(t); el.hidden=false;
-    $('lkpdword').disabled=false; $('lkpdprint').disabled=false;
+    $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
     setStatus('LKPD selesai. Anda bisa menyunting langsung sebelum mengunduh atau mencetak.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
@@ -831,8 +834,8 @@ $('histlist').addEventListener('click',async e=>{
     lastText=r.rpm_markdown||'';
     const doc=$('doc'); doc.innerHTML=r.rpm_html||md(lastText); doc.hidden=false; $('empty').hidden=true; applySigs();
     const lk=$('lkpd');
-    if(r.lkpd_html){ lk.innerHTML=r.lkpd_html; lk.hidden=false; $('lkpdword').disabled=false; $('lkpdprint').disabled=false; }
-    else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; }
+    if(r.lkpd_html){ lk.innerHTML=r.lkpd_html; lk.hidden=false; $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false; }
+    else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true; }
     ['copy','word','print','regen','lkpdbtn','savedb'].forEach(id=>$(id).disabled=false);
     curId=r.id; $('histbox').hidden=true;
     setStatus('Data dibuka dari database. Perubahan baru akan memperbarui data yang sama saat Anda menekan Simpan.');
