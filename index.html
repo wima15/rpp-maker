@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Penyusun RPM – Rencana Pembelajaran Mendalam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;600&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600&family=Noto+Sans+Javanese:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg: #f3f5f8;
@@ -304,6 +304,7 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 /* Tanda Tangan */
 .sign{display:flex;justify-content:space-between;gap:24px;margin-top:40px}
 .sign>div{width:45%;text-align:left;line-height:1.5;position:relative}
+.sign>div:last-child{width:36%}
 .sign .sp{display:block;height:64px;position:relative}
 .sign .sp img{position:absolute;left:0;top:-20px;height:100px;width:auto;max-width:none;object-fit:contain;mix-blend-mode:multiply;z-index:3;pointer-events:none}
 .sign .nm{font-weight:700;text-decoration:underline}
@@ -344,6 +345,8 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 #doc p,#doc li,#doc td,#lkpd p,#asesmen p,#lkpd li,#asesmen li,#lkpd td,#asesmen td{text-align:justify}
 #doc p,#lkpd p,#asesmen p{margin:6px 0}
 #doc ul,#doc ol,#lkpd ul,#asesmen ul,#lkpd ol,#asesmen ol{margin:6px 0 6px 20px;padding:0}
+#doc li>ul,#doc li>ol,#lkpd li>ul,#lkpd li>ol,#asesmen li>ul,#asesmen li>ol{margin:2px 0 2px 18px}
+#doc li>ul,#lkpd li>ul,#asesmen li>ul{list-style:circle}
 #doc li::marker,#lkpd li::marker,#asesmen li::marker{color:#1e3a8a;font-weight:600}
 #doc strong,#lkpd strong,#asesmen strong{color:#0f172a}
 
@@ -374,8 +377,15 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 }
 
 /* Tabel Dokumen */
-#doc table,#lkpd table,#asesmen table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;display:table}
+#doc table,#lkpd table,#asesmen table{border-collapse:collapse;width:100%;max-width:100%;margin:12px 0;font-size:13px;display:table}
+#doc th,#doc td,#lkpd th,#lkpd td,#asesmen th,#asesmen td{overflow-wrap:break-word;word-break:normal;hyphens:manual}
+/* tabel lebar (5+ kolom, mis. rubrik): font & padding lebih ringkas, kolom tidak lebih sempit dari kata terpanjang, rata kiri agar tidak renggang */
+#doc table.lebar,#lkpd table.lebar,#asesmen table.lebar{font-size:12px}
+#doc table.lebar th,#doc table.lebar td,#lkpd table.lebar th,#lkpd table.lebar td,#asesmen table.lebar th,#asesmen table.lebar td{padding:6px 6px;text-align:left}
+#doc table.lebar td:first-child,#lkpd table.lebar td:first-child,#asesmen table.lebar td:first-child{min-width:78px}
+#doc table.lebar th:last-child,#lkpd table.lebar th:last-child,#asesmen table.lebar th:last-child,#doc table.lebar td:last-child,#lkpd table.lebar td:last-child,#asesmen table.lebar td:last-child{min-width:70px}
 #doc th,#doc td,#lkpd th,#asesmen th,#lkpd td,#asesmen td{border:1px solid #cbd5e1;padding:7px 10px;vertical-align:top;text-align:left}
+#lkpd td,#lkpd li,#lkpd p{text-align:justify}   /* LKPD rata kiri-kanan (kop & identitas tetap) */
 #doc th,#lkpd th,#asesmen th{background:#1e3a8a;color:#fff;border-color:#1e3a8a;font-weight:600}
 #doc tr:nth-child(even) td,#lkpd tr:nth-child(even) td,#asesmen tr:nth-child(even) td{background:#f8fafc}
 #doc td:first-child,#lkpd td:first-child,#asesmen td:first-child{font-weight:600}
@@ -387,6 +397,18 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 #doc li.cb.on::before,#lkpd li.cb.on::before,#asesmen li.cb.on::before{content:'\2611'}
 #doc table.draw td,#lkpd table.draw td,#asesmen table.draw td{background:#fff!important}
 #doc table.draw,#lkpd table.draw,#asesmen table.draw{table-layout:fixed}
+
+/* ===== Aksara Jawa, tulisan Arab, rumus ===== */
+#doc,#lkpd,#asesmen{font-family:'Plus Jakarta Sans','Amiri','Noto Naskh Arabic','Noto Sans Javanese','Javanese Text','Traditional Arabic',Arial,sans-serif}
+.ar{font-family:'Amiri','Noto Naskh Arabic','Traditional Arabic','Scheherazade New',Arial,serif;font-size:1.3em;line-height:1.35;direction:rtl;unicode-bidi:isolate;font-weight:400}
+.jv{font-family:'Noto Sans Javanese','Javanese Text',serif;font-size:1.15em;line-height:1.55;font-weight:400}
+.mt{white-space:nowrap}
+
+/* ===== Tabel Pengalaman Belajar: Tahap | Kegiatan | Waktu (hemat spasi) ===== */
+#doc table.pengalaman,#lkpd table.pengalaman{table-layout:fixed}
+#doc table.pengalaman th,#doc table.pengalaman td{padding:4px 8px;line-height:1.4}
+#doc table.pengalaman td:last-child{text-align:center}
+#doc table.pengalaman .prinsip{margin-top:3px;padding-top:3px;border-top:1px dashed #94a3b8;color:#1e3a8a;line-height:1.4}
 
 .pb{height:0;border:0;margin:0;padding:0;break-before:page;page-break-before:always}
 @media screen{
@@ -417,7 +439,7 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
 @media print{
   body{background:#fff}
   header,form,.toolbar,.status,.sidebar,#sb_show{display:none!important}
-  main{display:block;padding:0}
+  main,main.view-saved,.view-saved{display:block;padding:0!important;margin:0!important}
   .panel{border:0;padding:0;box-shadow:none}
   #doc,#lkpd,#asesmen{border:0;padding:0;box-shadow:none;margin-top:0}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -676,7 +698,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <datalist id="gurulist"></datalist>
     <p class="hint" id="dbsrc">Memuat daftar guru…</p>
     <button type="button" class="ghost sm" id="reloadSrc">Muat ulang data guru</button>
-    <input id="kepsek" type="hidden"><input id="sekolah" type="hidden">
+    <input id="kepsek" type="hidden"><input id="sekolah" type="hidden"><input id="tempat" type="hidden"><input id="tglrpp" type="hidden">
     <p class="hint" id="schoolinfo">Memuat data sekolah…</p>
     <div class="row">
       <div><label for="mapel">Mata pelajaran</label><input id="mapel" required list="mapellist" placeholder="mis. IPAS"><datalist id="mapellist"></datalist></div>
@@ -935,6 +957,9 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <p class="hint">Nama kepala sekolah dan satuan pendidikan diatur di sini dan dipakai otomatis untuk semua guru.</p>
       <label for="a_kepsek">Nama kepala sekolah</label><input id="a_kepsek">
       <label for="a_sekolah">Satuan pendidikan</label><input id="a_sekolah">
+      <label for="a_tempat">Tempat penulisan RPP (kota)</label><input id="a_tempat" placeholder="contoh: Banyumas">
+      <label for="a_tglrpp">Tanggal RPP</label><input id="a_tglrpp" type="date">
+      <p class="hint">Tempat dan tanggal ini dicetak di atas kolom tanda tangan guru pada dokumen RPP semua guru. Kosongkan bila ingin tetap diisi manual.</p>
       <div class="btns"><button type="button" id="a_schsave">Simpan data sekolah</button></div>
       <p class="hint" id="a_schmsg"></p>
       <h3>Tanda tangan kepala sekolah</h3>
@@ -955,7 +980,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <h3>Tambah guru</h3>
       <div class="row">
         <div><label for="a_gn">Nama guru</label><input id="a_gn"></div>
-        <div><label for="a_gm">Mata pelajaran (pisah koma)</label><input id="a_gm"></div>
+        <div><label for="a_gm">Mata pelajaran (pisah titik koma ;)</label><input id="a_gm"></div>
       </div>
       <div class="btns"><button type="button" id="a_gadd">Tambah</button></div>
       <details style="margin-top:14px"><summary><b>Cadangan: impor manual dengan menempel</b></summary>
@@ -991,6 +1016,8 @@ try{
 
 function setStatus(t, err){ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); }
 
+
+const NOTASI=`\n\nPENULISAN RUMUS DAN HURUF KHUSUS (WAJIB): (1) JANGAN memakai LaTeX atau tanda dolar. Tulis rumus dengan simbol Unicode dalam teks biasa, misalnya 3 × 3 × 3, 12 ÷ 4, √16, x², a₁, ½, ≤, ≥, ≠, π. Pangkat boleh ditulis 3^3 atau 3³. (2) Tulisan Arab ditulis dengan huruf Arab Unicode asli (bukan gambar, bukan hanya transliterasi), lengkap dengan harakat bila dibutuhkan siswa. (3) Aksara Jawa ditulis dengan karakter Unicode asli (blok Javanese, U+A980–U+A9DF). Sertakan transliterasi Latin atau arti dalam kurung bila membantu siswa.`;
 function buildPrompt(){
   const dims=[...document.querySelectorAll('#dims input:checked')].map(i=>i.value);
   return `Anda adalah pakar kurikulum dan pengembang pembelajaran di Indonesia. Susun dokumen RENCANA PEMBELAJARAN MENDALAM (RPM) yang lengkap, siap pakai, dan realistis untuk dilaksanakan guru, mengacu pada Kurikulum Merdeka terbaru dan pendekatan Pembelajaran Mendalam (deep learning) dari Kemendikdasmen: berkesadaran (mindful), bermakna (meaningful), dan menggembirakan (joyful), dengan 8 Dimensi Profil Lulusan (Keimanan dan Ketakwaan terhadap Tuhan YME, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi).
@@ -1021,22 +1048,21 @@ Tabel identitas 2 kolom dengan baris judul "Komponen | Keterangan" (Satuan Pendi
 ### Capaian Pembelajaran
 ### Lintas Disiplin Ilmu
 ### Tujuan Pembelajaran
-Tulis bernomor TP1, TP2, dst (satu kalimat per TP, kata kerja operasional) agar bisa dirujuk oleh LKPD dan asesmen.
 ### Topik Pembelajaran Kontekstual
 ### Praktik Pedagogis
 ### Kemitraan Pembelajaran
 ### Lingkungan Pembelajaran
 ### Pemanfaatan Digital
 ## C. Pengalaman Belajar
-Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan kolom: Tahap | Kegiatan Pembelajaran | Prinsip Pembelajaran Mendalam | Waktu. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Pada tahap Memahami, Mengaplikasi, dan Merefleksi, sebutkan secara eksplisit apa yang dikerjakan siswa dan hasil/produk yang dihasilkan (misalnya tabel pengamatan, sketsa, jawaban refleksi), karena LKPD dan asesmen akan disusun langsung dari langkah-langkah ini. Kolom Prinsip diisi berkesadaran, bermakna, atau menggembirakan beserta alasan singkat. Kolom Waktu berisi durasi menit, dan totalnya sesuai durasi per pertemuan.
+Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan TIGA kolom saja: Tahap | Kegiatan Pembelajaran | Waktu. Jangan membuat kolom Prinsip Pembelajaran Mendalam. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Di PALING BAWAH sel Kegiatan setiap baris, setelah langkah terakhir, tambahkan satu baris baru dengan format persis: <br>**Prinsip Pembelajaran Mendalam:** berkesadaran / bermakna / menggembirakan (boleh lebih dari satu) – alasan singkat satu kalimat. Kolom Waktu berisi durasi menit saja (misalnya 10 menit), dan totalnya sesuai durasi per pertemuan.
 ## D. Asesmen Pembelajaran
 ### Asesmen Awal (diagnostik)
 ### Asesmen Proses (formatif)
 ### Asesmen Akhir (sumatif)
-Untuk tiap jenis asesmen tulis: teknik, instrumen, waktu pelaksanaan (sebut pertemuan dan tahap), TP yang diukur (TP1, dst), dan hasil/produk siswa yang dinilai. Asesmen proses harus menilai hasil kerja yang dihasilkan pada tahap Mengaplikasi dan Merefleksi di Bagian C. Sertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
+Format tiap asesmen: daftar bullet berlabel tebal (**Teknik**, **Instrumen**, **Waktu Pelaksanaan**, **TP yang Diukur**, **Hasil/Produk Siswa**), satu bullet per label. Jika satu label berisi lebih dari satu butir (daftar pertemuan, daftar produk, soal bernomor), tulis butir-butirnya sebagai sub-daftar yang MENJOROK DUA SPASI tepat di bawah label tersebut, jangan sejajar dengan label, dan jangan menambah bullet untuk kalimat biasa.\nSertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
 Jangan membuat blok tanda tangan; aplikasi menambahkannya otomatis setelah bagian D.
 
-ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.`;
+ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.${NOTASI}`;
 }
 
 // konverter Markdown sederhana
@@ -1056,12 +1082,19 @@ function md(src){
       // sel kosong = hanya spasi, &nbsp;, atau <br>
       const blank=c=>!c.replace(/&nbsp;|&#160;|<br\s*\/?>|\s/gi,'');
       const data=rows.map(cells).filter((r,idx)=>!(sep&&idx===1));
+      /* samakan jumlah kolom semua baris dengan baris judul: sel ekstra kosong dibuang, sel ekstra berisi digabung ke kolom terakhir, baris pendek dilengkapi */
+      const nc=data[0].length;
+      data.forEach(r=>{
+        while(r.length>nc&&blank(r[r.length-1])) r.pop();
+        if(r.length>nc){ const ex=r.splice(nc-1); r.push(ex.filter(c=>!blank(c)).join(' ')); }
+        while(r.length<nc) r.push('');
+      });
       const body=sep?data.slice(1):data;
       const nBlankRows=body.filter(r=>r.every(blank)).length;
       const ncol=Math.max(...data.map(r=>r.length));
       const frameH=ncol<=2?220:ncol===3?190:160;   // tinggi bingkai gambar menyesuaikan jumlah kolom
       const isFrame=body.length>0 && nBlankRows===1 && body.length===1;
-      out+=isFrame?`<table class="draw" style="table-layout:fixed">`:'<table>';
+      out+=isFrame?`<table class="draw" style="table-layout:fixed">`:(ncol>=5?'<table class="lebar">':'<table>');
       data.forEach((r,idx)=>{
         const head=sep&&idx===0, tag=head?'th':'td';
         const allBlank=!head && r.every(blank);
@@ -1079,8 +1112,9 @@ function md(src){
     if((m=t.match(/^(#{1,3})\s+(.*)/))){ close(); out+=`<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`; i++; continue; }
     if((m=t.match(/^[-*•]\s+(.*)/))){ if(list!=='ul'){close(); out+='<ul>'; list='ul';}
       const ck=m[1].match(/^\[([ xX]?)\]\s*(.*)/);
-      out+=ck?`<li class="chk" style="list-style:none;margin-left:-18px">${ck[1].trim()?'\u2611':'\u2610'} ${inl(ck[2])}</li>`:`<li>${inl(m[1])}</li>`; i++; continue; }
-    if((m=t.match(/^(\d+)[.)]\s+(.*)/))){ if(list!=='ol'){close(); out+=`<ol start="${m[1]}">`; list='ol';} out+=`<li>${inl(m[2])}</li>`; i++; continue; }
+      const sub=/^(\s{2,}|\t)/.test(line)?' data-sub="1"':'';
+      out+=ck?`<li class="chk" style="list-style:none;margin-left:-18px">${ck[1].trim()?'\u2611':'\u2610'} ${inl(ck[2])}</li>`:`<li${sub}>${inl(m[1])}</li>`; i++; continue; }
+    if((m=t.match(/^(\d+)[.)]\s+(.*)/))){ if(list!=='ol'){close(); out+=`<ol start="${m[1]}">`; list='ol';} out+=`<li${/^(\s{2,}|\t)/.test(line)?' data-sub="1"':''}>${inl(m[2])}</li>`; i++; continue; }
     close(); out+=`<p>${inl(t)}</p>`; i++;
   }
   close(); return out;
@@ -1099,7 +1133,8 @@ function setEdit(on){
   $('editextra').hidden=!editing;
 }
 $('editbtn').addEventListener('click',()=>{
-  setEdit(!editing);
+  const wasEditing=editing; setEdit(!editing);
+  if(wasEditing) ['doc','lkpd','asesmen'].forEach(id=>{ if(!$(id).hidden) fixText($(id)); });
   if(editing) setStatus('Mode edit aktif. Klik teks di dokumen untuk menyunting.');
   else setStatus(dirty?'Mode edit ditutup. Ada perubahan yang belum disimpan: tekan Simpan perubahan.':'Mode edit ditutup.');
 });
@@ -1160,6 +1195,7 @@ function pageCfg(){
   const m=$('mpre').value==='custom'
     ? ['mt','mr','mb','ml'].map(i=>Math.max(0,Math.min(60,parseFloat($(i).value)||0)))
     : $('mpre').value.split(',').map(Number);
+  if(m.length!==4||m.some(x=>!isFinite(x))) m.splice(0,m.length,25.4,25.4,25.4,25.4);   // nilai tersimpan tidak valid -> Normal
   return {w,h,m,land};
 }
 function applyPage(){
@@ -1185,9 +1221,21 @@ applyPage();
 
 const sigImg=[null,null], sigStored=[false,false];
 const sigTag=i=>sigImg[i]?`<img src="${sigImg[i]}" alt="Tanda tangan" height="68">`:'';
+const TGL_KOSONG='…………, ……………… 20…';
+const BULAN_ID=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+/* tempat + tanggal RPP yang diatur admin; '' bila belum diatur */
+function tglRPP(){
+  const t=($('tempat')?$('tempat').value:'').trim(), d=($('tglrpp')?$('tglrpp').value:'').trim();
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  const tg=m?`${+m[3]} ${BULAN_ID[+m[2]-1]||''} ${m[1]}`:'';
+  if(t&&tg) return `${t}, ${tg}`;
+  if(tg) return tg;
+  if(t) return `${t}, ……………… 20…`;
+  return '';
+}
 function signHTML(){
   const k=esc($('kepsek').value), g=esc($('guru').value);
-  return `<div class="sign"><div>Mengetahui,<br>Kepala Sekolah<span class="sp">${sigTag(0)}</span><span class="nm">${k}</span><br>NIP. ..................</div><div>…………, ……………… 20…<br>Guru Mata Pelajaran<span class="sp">${sigTag(1)}</span><span class="nm">${g}</span><br>NIP. ..................</div></div>`;
+  return `<div class="sign"><div>Mengetahui,<br>Kepala Sekolah<span class="sp">${sigTag(0)}</span><span class="nm">${k}</span><br>NIP. ..................</div><div><span class="tgl">${esc(tglRPP()||TGL_KOSONG)}</span><br>Guru Mata Pelajaran<span class="sp">${sigTag(1)}</span><span class="nm">${g}</span><br>NIP. ..................</div></div>`;
 }
 function applySigs(){
   const sps=document.querySelectorAll('#doc .sign .sp');
@@ -1218,8 +1266,8 @@ function docForWord(el){
   const c=el.cloneNode(true), s=c.querySelector('.sign');
   if(s){
     const [a,b]=s.children, fix=h=>h.replace(/<span class="sp">([\s\S]*?)<\/span>/g,(m,im)=>im?im.replace(/height="68"/,'height="100"')+'<br>':'<br><br><br>');
-    const td='width:50%;border:none;text-align:left;background:#fff';
-    s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td}">${fix(b.innerHTML)}</td></tr></table>`;
+    const td='width:60%;border:none;text-align:left;background:#fff', td2='width:40%;border:none;text-align:left;background:#fff';
+    s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td2}">${fix(b.innerHTML)}</td></tr></table>`;
   }
   return c.innerHTML;
 }
@@ -1252,17 +1300,159 @@ function styleIdt(t){
     if(c.tagName==='TD'){ c.style.background=i===0?'#e8eef8':'#ffffff'; c.style.fontWeight=i===0?'600':'400'; if(i===0) c.style.width='38%'; }
   }));
 }
+/* Daftar asesmen: butir isi di bawah label ("Waktu Pelaksanaan:", "Instrumen: ...:") jadi sub-daftar, bukan bullet sejajar */
+function fixNest(root){
+  const isL=e=>e&&(e.tagName==='UL'||e.tagName==='OL');
+  const lab=li=>/^\s*<strong>/i.test(li.innerHTML);
+  const kids=[...root.children]; let k=0;
+  while(k<kids.length){
+    if(!isL(kids[k])){ k++; continue; }
+    const grp=[]; while(k<kids.length&&isL(kids[k])){ grp.push(kids[k]); k++; }
+    const items=grp.flatMap(l=>[...l.children].map(li=>({li,ol:l.tagName==='OL',st:l.getAttribute('start')})));
+    if(!items.some(x=>!x.ol&&lab(x.li))) continue;
+    const tops=[]; let par=null;
+    items.forEach(x=>{
+      const child=par&&(x.li.hasAttribute('data-sub')||(/:$/.test(par.li.textContent.trim())&&!lab(x.li)));
+      if(child){ x.li.removeAttribute('data-sub'); par.kids.push(x); }
+      else{ par={li:x.li,kids:[]}; tops.push(par); }
+    });
+    if(!tops.some(t=>t.kids.length)) continue;
+    const ul=document.createElement('ul');
+    tops.forEach(t=>{
+      t.li.removeAttribute('data-sub'); ul.appendChild(t.li);
+      let cur=null;
+      t.kids.forEach(c=>{
+        if(!cur||cur.ol!==c.ol){ cur={ol:c.ol,el:document.createElement(c.ol?'ol':'ul')}; if(c.ol&&c.st) cur.el.setAttribute('start',c.st); t.li.appendChild(cur.el); }
+        cur.el.appendChild(c.li);
+      });
+    });
+    grp[0].replaceWith(ul); grp.slice(1).forEach(l=>l.remove());
+  }
+}
 /* penomoran lanjut: daftar bernomor yang hanya dipisah baris isian (titik-titik/garis) tetap berurutan */
-function fixOl(root){
-  let next=null;
+function fixOl(root,kind){
+  let next=null, fresh=false, off=0;
   [...root.children].forEach(el=>{
+    if(kind==='lkpd' && /^H[1-3]$/.test(el.tagName)){ fresh=true; off=0; next=null; return; }   // LKPD: tiap kegiatan mulai dari 1 lagi
     if(el.tagName==='OL'){
-      const src=parseInt(el.getAttribute('start')||'1',10)||1;
+      let src=parseInt(el.getAttribute('start')||'1',10)||1;
+      if(kind==='lkpd'){ if(fresh){ off=src-1; fresh=false; } src=Math.max(1,src-off); }
       const st=(next!=null&&src<next)?next:src;
       el.setAttribute('start',st); next=st+el.children.length;
     }else if(el.tagName==='P' && el.textContent.trim() && !/[A-Za-z0-9\u00C0-\u024F]/.test(el.textContent)){
       /* baris isian: tidak memutus penomoran */
     }else next=null;
+  });
+}
+
+/* ===== Perapi teks: rumus LaTeX -> simbol, aksara Jawa & tulisan Arab -> font khusus ===== */
+const TEXSYM={times:'×',div:'÷',cdot:'·',pm:'±',mp:'∓',leq:'≤',le:'≤',geq:'≥',ge:'≥',neq:'≠',ne:'≠',approx:'≈',infty:'∞',
+  pi:'π',alpha:'α',beta:'β',gamma:'γ',delta:'δ',Delta:'Δ',theta:'θ',lambda:'λ',mu:'μ',sigma:'σ',omega:'ω',Omega:'Ω',phi:'φ',
+  circ:'°',degree:'°',rightarrow:'→',to:'→',Rightarrow:'⇒',leftarrow:'←',leftrightarrow:'↔',sum:'∑',angle:'∠',in:'∈',cup:'∪',cap:'∩',
+  subset:'⊂',therefore:'∴',cdots:'⋯',ldots:'…',dots:'…',perp:'⊥',parallel:'∥',triangle:'△',neg:'¬',forall:'∀',exists:'∃',emptyset:'∅',
+  quad:' ',qquad:'  ',',':' ',';':' ','!':'','%':'%','{':'{','}':'}','$':'$','&':'&','#':'#','_':'_'};
+const TEXFN=['sin','cos','tan','log','ln','lim','min','max'];
+const SUPD={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ'};
+function texGrp(t,i){            // ambil {…} atau satu karakter mulai indeks i -> [isi, indeksBerikut]
+  while(t[i]===' ') i++;
+  if(t[i]==='{'){ let d=0,j=i; for(;j<t.length;j++){ if(t[j]==='{') d++; else if(t[j]==='}'){ d--; if(!d) break; } } return [t.slice(i+1,j), j+1]; }
+  if(t[i]==='\\'){ const m=t.slice(i).match(/^\\[A-Za-z]+/); if(m) return [m[0], i+m[0].length]; }
+  return [t[i]||'', i+1];
+}
+function texHtml(t){
+  let o='',i=0;
+  while(i<t.length){
+    const c=t[i];
+    if(c==='\\'){
+      const m=t.slice(i+1).match(/^([A-Za-z]+|.)/); if(!m){ i++; continue; }
+      const k=m[1]; i+=1+k.length;
+      if(k==='frac'||k==='dfrac'||k==='tfrac'){ const [a,j]=texGrp(t,i); const [b,j2]=texGrp(t,j); i=j2; o+=`<sup>${texHtml(a)}</sup>⁄<sub>${texHtml(b)}</sub>`; continue; }
+      if(k==='sqrt'){ let n=''; if(t[i]==='['){ const e=t.indexOf(']',i); n=t.slice(i+1,e); i=e+1; }
+        const [a,j]=texGrp(t,i); i=j; const h=texHtml(a); o+=(n?`<sup>${esc(n)}</sup>`:'')+'√'+(/^[\w.,]+$/.test(a)?h:'('+h+')'); continue; }
+      if(['text','mathrm','mathbf','textbf','mathit','operatorname','mbox'].includes(k)){ const [a,j]=texGrp(t,i); i=j; o+=texHtml(a); continue; }
+      if(k==='left'||k==='right'||k==='displaystyle'||k==='limits'){ if(t[i]==='.') i++; continue; }
+      if(k==='overline'||k==='bar'){ const [a,j]=texGrp(t,i); i=j; o+=`<span style="text-decoration:overline">${texHtml(a)}</span>`; continue; }
+      if(Object.prototype.hasOwnProperty.call(TEXSYM,k)){ o+=TEXSYM[k]; continue; }
+      if(TEXFN.includes(k)){ o+=k; continue; }
+      o+=esc('\\'+k); continue;
+    }
+    if(c==='^'||c==='_'){
+      const [a,j]=texGrp(t,i+1); i=j; const tag=c==='^'?'sup':'sub'; o+=`<${tag}>${texHtml(a)}</${tag}>`; continue;
+    }
+    if(c==='{'||c==='}'){ i++; continue; }
+    o+=esc(c); i++;
+  }
+  return o;
+}
+const RX_MATH=/\$\$([^$]+?)\$\$|\$([^$\n]+?)\$|\\\((.+?)\\\)|\\\[(.+?)\\\]/g;
+const RX_LOOSE=/\$?(\\[A-Za-z]+(?:\[[^\]]*\])?(?:\{(?:[^{}]|\{[^{}]*\})*\})*(?:[\^_](?:\{(?:[^{}]|\{[^{}]*\})*\}|\w))*)\$?/g;
+const RX_CMD=/\\(?:frac|dfrac|sqrt|times|div|cdot|pm|leq?|geq?|neq?|approx|infty|pi|alpha|beta|gamma|theta|Delta|circ|rightarrow|Rightarrow|text|mathrm|left|right|cdots|ldots|angle)\b/;
+const A_CH='\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF\\u200C\\u200D';
+const RX_AR=new RegExp('['+A_CH+']+(?:[\\s\\u00A0\\u060C\\u061B\\u061F]+['+A_CH+']+)*','g');
+const RX_JV=new RegExp('[\\uA980-\\uA9DF\\u200C\\u200D]+(?:\\s+[\\uA980-\\uA9DF\\u200C\\u200D]+)*','g');
+function fixText(root){
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{
+    const p=n.parentElement; if(!p||p.closest('script,style,.ar,.jv,.mt')) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT; }});
+  const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n=>{
+    let h=null, tx=n.nodeValue;
+    const hasMath=/\$|\\\(|\\\[|\\[A-Za-z]/.test(tx), hasScr=/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\uA980-\uA9DF]/.test(tx);
+    if(!hasMath&&!hasScr) return;
+    let parts=[{t:tx,h:false}];
+    if(hasMath){
+      parts=[]; let last=0,m; RX_MATH.lastIndex=0;
+      while((m=RX_MATH.exec(tx))){
+        const body=m[1]||m[2]||m[3]||m[4]||'';
+        if(m[2]!==undefined && !/[\\^_{]/.test(body)){ RX_MATH.lastIndex=m.index+1; continue; }   // "$5 dan $6" bukan rumus
+        if(m.index>last) parts.push({t:tx.slice(last,m.index),h:false});
+        parts.push({t:'<span class="mt">'+texHtml(body)+'</span>',h:true}); last=m.index+m[0].length;
+      }
+      if(last<tx.length) parts.push({t:tx.slice(last),h:false});
+      parts=parts.flatMap(x=>{                       // $ tak berpasangan: ubah hanya ekspresi \perintah{…}
+        if(x.h||!RX_CMD.test(x.t)) return [x];
+        const out=[]; let l=0,mm; RX_LOOSE.lastIndex=0;
+        while((mm=RX_LOOSE.exec(x.t))){
+          if(!RX_CMD.test(mm[1])){ continue; }
+          if(mm.index>l) out.push({t:x.t.slice(l,mm.index),h:false});
+          out.push({t:'<span class="mt">'+texHtml(mm[1])+'</span>',h:true}); l=mm.index+mm[0].length;
+        }
+        if(l<x.t.length) out.push({t:x.t.slice(l),h:false});
+        return out;
+      });
+    }
+    h=parts.map(x=>x.h?x.t:esc(x.t)).join('');
+    if(hasScr){
+      h=h.replace(/(<[^>]*>)|([^<]+)/g,(m,tag,txt)=>tag?tag:txt
+        .replace(RX_AR,r=>`<span class="ar" dir="rtl" lang="ar">${r}</span>`)
+        .replace(RX_JV,r=>`<span class="jv" lang="jv">${r}</span>`));
+    }
+    if(h===esc(tx)) return;
+    const tpl=document.createElement('template'); tpl.innerHTML=h; n.replaceWith(tpl.content);
+  });
+}
+/* Tabel Pengalaman Belajar: jadikan 3 kolom (Tahap | Kegiatan | Waktu); Prinsip Pembelajaran Mendalam di bawah langkah */
+function fixPengalaman(root){
+  root.querySelectorAll('table').forEach(t=>{
+    const hr=t.rows[0]; if(!hr) return;
+    const hs=[...hr.cells].map(c=>c.textContent.trim().toLowerCase());
+    if(!(hs[0]==='tahap'&&hs.some(x=>x.startsWith('kegiatan')))) return;
+    const ip=hs.findIndex(x=>x.startsWith('prinsip'));
+    if(ip>-1){                                   // dokumen lama 4 kolom -> gabungkan
+      [...t.rows].forEach((r,ri)=>{
+        const c=r.cells; if(c.length<=ip) return;
+        if(ri>0 && c[1]){ const pr=c[ip].innerHTML.trim(); if(pr&&pr!=='&nbsp;') c[1].innerHTML+=`<br><strong>Prinsip Pembelajaran Mendalam:</strong> ${pr}`; }
+        c[ip].remove();
+      });
+    }
+    t.classList.add('pengalaman'); t.style.tableLayout='fixed';
+    [...t.rows[0].cells].forEach((c,i,a)=>{ c.style.width=i===0?'15%':(i===a.length-1?'11%':'74%'); c.setAttribute('width',i===0?'15%':(i===a.length-1?'11%':'74%')); });
+    [...t.rows].slice(1).forEach(r=>{
+      const k=r.cells[1]; if(!k||k.querySelector('.prinsip')) return;
+      const m=k.innerHTML.match(/^([\s\S]*?)(?:<br\s*\/?>\s*)*(<strong>\s*Prinsip Pembelajaran Mendalam\s*:?\s*<\/strong>[\s\S]*)$/i);
+      if(m) k.innerHTML=`${m[1]}<div class="prinsip" style="margin-top:3pt;padding-top:2pt;border-top:1px dashed #94a3b8;color:#1e3a8a">${m[2]}</div>`;
+    });
+    t.querySelectorAll('.prinsip').forEach(x=>x.style.removeProperty('font-size'));   // dokumen lama: samakan ukuran
   });
 }
 function styleDoc(root,kind){
@@ -1285,6 +1475,13 @@ function styleDoc(root,kind){
     let n=k.nextElementSibling; if(n&&n.tagName==='HR') n=n.nextElementSibling;
     if(n&&n.tagName==='TABLE'&&!n.classList.contains('kop')) styleIdt(n);
   });
+  /* tabel dengan baris judul: buang sel kosong berlebih di ujung kanan baris yang lebih panjang dari judul */
+  root.querySelectorAll('table:not(.kop)').forEach(t=>{
+    const rows=[...t.rows]; if(rows.length<2) return;
+    const nc=rows[0].cells.length; if(![...rows[0].cells].some(c=>c.tagName==='TH')) return;
+    const kosong=c=>!c.querySelector('img')&&!c.textContent.replace(/\u00a0/g,'').trim();
+    rows.forEach(r=>{ while(r.cells.length>nc&&kosong(r.cells[r.cells.length-1])) r.deleteCell(-1); });
+  });
   /* sel isian: buang sisa &nbsp; / spasi supaya benar-benar kosong; tabel yang seluruh isinya kosong = kotak gambar */
   root.querySelectorAll('table:not(.kop)').forEach(t=>{
     const body=[...t.rows].filter(r=>![...r.cells].every(c=>c.tagName==='TH'));
@@ -1303,13 +1500,16 @@ function styleDoc(root,kind){
     root.querySelectorAll('.pb').forEach(x=>x.remove());
     [...root.querySelectorAll('table.kop')].forEach((k,i)=>{ if(i>0) k.insertAdjacentHTML('beforebegin','<div class="pb" contenteditable="false" style="page-break-before:always;break-before:page"></div>'); });
   }
-  fixOl(root);
+  fixNest(root);
+  fixOl(root,kind);
+  fixPengalaman(root);
+  fixText(root);
   fillLogos(root);
 }
 /* logo tidak ikut disimpan ke database (diisi ulang saat dibuka) */
 function stripLogos(el){ const c=el.cloneNode(true); c.querySelectorAll('img[data-logo]').forEach(i=>i.removeAttribute('src')); return c; }
 
-const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2433}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c3cfe3;padding:5px;vertical-align:top}th{background:#1f3a6e;color:#fff}h1{font-size:15pt;color:#14284f;text-align:center;margin:3pt 0;letter-spacing:1pt}h2{background:#e8eef8;color:#14284f;border-left:5pt solid #2f6bb3;font-size:12.5pt;padding:3pt 8pt;margin-top:14pt}h3{color:#14284f;font-size:12pt;font-weight:bold;border-left:4pt solid #f2b441;border-bottom:1pt solid #e3c56b;padding:1pt 0 2pt 8pt;margin-top:12pt}p,li,td{text-align:justify}.sch{font-size:9.5pt;font-weight:bold;letter-spacing:2pt;color:#2f6bb3;text-align:center}.sub{font-size:9pt;color:#5a6b8c;text-align:center}hr.kop-rule{border:0;border-top:3pt solid #1f3a6e;border-bottom:1pt solid #f2b441;height:2pt}';
+const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2433}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c3cfe3;padding:5px;vertical-align:top}th{background:#1f3a6e;color:#fff}h1{font-size:15pt;color:#14284f;text-align:center;margin:3pt 0;letter-spacing:1pt}h2{background:#e8eef8;color:#14284f;border-left:5pt solid #2f6bb3;font-size:12.5pt;padding:3pt 8pt;margin-top:14pt}h3{color:#14284f;font-size:12pt;font-weight:bold;border-left:4pt solid #f2b441;border-bottom:1pt solid #e3c56b;padding:1pt 0 2pt 8pt;margin-top:12pt}p,li,td{text-align:justify}.sch{font-size:9.5pt;font-weight:bold;letter-spacing:2pt;color:#2f6bb3;text-align:center}.sub{font-size:9pt;color:#5a6b8c;text-align:center}hr.kop-rule{border:0;border-top:3pt solid #1f3a6e;border-bottom:1pt solid #f2b441;height:2pt}.ar{font-family:"Traditional Arabic","Amiri","Arial",serif;mso-bidi-font-family:"Traditional Arabic";font-size:16pt;mso-bidi-font-size:16pt}.jv{font-family:"Javanese Text","Noto Sans Javanese",serif;mso-ascii-font-family:"Javanese Text";mso-hansi-font-family:"Javanese Text";mso-fareast-font-family:"Javanese Text";font-size:13pt}.mt{white-space:nowrap}table.pengalaman td,table.pengalaman th{padding:3pt 5pt;line-height:110%}';
 
 async function ask(prompt){
   let res;
@@ -1330,123 +1530,29 @@ async function ask(prompt){
   return t.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
 }
 
-/* ================= PETA RPM: rujukan terstruktur untuk LKPD dan Asesmen ================= */
-function cellLines(c){
-  const h=c.cloneNode(true); h.querySelectorAll('br').forEach(b=>b.replaceWith('\n'));
-  return h.textContent.split('\n').map(x=>x.trim()).filter(Boolean);
-}
-function tblText(t){
-  return [...t.rows].map(r=>[...r.cells].map(c=>cellLines(c).join(' / ')).join(' | ')).join('\n');
-}
-function tahapKey(x){
-  x=(x||'').toLowerCase();
-  if(/memahami/.test(x)) return 'Memahami';
-  if(/mengaplikasi/.test(x)) return 'Mengaplikasi';
-  if(/merefleksi/.test(x)) return 'Merefleksi';
-  if(/penutup/.test(x)) return 'Penutup';
-  if(/awal|pembuka|pendahuluan/.test(x)) return 'Awal';
-  return x.replace(/^inti\s*[\u2013-]\s*/,'').trim()||'Kegiatan';
-}
-function rpmBlueprint(){
-  const tp=[], meets=[]; let inTP=false, inC=false, cur=null;
-  [...$('doc').children].forEach(el=>{
-    const tag=el.tagName, tx=(el.textContent||'').trim();
-    if(tag==='H2'){ inC=/pengalaman belajar/i.test(tx); inTP=false; cur=null; return; }
-    if(tag==='H3'){
-      inTP=/tujuan pembelajaran/i.test(tx);
-      if(inC){ cur={judul:tx,tahap:[]}; meets.push(cur); }
-      return;
-    }
-    if(inTP){
-      if(tag==='UL'||tag==='OL') [...el.children].forEach(li=>{ const v=li.textContent.trim(); if(v) tp.push(v); });
-      else if(tag==='P'&&tx) tp.push(tx);
-    }
-    if(inC&&tag==='TABLE'&&!el.classList.contains('kop')){
-      if(!cur){ cur={judul:'Pertemuan '+(meets.length+1),tahap:[]}; meets.push(cur); }
-      [...el.rows].forEach(r=>{
-        const c=[...r.cells]; if(c.length<2) return;
-        if(c[0].tagName==='TH' || /^tahap$/i.test(c[0].textContent.trim())) return;
-        const steps=cellLines(c[1]).map(l=>l.replace(/^\s*\d+\s*[.)]\s*/,'').trim()).filter(Boolean);
-        cur.tahap.push({key:tahapKey(c[0].textContent), label:c[0].textContent.trim(), steps,
-          prinsip:c[2]?cellLines(c[2]).join(' ; '):'', waktu:c[3]?c[3].textContent.trim():''});
-      });
-    }
-  });
-  return {tp,meets};
-}
-function blueprintText(){
-  const b=rpmBlueprint(); if(!b.meets.some(m=>m.tahap.length)) return '';
-  let o='';
-  if(b.tp.length) o+='TUJUAN PEMBELAJARAN (kode TP dipakai sebagai rujukan):\n'+b.tp.map((t,i)=>'TP'+(i+1)+'. '+t.replace(/^(TP\s*\d+\s*[:.)-]?\s*|\d+\s*[.)]\s*)/i,'')).join('\n')+'\n\n';
-  b.meets.forEach(m=>{
-    o+=m.judul.toUpperCase()+'\n';
-    m.tahap.forEach(t=>{
-      o+='['+t.key+'] ('+t.label+') waktu: '+(t.waktu||'-')+' | prinsip: '+(t.prinsip||'-')+'\n';
-      t.steps.forEach((x,i)=>{ o+='  '+t.key+'-'+(i+1)+'. '+x+'\n'; });
-    });
-    o+='\n';
-  });
-  return o.trim();
-}
-/* teks bersih dokumen (tanpa kop, tanda tangan, logo); tabel dijadikan baris "a | b | c" */
-function docText(root,bp){
-  let out='', skipC=false;
-  [...root.children].forEach(el=>{
-    const tag=el.tagName;
-    if(el.classList.contains('sign')||el.classList.contains('pb')||tag==='HR') return;
-    if(tag==='TABLE'&&el.classList.contains('kop')){ const h=el.querySelector('h1'); out+='\n# '+(h?h.textContent.trim():'')+'\n'; return; }
-    if(tag==='H2'){
-      skipC=!!bp&&/pengalaman belajar/i.test(el.textContent);
-      out+='\n## '+el.textContent.trim()+'\n';
-      if(skipC) out+='(Rincian per pertemuan ada di PETA LANGKAH RPM; kode langkah, mis. Memahami-2, dipakai sebagai rujukan.)\n'+bp+'\n';
-      return;
-    }
-    if(skipC) return;
-    if(tag==='H1'||tag==='H3') out+='\n### '+el.textContent.trim()+'\n';
-    else if(tag==='TABLE') out+=tblText(el)+'\n';
-    else if(tag==='UL'||tag==='OL') out+=[...el.children].map((li,i)=>(tag==='OL'?(i+1)+'. ':'- ')+li.textContent.trim()).join('\n')+'\n';
-    else { const v=el.textContent.trim(); if(v) out+=v+'\n'; }
-  });
-  return out.trim();
-}
-function rpmContext(){ return docText($('doc'),blueprintText()); }
-function lkpdContext(){ return ($('lkpd').hidden||!$('lkpd').textContent.trim())?'':docText($('lkpd'),''); }
-
 function lkpdPrompt(){
-  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. LKPD adalah turunan langsung dari bagian C. Pengalaman Belajar di RPM, jadi urutan, isi, dan jenis aktivitasnya HARUS sama dengan PETA LANGKAH RPM di bawah (tiap langkah punya kode, misalnya Memahami-2). Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
-
-ATURAN KESESUAIAN DENGAN RPM (wajib, akan diperiksa guru):
-1. Satu LKPD per pertemuan, berurutan sesuai pertemuan di RPM, dan judulnya diambil dari fokus pertemuan itu.
-2. Tahap kegiatan LKPD mengikuti tahap RPM persis dan berurutan: Pemantik (tahap Awal), Kegiatan 1 Memahami, Kegiatan 2 Mengaplikasi, Kegiatan 3 Merefleksi. Bila RPM memiliki tahap Penutup dengan langkah untuk siswa, gabungkan sebagai butir terakhir Kegiatan 3 (kesimpulan dan tindak lanjut).
-3. Setiap langkah RPM yang dikerjakan siswa (mengamati, membaca, berdiskusi, mencoba, membuat, mempresentasikan, menjawab, menilai diri) WAJIB menjadi satu butir tugas atau pertanyaan pada tahap yang sama dan dalam urutan yang sama, dengan kata kerja dan objek kerja yang sama seperti di RPM. Langkah yang hanya dilakukan guru (salam, presensi, penjelasan guru) tidak dijadikan butir tugas; bila perlu cukup menjadi bacaan atau informasi singkat.
-4. DILARANG menambah aktivitas, produk, media, atau alat yang tidak ada di RPM, dan DILARANG melewatkan langkah siswa. Bentuk kerja (individu, pasangan, kelompok), media, dan produk yang disebut RPM dipakai persis.
-5. Di bawah judul tiap kegiatan tulis "Waktu: n menit" sesuai kolom waktu tahap itu di RPM.
-6. Tujuan Belajar di LKPD adalah TP RPM yang dicapai pada pertemuan itu (sebut kodenya, misalnya TP1) dalam bahasa siswa.
-7. Penilaian: 3 sampai 5 kriteria rubrik diturunkan dari hasil atau produk yang diminta pada Kegiatan 2 dan 3, dan selaras dengan rubrik serta dimensi profil lulusan di bagian D RPM.
-8. Akhiri tiap LKPD dengan "## Keterkaitan dengan RPM (untuk guru)", berupa tabel 3 kolom: Langkah RPM | Ringkasan langkah | Butir LKPD. Tabel ini memuat SEMUA langkah RPM pertemuan itu; langkah yang hanya dilakukan guru ditulis "Dilakukan guru" pada kolom Butir LKPD. Bagian ini selalu Bahasa Indonesia.
+  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
 
 BAHASA LKPD: ${$('bahasa').value==='auto'
   ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
   : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`}
-Berlaku untuk semua teks LKPD yang dibaca siswa: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
+Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
 
 Format Markdown untuk tiap pertemuan:
 # LKPD PERTEMUAN n: judul kegiatan
 Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, dan Pertemuan ke-n (sudah terisi), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
-## Tujuan Belajar
+## Tujuan Belajar (kalimat sederhana untuk siswa)
 ## Petunjuk Pengerjaan
-## Alat dan Bahan (hanya yang disebut di RPM)
-## Pemantik (tahap Awal: pertanyaan atau stimulus konkret sesuai langkah Awal di RPM)
-## Kegiatan 1: Memahami (bacaan singkat, data, atau pertanyaan sesuai langkah Memahami di RPM)
-## Kegiatan 2: Mengaplikasi (tugas berurutan sesuai langkah Mengaplikasi di RPM)
-## Kegiatan 3: Merefleksi (pertanyaan refleksi sesuai langkah Merefleksi dan Penutup di RPM)
+## Alat dan Bahan (jika diperlukan)
+## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret)
+## Kegiatan 2: Mengaplikasi (tugas langkah demi langkah sesuai kegiatan inti RPM)
+## Kegiatan 3: Merefleksi (3–4 pertanyaan refleksi)
 ## Penilaian (tabel rubrik singkat dengan kolom Kriteria, Skor 1–4, Paraf Guru)
-## Keterkaitan dengan RPM (untuk guru)
 
-Aturan isi: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa titik-titik); aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Beri nomor berurutan dan jangan mengulang dari 1 di tengah LKPD. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
+Aturan: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Jika tugas meminta siswa menggambar, membuat sketsa, atau menempel sesuatu, sediakan tabel berisi baris judul kolom lalu SATU baris isi yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa garis titik); aplikasi menyesuaikan ukuran bingkainya. Pilihan ganda atau centang ditulis dengan awalan "- [ ] ". Beri nomor berurutan tanpa mengulang dari 1. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.${NOTASI}
 
 RPM:
-${rpmContext()}`;
+${$('doc').innerText}`;
 }
 
 $('lkpdbtn').addEventListener('click',async()=>{
@@ -1480,30 +1586,21 @@ function asesBahasa(){
 function asesDetail(k){
   if(k==='diagnostik') return `ISI KHUSUS ASESMEN DIAGNOSTIK
 Tujuan: memetakan kesiapan dan karakter siswa SEBELUM pembelajaran dimulai.
-- ## A. Kisi-kisi: kolom "Pertemuan & Langkah RPM" diisi dengan langkah Awal dan Memahami Pertemuan 1 yang membutuhkan kemampuan prasyarat itu.
-- ## B. Instrumen terdiri dari dua bagian. "Bagian 1: Asesmen Kognitif" berisi 6–8 soal kemampuan prasyarat (campuran pilihan ganda dan isian singkat) yang runtut dari mudah ke sulit; soal hanya menguji prasyarat yang benar-benar dibutuhkan untuk mengikuti langkah-langkah di PETA RPM dan mengarah ke TP, bukan materi yang baru diajarkan. "Bagian 2: Asesmen Non-Kognitif" berisi 5–6 pernyataan skala 1–4 atau pertanyaan singkat tentang minat, gaya belajar, kesiapan, dan kondisi belajar siswa terkait topik dan bentuk kerja yang dipakai di RPM (individu, kelompok, praktik, dan sebagainya).
-- ## E. Pengolahan Hasil dan Tindak Lanjut wajib memuat rentang skor untuk tiga kelompok (sudah paham, paham sebagian, belum paham) dan strategi pembelajaran berdiferensiasi yang konkret untuk tiap kelompok, dengan menyebut langkah RPM (kode tahap-nomor) yang disesuaikan untuk kelompok itu.`;
+- ## B. Instrumen terdiri dari dua bagian. "Bagian 1: Asesmen Kognitif" berisi 6–8 soal kemampuan prasyarat (campuran pilihan ganda dan isian singkat) yang runtut dari mudah ke sulit. "Bagian 2: Asesmen Non-Kognitif" berisi 5–6 pernyataan skala 1–4 atau pertanyaan singkat tentang minat, gaya belajar, kesiapan, dan kondisi belajar siswa terkait topik.
+- ## E. Pengolahan Hasil dan Tindak Lanjut wajib memuat rentang skor untuk tiga kelompok (sudah paham, paham sebagian, belum paham) dan strategi pembelajaran berdiferensiasi yang konkret untuk tiap kelompok, selaras dengan Pengalaman Belajar di RPM.`;
   if(k==='formatif') return `ISI KHUSUS ASESMEN FORMATIF
-Tujuan: memantau dan memberi umpan balik SELAMA proses pembelajaran, pada langkah-langkah yang sama dengan PETA LANGKAH RPM dan hasil kerja pada LKPD.
-- ## A. Kisi-kisi dibuat per pertemuan: setiap baris menyebut pertemuan dan kode langkah RPM yang dinilai.
-- ## B. Instrumen dibagi per pertemuan (### Pertemuan n, persis sebanyak pertemuan di RPM dan dalam urutan yang sama). Tiap pertemuan berisi: (1) tiket keluar (exit ticket) 3 soal singkat yang hanya menguji hal yang dipelajari pada tahap Memahami dan Mengaplikasi pertemuan itu, dan (2) satu instrumen proses yang menilai kegiatan tahap Mengaplikasi pertemuan itu, yaitu lembar observasi kinerja/diskusi, penilaian diri, atau penilaian sejawat. Kriteria pada instrumen proses WAJIB berasal dari kata kerja dan hasil kerja pada langkah Mengaplikasi (dan Merefleksi) pertemuan itu serta butir LKPD-nya, bukan kriteria umum. Lembar observasi dibuat sebagai tabel dengan kolom No | Nama Siswa | kriteria-kriteria | Skor | Keterangan; isi kolom No dengan 1 sampai 5, kolom lain dibiarkan kosong.
-- ## C. Kunci jawaban tiket keluar dan pedoman skor per butir, per pertemuan.
-- ## E. Pengolahan Hasil dan Tindak Lanjut: cara merekap skor proses, kriteria umpan balik, dan tindak lanjut (penguatan atau perbaikan) per kelompok capaian, dengan menyebut langkah RPM yang diulang atau diperkaya.`;
+Tujuan: memantau dan memberi umpan balik SELAMA proses pembelajaran.
+- Kisi-kisi dibuat per pertemuan.
+- ## B. Instrumen dibagi per pertemuan (### Pertemuan n, sesuai jumlah pertemuan di RPM). Tiap pertemuan berisi: (1) tiket keluar (exit ticket) 3 soal singkat yang spesifik pada materi pertemuan itu, dan (2) satu instrumen proses sesuai kegiatan pertemuan, yaitu lembar observasi kinerja/diskusi, penilaian diri, atau penilaian sejawat. Lembar observasi dibuat sebagai tabel dengan kolom No | Nama Siswa | kriteria-kriteria | Skor | Keterangan; isi kolom No dengan 1 sampai 5, kolom lain dibiarkan kosong.
+- ## E. Pengolahan Hasil dan Tindak Lanjut: cara merekap skor proses, kriteria umpan balik, dan tindak lanjut (penguatan atau perbaikan) per kelompok capaian.`;
   return `ISI KHUSUS ASESMEN SUMATIF
-Tujuan: mengukur ketercapaian seluruh tujuan pembelajaran di AKHIR pembelajaran, berdasarkan hal yang telah dipelajari dan dikerjakan siswa pada PETA LANGKAH RPM dan LKPD.
-- ## B. Instrumen terdiri dari "Bagian 1: Tes Tertulis" (10–15 soal pilihan ganda dengan 4 opsi, ditambah 4–5 soal uraian yang menuntut penalaran tingkat tinggi) dan "Bagian 2: Asesmen Kinerja/Produk". Tugas kinerja/produk harus SEJENIS dengan produk dan aktivitas pada tahap Mengaplikasi di RPM/LKPD (konteks baru, tingkat tantangan lebih tinggi), lengkap dengan petunjuk dan hasil yang diharapkan. Semua soal harus menguji TP yang tercantum di kisi-kisi dan hanya memakai konteks, istilah, dan keterampilan yang sudah dilatihkan.
+Tujuan: mengukur ketercapaian seluruh tujuan pembelajaran di AKHIR pembelajaran.
+- ## B. Instrumen terdiri dari "Bagian 1: Tes Tertulis" (10–15 soal pilihan ganda dengan 4 opsi, ditambah 4–5 soal uraian yang menuntut penalaran tingkat tinggi) dan "Bagian 2: Asesmen Kinerja/Produk" (satu tugas kinerja, produk, atau proyek yang sesuai topik dan mata pelajaran, lengkap dengan petunjuk dan hasil yang diharapkan).
 - ## C. Kunci Jawaban dan Pedoman Penskoran: tabel kunci pilihan ganda (No | Kunci | Level Kognitif), jawaban model soal uraian dengan pedoman skor per rentang, dan bobot tiap bagian.
-- ## E. Pengolahan Nilai dan Tindak Lanjut: rumus nilai akhir beserta bobotnya, kriteria ketercapaian tiap TP (TP1, dst), serta program remedial dan pengayaan yang konkret dengan merujuk langkah RPM yang diulang atau diperkaya.`;
+- ## E. Pengolahan Nilai dan Tindak Lanjut: rumus nilai akhir beserta bobotnya, kriteria ketercapaian tujuan pembelajaran, serta program remedial dan pengayaan yang konkret.`;
 }
 function asesPrompt(j){
-  const lk=(j.k==='diagnostik')?'':lkpdContext();
-  return `Berdasarkan RPM berikut, susun dokumen ASESMEN ${j.label.toUpperCase()} yang LENGKAP dan siap pakai oleh guru untuk fase ${$('fase').value}. Dokumen WAJIB memuat kisi-kisi, instrumen, kunci atau pedoman penskoran, dan rubrik penilaian. Semua isi harus spesifik pada topik "${$('topik').value}" dan SELARAS dengan tujuan pembelajaran, langkah pada Pengalaman Belajar RPM, serta LKPD (bila tersedia), bukan perintah umum.
-
-ATURAN KESESUAIAN DENGAN RPM (wajib, akan diperiksa guru):
-1. Gunakan TP persis seperti di RPM, lengkap dengan kodenya (TP1, TP2, dst), dan semua TP harus terwakili di kisi-kisi.
-2. Tiap baris kisi-kisi menyebut pertemuan dan kode langkah RPM tempat kompetensi itu dilatihkan (contoh: "P2 Mengaplikasi-3"). Soal atau tugas hanya boleh menguji hal yang benar-benar dipelajari dan dikerjakan siswa pada langkah itu (konteks, istilah, data, jenis tugas, bentuk produk). Dilarang memasukkan materi atau keterampilan yang tidak muncul di PETA LANGKAH RPM.
-3. Bagian D RPM sudah menetapkan teknik, instrumen, waktu pelaksanaan, dan rubrik asesmen. Jadikan itu dasar: kembangkan, jangan bertentangan. Kriteria dan dimensi profil lulusan pada rubrik harus selaras dengan rubrik di bagian D RPM.
-4. Bila LKPD tersedia di bawah, instrumen dan rubrik untuk kegiatan proses atau produk harus menilai hasil kerja pada butir LKPD itu, dan kriteria skornya selaras dengan bagian Penilaian LKPD.
+  return `Berdasarkan RPM berikut, susun dokumen ASESMEN ${j.label.toUpperCase()} yang LENGKAP dan siap pakai oleh guru untuk fase ${$('fase').value}. Dokumen WAJIB memuat kisi-kisi, instrumen, kunci atau pedoman penskoran, dan rubrik penilaian. Semua isi harus spesifik pada topik "${$('topik').value}" dan selaras dengan tujuan pembelajaran serta pengalaman belajar di RPM, bukan perintah umum.
 
 BAHASA: Kisi-kisi, rubrik, pedoman, dan seluruh petunjuk untuk guru memakai Bahasa Indonesia baku. ${asesBahasa()}
 
@@ -1511,7 +1608,7 @@ FORMAT MARKDOWN (ikuti persis urutan ini):
 # ${j.judul}: judul topik singkat
 Tabel identitas 2 kolom dengan baris judul "Komponen | Keterangan", berisi Mata Pelajaran, Topik, Fase/Kelas, Jenis Asesmen, Alokasi Waktu, dan Nama Guru (semua sudah terisi dari RPM). Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
 ## A. Kisi-Kisi
-Satu tabel dengan kolom: No | Tujuan Pembelajaran (kode TP) | Pertemuan & Langkah RPM | Indikator Soal/Tugas (sebut materinya) | Level Kognitif (C1–C6) | Bentuk | No. Soal | Skor. Nomor soal harus cocok dengan Instrumen di bagian B. Di bawah tabel tulis total skor dan komposisi level kognitif.
+Satu tabel dengan kolom: No | Tujuan Pembelajaran | Materi | Indikator Soal/Tugas | Level Kognitif (C1–C6) | Bentuk | No. Soal | Skor. Setiap tujuan pembelajaran di RPM harus terwakili, dan nomor soal harus cocok dengan Instrumen di bagian B. Di bawah tabel tulis total skor dan komposisi level kognitif.
 ## B. Instrumen
 Petunjuk pengerjaan singkat, lalu soal atau tugas. Soal pilihan ganda ditulis: nomor dan pertanyaan pada satu baris ("1. pertanyaan"), lalu tiap opsi pada baris sendiri diawali huruf ("A. opsi"). Penomoran harus berurutan dan tidak diulang dari 1 di tengah dokumen. Jangan membuat tempat jawaban dengan titik-titik panjang atau sel kosong total.
 ## C. Kunci Jawaban dan Pedoman Penskoran
@@ -1522,13 +1619,10 @@ WAJIB satu atau lebih tabel rubrik analitik dengan kolom: Kriteria | Level 4 (Sa
 
 ${asesDetail(j.k)}
 
-ATURAN: Jangan mengarang nomor regulasi atau kutipan. Pilihan ganda hanya satu jawaban benar dengan pengecoh yang masuk akal. Tulis rumus dalam teks biasa. Keluarkan hanya dokumen asesmen, tanpa kalimat pembuka atau penutup.
+ATURAN: Jangan mengarang nomor regulasi atau kutipan. Pilihan ganda hanya satu jawaban benar dengan pengecoh yang masuk akal. Keluarkan hanya dokumen asesmen, tanpa kalimat pembuka atau penutup.${NOTASI}
 
 RPM:
-${rpmContext()}${lk?`
-
-LKPD YANG SUDAH DISUSUN (dikerjakan siswa; rujukan untuk instrumen dan rubrik):
-${lk}`:''}`;
+${$('doc').innerText}`;
 }
 function resetAses(){
   const el=$('asesmen'); el.innerHTML=''; el.hidden=true;
@@ -1896,7 +1990,7 @@ async function agLoad(){
   agRender();
 }
 function agRender(){
-  $('a_glist').innerHTML=AG.length?'<table class="at"><thead><tr><th>Nama</th><th>Mata pelajaran (pisah koma)</th><th></th></tr></thead><tbody>'+AG.map((r,i)=>`<tr data-i="${i}"><td><input data-f="nama" value="${esc(r.nama||'')}"></td><td><input data-f="mapel" value="${esc(r.mapel||'')}"></td><td style="white-space:nowrap"><button type="button" class="sm" data-act="save">Simpan</button> <button type="button" class="ghost sm" data-act="del">Hapus</button></td></tr>`).join('')+'</tbody></table>':'';
+  $('a_glist').innerHTML=AG.length?'<table class="at"><thead><tr><th>Nama</th><th>Mata pelajaran (pisah titik koma ;)</th><th></th></tr></thead><tbody>'+AG.map((r,i)=>`<tr data-i="${i}"><td><input data-f="nama" value="${esc(r.nama||'')}"></td><td><input data-f="mapel" value="${esc(r.mapel||'')}"></td><td style="white-space:nowrap"><button type="button" class="sm" data-act="save">Simpan</button> <button type="button" class="ghost sm" data-act="del">Hapus</button></td></tr>`).join('')+'</tbody></table>':'';
 }
 $('a_gload').addEventListener('click',agLoad);
 $('a_gadd').addEventListener('click',async()=>{
@@ -1926,7 +2020,7 @@ function parseGuru(t){
   const seen=new Set();
   return t.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
     const k=l.search(/[\t|;]/);
-    return {nama:(k<0?l:l.slice(0,k)).trim(), mapel:k<0?'':l.slice(k+1).replace(/[\t|;]+/g,', ').replace(/,\s*$/,'').trim()};
+    return {nama:(k<0?l:l.slice(0,k)).trim(), mapel:k<0?'':l.slice(k+1).replace(/[\t|]+/g,'; ').replace(/[;,]\s*$/,'').trim()};
   }).filter(r=>r.nama&&!/^(no|nama|nama guru)$/i.test(r.nama)).filter(r=>{ const key=r.nama.toLowerCase(); if(seen.has(key)) return false; seen.add(key); return true; });
 }
 $('a_gimpdb').addEventListener('click',async()=>{
@@ -1991,6 +2085,23 @@ async function syncErapor(dry){
 $('a_sync').addEventListener('click',()=>syncErapor(false));
 $('a_syncdry').addEventListener('click',()=>syncErapor(true));
 
+/* --- pemecah daftar mapel: koma yang menjadi bagian judul mapel tidak ikut memecah ---
+   1) bila ada ; / | / baris baru, hanya itu pemisahnya (koma = bagian judul)
+   2) selain itu pisah koma, kecuali judul yang terdaftar di MAPEL_KOMA (tambahkan pola baru di sini bila ada mapel lain yang judulnya memakai koma) */
+const MAPEL_KOMA=[/Pro(?:j|y)ek\s+Kreati[vf]itas[\s,]+Inovasi[\s,]+(?:dan|&|serta)\s+Kewirausahaan/gi];
+const SAMBUNG=/^(?:dan|&|serta|atau)\s/i; /* serpihan yang diawali kata sambung bukan mapel sendiri: gabung ke sebelumnya */
+function splitMapel(v){
+  const t=String(v||'');
+  if(/[;|\n]/.test(t)) return t.split(/[;|\n]/).map(x=>x.trim()).filter(Boolean);
+  const keep=[]; let u=t;
+  MAPEL_KOMA.forEach(rx=>{ u=u.replace(rx,m=>{ keep.push(m.replace(/\s+/g,' ').trim()); return '\u0001'+(keep.length-1)+'\u0001'; }); });
+  const out=[];
+  u.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{
+    if(out.length&&SAMBUNG.test(x)) out[out.length-1]+=', '+x; else out.push(x);
+  });
+  return out.map(x=>x.replace(/\u0001(\d+)\u0001/g,(m,i)=>keep[+i]));
+}
+
 /* --- daftar guru hasil sinkron (dibaca halaman utama), cadangan data lokal --- */
 async function loadFallback(err){
   let list=null, from='';
@@ -2000,7 +2111,7 @@ async function loadFallback(err){
   const seen=new Set(); GURUS=[]; ALL_MAPEL=[];
   list.forEach(r=>{
     const n=String(r.nama||'').trim(); if(!n||seen.has(n.toLowerCase())) return; seen.add(n.toLowerCase());
-    const mapel=String(r.mapel||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+    const mapel=splitMapel(r.mapel);
     GURUS.push({nama:n,mapel}); ALL_MAPEL.push(...mapel);
   });
   GURUS.sort((a,b)=>a.nama.localeCompare(b.nama,'id'));
@@ -2122,13 +2233,22 @@ function showSchool(){
   const k=$('kepsek').value.trim(), sc=$('sekolah').value.trim();
   $('schoolinfo').className='hint'+((k&&sc)?'':' err');
   $('schoolinfo').textContent=(k&&sc)?`Satuan pendidikan: ${sc}. Kepala sekolah: ${k}. (Diatur oleh admin.)`:'Nama kepala sekolah dan satuan pendidikan belum diatur admin.';
-  if(document.activeElement!==$('a_kepsek')&&document.activeElement!==$('a_sekolah')){ $('a_kepsek').value=k; $('a_sekolah').value=sc; }
+  if(document.activeElement!==$('a_kepsek')&&document.activeElement!==$('a_sekolah')&&document.activeElement!==$('a_tempat')&&document.activeElement!==$('a_tglrpp')){ $('a_kepsek').value=k; $('a_sekolah').value=sc; $('a_tempat').value=$('tempat').value; $('a_tglrpp').value=$('tglrpp').value; }
   applySchoolToDoc();
 }
 /* perbarui nama kepala sekolah / satuan pendidikan pada dokumen yang sedang tampil */
 function applySchoolToDoc(){
   const k=$('kepsek').value.trim(), sc=$('sekolah').value.trim();
   const sp=document.querySelectorAll('#doc .sign .nm'); if(sp[0]&&k) sp[0].textContent=k;
+  const tg=tglRPP();
+  if(tg){
+    const d2=document.querySelectorAll('#doc .sign>div')[1];
+    if(d2){
+      let el=d2.querySelector('.tgl');
+      if(!el&&d2.firstChild&&d2.firstChild.nodeType===3){ el=document.createElement('span'); el.className='tgl'; d2.replaceChild(el,d2.firstChild); }
+      if(el) el.textContent=tg;
+    }
+  }
   document.querySelectorAll('#doc table.idt tr, #lkpd table.idt tr, #asesmen table.idt tr').forEach(r=>{
     if(r.cells.length<2) return; const lb=r.cells[0].textContent;
     if(k&&/kepala\s*sekolah|principal|headmaster/i.test(lb)) r.cells[1].textContent=k;
@@ -2144,6 +2264,7 @@ async function reloadKepsek(){
     if(!n||!n.kepsek) throw new Error('Data kepala sekolah belum diatur admin.');
     const lama=$('kepsek').value.trim();
     $('kepsek').value=n.kepsek; if(n.sekolah) $('sekolah').value=n.sekolah;
+    $('tempat').value=n.tempat||''; $('tglrpp').value=n.tanggal||'';
     showSchool();
     sigImg[0]=null; sigStored[0]=false; await loadSigKepsek(); applySigs();
     const baru=$('kepsek').value.trim();
@@ -2170,18 +2291,18 @@ async function loadSekolah(){
   try{
     const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.sekolah&select=nilai&limit=1');
     const n=r&&r[0]&&r[0].nilai;
-    if(n){ $('kepsek').value=n.kepsek||''; $('sekolah').value=n.sekolah||''; }
+    if(n){ $('kepsek').value=n.kepsek||''; $('sekolah').value=n.sekolah||''; $('tempat').value=n.tempat||''; $('tglrpp').value=n.tanggal||''; }
   }catch(e){}
   showSchool();
 }
 async function saveSekolah(){
-  const kepsek=$('a_kepsek').value.trim(), sekolah=$('a_sekolah').value.trim();
+  const kepsek=$('a_kepsek').value.trim(), sekolah=$('a_sekolah').value.trim(), tempat=$('a_tempat').value.trim(), tanggal=$('a_tglrpp').value.trim();
   if(!kepsek||!sekolah){ msg('a_schmsg','Nama kepala sekolah dan satuan pendidikan wajib diisi.',true); return; }
   const b=$('a_schsave'); b.disabled=true; msg('a_schmsg','Menyimpan…');
   try{
-    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'sekolah',nilai:{kepsek,sekolah},updated_at:new Date().toISOString()}});
-    $('kepsek').value=kepsek; $('sekolah').value=sekolah; showSchool();
-    msg('a_schmsg','Data sekolah tersimpan dan berlaku untuk semua guru.');
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'sekolah',nilai:{kepsek,sekolah,tempat,tanggal},updated_at:new Date().toISOString()}});
+    $('kepsek').value=kepsek; $('sekolah').value=sekolah; $('tempat').value=tempat; $('tglrpp').value=tanggal; showSchool();
+    msg('a_schmsg','Data sekolah dan tanggal RPP tersimpan, berlaku untuk semua guru.');
   }catch(e){ msg('a_schmsg','Gagal menyimpan: '+tblErr(e,'pengaturan_rpm'),true); }
   finally{ b.disabled=false; }
 }
