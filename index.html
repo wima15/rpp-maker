@@ -148,7 +148,7 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
 body[data-sb="hidden"] #sb_show{display:grid}
 
 body[data-sb="collapsed"] .app{grid-template-columns:68px minmax(0,1fr)}
-body[data-sb="hidden"] .app{grid-template-columns:0 minmax(0,1fr)}
+body[data-sb="hidden"] .app{grid-template-columns:minmax(0,1fr)}
 body[data-sb="hidden"] .sidebar{display:none}
 body[data-sb="collapsed"] .sidebar{padding:20px 8px;align-items:stretch}
 body[data-sb="collapsed"] .sb-head{justify-content:center}
@@ -182,9 +182,10 @@ form{
   max-height:calc(100vh - 32px);
   max-height:calc(100dvh - 32px);
   overflow-y:auto;
-  overscroll-behavior:contain;
+  overscroll-behavior:auto;
   scrollbar-width:thin;
-  padding-bottom:16px;
+  padding-bottom:40px;
+  scroll-padding-bottom:40px;
 }
 @media (max-width:960px){form{position:static;max-height:none;overflow-y:visible}}
 
@@ -748,7 +749,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <textarea id="cp" placeholder="Kosongkan agar AI merujuk CP resmi sesuai mapel dan fase"></textarea>
     <div class="row">
       <div><label for="pertemuan">Jumlah pertemuan</label><input id="pertemuan" type="number" min="1" max="12" value="2"></div>
-      <div><label for="waktu">Durasi per pertemuan</label><input id="waktu" value="2 × 35 menit"></div>
+      <div><label for="waktu">Durasi per pertemuan</label><input id="waktu" value="2 × 45 menit"></div>
     </div>
     <label for="siswa">Karakteristik siswa</label>
     <textarea id="siswa" placeholder="mis. 30 siswa, sebagian besar visual, 3 siswa butuh pendampingan membaca"></textarea>
@@ -1112,23 +1113,7 @@ async function generate(){
   setStatus('');
   showLoader(['Menyusun RPM Anda…','Merumuskan tujuan pembelajaran…','Menyusun tabel pengalaman belajar…','Menyiapkan asesmen dan rubrik…','Hampir selesai, mohon tunggu…']);
   try{
-    const res=await fetch(aiUrl(),{
-      method:'POST',
-      headers:{'Content-Type':'application/json',apikey:SB_DST.key},
-      body:JSON.stringify({
-        model:$('model').value.trim(),
-        contents:[{role:'user',parts:[{text:buildPrompt()}]}],
-        generationConfig:{temperature:0.7,maxOutputTokens:16384}
-      })
-    });
-    const data=await res.json();
-    if(!res.ok){
-      const msg=data?.error?.message||('HTTP '+res.status);
-      throw new Error(msg);
-    }
-    const text=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
-    if(!text) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
-    lastText=text.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
+    lastText=await ask(buildPrompt());
     const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
     ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
     $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true;
@@ -1326,11 +1311,20 @@ function stripLogos(el){ const c=el.cloneNode(true); c.querySelectorAll('img[dat
 const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2433}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c3cfe3;padding:5px;vertical-align:top}th{background:#1f3a6e;color:#fff}h1{font-size:15pt;color:#14284f;text-align:center;margin:3pt 0;letter-spacing:1pt}h2{background:#e8eef8;color:#14284f;border-left:5pt solid #2f6bb3;font-size:12.5pt;padding:3pt 8pt;margin-top:14pt}h3{color:#14284f;font-size:12pt;font-weight:bold;border-left:4pt solid #f2b441;border-bottom:1pt solid #e3c56b;padding:1pt 0 2pt 8pt;margin-top:12pt}p,li,td{text-align:justify}.sch{font-size:9.5pt;font-weight:bold;letter-spacing:2pt;color:#2f6bb3;text-align:center}.sub{font-size:9pt;color:#5a6b8c;text-align:center}hr.kop-rule{border:0;border-top:3pt solid #1f3a6e;border-bottom:1pt solid #f2b441;height:2pt}';
 
 async function ask(prompt){
-  const res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},
-    body:JSON.stringify({model:$('model').value.trim(),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
-  const data=await res.json();
-  if(!res.ok) throw new Error(data?.error?.message||('HTTP '+res.status));
-  const t=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+  let res;
+  try{
+    res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},
+      body:JSON.stringify({model:$('model').value.trim(),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
+  }catch(e){ throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
+  let data=null;
+  try{ const raw=await res.text(); data=raw?JSON.parse(raw):null; }catch(e){ data=null; }
+  if(!res.ok){
+    const m=(data&&((data.error&&data.error.message)||data.message||(typeof data.error==='string'?data.error:'')))||'';
+    if([546,504,502,408].includes(res.status)) throw new Error('Server AI kehabisan waktu atau sumber daya (kode '+res.status+'). Permintaan terlalu berat untuk satu kali proses. Coba lagi, pakai model "flash", atau kurangi jumlah pertemuan.'+(m?' Detail: '+m:''));
+    if(res.status===429) throw new Error('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi.'+(m?' Detail: '+m:''));
+    throw new Error(m||('HTTP '+res.status));
+  }
+  const t=((data&&data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts)||[]).map(p=>p.text||'').join('');
   if(!t) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
   return t.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
 }
@@ -1658,7 +1652,7 @@ function closeProject(){
   ['doc','lkpd','asesmen'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
   $('empty').hidden=false; lastText=''; curId=null;
   ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall'].forEach(id=>$(id).disabled=true);
-  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('waktu').value='2 × 35 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
+  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
   lastText='';
   if(inViewer()) showList(); else{ showView('make'); }
