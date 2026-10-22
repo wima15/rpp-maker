@@ -169,6 +169,78 @@ details.keybox[open] summary{margin-bottom:6px}
 .hist .item button.del:hover{background:var(--danger);color:#fff}
 pre.sql{font-size:11px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre-wrap;margin:6px 0}
 @media print{#histbox{display:none!important}}
+
+/* ---- layout sidebar ---- */
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);align-items:start}
+.sidebar{position:sticky;top:0;align-self:start;height:100vh;height:100dvh;margin-top:12px;border-top:1px solid var(--line);border-top-right-radius:12px;display:flex;flex-direction:column;gap:6px;padding:20px 14px;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto}
+.sb-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 10px 8px}
+.sb-link{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--ink);font-size:14px;font-weight:600}
+.sb-link svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sb-link:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.sb-link[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.content{min-width:0}
+.view-saved{display:block;padding:16px clamp(16px,4vw,48px) 48px}
+.view-saved .hist{margin:0;padding:18px;background:var(--panel);border-radius:10px;max-width:880px}
+.view-saved .hist h3{font-size:20px;margin-bottom:12px}
+main[hidden],.view-saved[hidden]{display:none!important}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;align-items:center;gap:8px;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .sb-title{display:none}
+  .sb-link{width:auto;white-space:nowrap;padding:9px 14px}
+}
+@media print{.sidebar{display:none!important}.app{display:block}.view-saved{padding:0}}
+/* ---- sidebar: expand / collapse / sembunyikan ---- */
+.app{transition:grid-template-columns .2s ease}
+body[data-sb="collapsed"] .app{grid-template-columns:68px minmax(0,1fr)}
+body[data-sb="hidden"] .app{grid-template-columns:0 minmax(0,1fr)}
+body[data-sb="hidden"] .sidebar{display:none}
+.sb-head{display:flex;align-items:center;gap:4px;margin:0 0 8px}
+.sb-head .sb-title{flex:1;margin:0 0 0 10px}
+.sb-ctl{display:grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted)}
+.sb-ctl svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sb-ctl:hover{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--ink)}
+#sb_collapse svg{transition:transform .2s}
+body[data-sb="collapsed"] #sb_collapse svg{transform:rotate(180deg)}
+body[data-sb="collapsed"] .sidebar{padding:20px 10px;align-items:stretch}
+body[data-sb="collapsed"] .sb-head{justify-content:center}
+body[data-sb="collapsed"] .sb-head .sb-title,body[data-sb="collapsed"] #sb_hide,body[data-sb="collapsed"] .sb-link .lbl{display:none}
+body[data-sb="collapsed"] .sb-link{justify-content:center;padding:11px 0}
+#sb_show{display:none;position:fixed;left:0;top:150px;z-index:30;width:26px;height:46px;padding:0;place-items:center;border:1px solid var(--line);border-left:0;border-radius:0 10px 10px 0;background:var(--panel);color:var(--accent);box-shadow:0 2px 8px rgba(15,60,50,.15)}
+#sb_show svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+body[data-sb="hidden"] #sb_show{display:grid}
+@media (max-width:900px){
+  body[data-sb="collapsed"] .app,body[data-sb="hidden"] .app{grid-template-columns:1fr}
+  .sb-head{margin:0;flex:none}
+  .sb-head .sb-title{display:none}
+  #sb_collapse{display:none}
+  body[data-sb="collapsed"] .sidebar{padding:8px 12px}
+  body[data-sb="collapsed"] .sb-link{padding:9px 14px}
+  body[data-sb="collapsed"] .sb-link .lbl{display:inline}
+  #sb_show{top:auto;bottom:16px;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;left:12px}
+}
+@media print{#sb_show{display:none!important}}
+
+/* ---- tampilan RPP tersimpan (hanya lihat, edit, cetak) ---- */
+.sv-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.sv-top button{margin:0}
+#sv_title{font-weight:700;font-size:15px}
+.pchecks{display:flex;flex-wrap:wrap;gap:4px 14px}
+.pchecks label{display:flex;align-items:center;gap:6px;font-weight:500;margin:0;cursor:pointer}
+.pchecks input{width:auto}
+#g-resusun{display:none}
+#outpanel.mode-saved #g-resusun{display:block}
+#g-both,#print,#lkpdprint,#asesprint{display:none!important}
+#outpanel.mode-saved #g-rpm,#outpanel.mode-saved #g-lkpd,#outpanel.mode-saved #g-ases,#outpanel.mode-saved #g-both{display:none}
+#outpanel.mode-saved #editgroup{order:1}#outpanel.mode-saved #g-db{order:2}#outpanel.mode-saved #g-savedprint{order:3}#outpanel.mode-saved #g-resusun{order:4}#outpanel.mode-saved #g-close{order:5}
+@media print{
+  body[data-p="sel"] #doc,body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen{display:none!important}
+  body[data-p="sel"][data-sel~="doc"] #doc,body[data-p="sel"][data-sel~="lkpd"] #lkpd,body[data-p="sel"][data-sel~="ases"] #asesmen{display:block!important}
+  body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen{break-before:page;margin-top:0}
+  body[data-p="sel"][data-first="lkpd"] #lkpd,body[data-p="sel"][data-first="ases"] #asesmen{break-before:auto}
+  .sv-top{display:none!important}
+}
+
 /* ---- intro splash ---- */
 #intro{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px;text-align:center;cursor:pointer;color:#e4efec;
   background:radial-gradient(ellipse at 50% 40%,#14504a 0%,#0b2a26 55%,#071a17 100%);transition:opacity .7s ease,visibility .7s ease}
@@ -298,8 +370,26 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   <p>Isi data pembelajaran, AI menyusun Rencana Pembelajaran Mendalam (RPM) sesuai Kurikulum Merdeka dan 8 Dimensi Profil Lulusan. Hasilnya bisa Anda sunting langsung.</p>
   <button type="button" class="ghost" id="admopen">Portal Admin</button>
 </header>
+<div class="app">
+<aside class="sidebar" aria-label="Menu utama">
+  <div class="sb-head">
+    <span class="sb-title">Menu</span>
+    <button type="button" class="sb-ctl" id="sb_collapse" title="Ciutkan menu" aria-label="Ciutkan menu" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button type="button" class="sb-ctl" id="sb_hide" title="Sembunyikan menu" aria-label="Sembunyikan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+  <button type="button" class="sb-link" id="nav-make" data-view="make" aria-current="page" title="Buat RPP">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    <span class="lbl">Buat RPP</span>
+  </button>
+  <button type="button" class="sb-link" id="nav-saved" data-view="saved" title="RPP Tersimpan">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16"/><path d="M9 14h6"/></svg>
+    <span class="lbl">RPP Tersimpan</span>
+  </button>
+</aside>
+<button type="button" id="sb_show" title="Tampilkan menu" aria-label="Tampilkan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+<div class="content">
 
-<main>
+<main id="view-make">
 <form class="panel" id="f" autocomplete="off">
   <fieldset>
     <legend>Model AI</legend>
@@ -433,9 +523,9 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   <button type="submit" class="gen" id="gen">Susun RPM</button>
 </form>
 
-<section class="panel" aria-live="polite">
+<section class="panel" id="outpanel" aria-live="polite">
   <div class="toolbar">
-    <div class="tgroup">
+    <div class="tgroup" id="g-rpm">
       <span class="tlabel">RPM</span>
       <div class="tbtns">
         <button type="button" class="ghost" id="copy" disabled>Salin</button>
@@ -444,7 +534,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
         <button type="button" class="ghost" id="regen" disabled>Susun ulang</button>
       </div>
     </div>
-    <div class="tgroup">
+    <div class="tgroup" id="g-lkpd">
       <span class="tlabel">LKPD</span>
       <div class="tbtns">
         <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
@@ -452,7 +542,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
         <button type="button" class="ghost" id="lkpdprint" disabled>Cetak / PDF</button>
       </div>
     </div>
-    <div class="tgroup">
+    <div class="tgroup" id="g-ases">
       <span class="tlabel">Asesmen</span>
       <div class="tbtns">
         <button type="button" id="asesbtn" disabled>Buat Asesmen</button>
@@ -460,19 +550,40 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
         <button type="button" class="ghost" id="asesprint" disabled>Cetak / PDF</button>
       </div>
     </div>
-    <div class="tgroup">
+    <div class="tgroup" id="g-both">
       <span class="tlabel">Cetak gabungan</span>
       <div class="tbtns">
         <button type="button" class="ghost" id="printboth" disabled>RPM + LKPD</button>
         <button type="button" class="ghost" id="printall" disabled>Semua dokumen</button>
       </div>
     </div>
-    <div class="tgroup">
+    <div class="tgroup" id="g-savedprint">
+      <span class="tlabel">Cetak</span>
+      <div class="pchecks">
+        <label><input type="checkbox" id="pc_doc"> RPM</label>
+        <label><input type="checkbox" id="pc_lkpd"> LKPD</label>
+        <label><input type="checkbox" id="pc_ases"> Asesmen</label>
+      </div>
+      <div class="tbtns" style="margin-top:8px">
+        <button type="button" id="pc_go" disabled>Cetak / PDF</button>
+        <button type="button" class="ghost" id="pc_page">Atur kertas &amp; margin</button>
+      </div>
+      <p class="hint" id="pc_hint" style="margin-top:6px">Centang dokumen yang ingin dicetak.</p>
+    </div>
+    <div class="tgroup" id="g-db">
       <span class="tlabel">Database</span>
       <div class="tbtns">
         <button type="button" class="ghost" id="savedb" disabled>Simpan ke database</button>
-        <button type="button" class="ghost" id="histbtn">RPP tersimpan</button>
       </div>
+    </div>
+    <div class="tgroup" id="g-resusun">
+      <span class="tlabel">Susun ulang</span>
+      <div class="tbtns"><button type="button" class="ghost" id="pc_resusun">Susun ulang di Buat RPP</button></div>
+      <p class="hint" style="margin-top:6px">Membuka menu Buat RPP dengan data ini sudah terisi.</p>
+    </div>
+    <div class="tgroup" id="g-close">
+      <span class="tlabel">Proyek</span>
+      <div class="tbtns"><button type="button" class="ghost" id="pc_close" disabled>Tutup proyek</button></div>
     </div>
     <div class="tgroup tedit" id="editgroup">
       <span class="tlabel">Sunting dokumen</span>
@@ -488,12 +599,6 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       </div>
     </div>
   </div>
-  <div class="hist" id="histbox" hidden>
-    <h3>RPP tersimpan</h3>
-    <label for="histguru" style="margin:0 0 6px">Pilih nama guru</label>
-    <select id="histguru" style="width:100%;margin-bottom:8px"><option value="">Memuat daftar guru…</option></select>
-    <div id="histlist"><p class="hint">Pilih nama guru untuk melihat RPP yang pernah dibuat.</p></div>
-  </div>
   <div class="status" id="status"></div>
   <div class="loader" id="loader" role="status" aria-live="polite">
     <div class="spin" aria-hidden="true"></div>
@@ -506,17 +611,24 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 </section>
 </main>
 
+<main class="view-saved" id="view-saved" hidden>
+  <div id="savedviewer" hidden>
+    <div class="sv-top"><button type="button" class="ghost sm" id="sv_back">← Daftar RPP tersimpan</button><span id="sv_title"></span></div>
+  </div>
+  <div class="hist" id="histbox">
+    <h3>RPP tersimpan</h3>
+    <label for="histguru" style="margin:0 0 6px">Pilih nama guru</label>
+    <select id="histguru" style="width:100%;margin-bottom:8px"><option value="">Memuat daftar guru…</option></select>
+    <div id="histlist"><p class="hint">Pilih nama guru untuk melihat RPP yang pernah dibuat.</p></div>
+  </div>
+</main>
+</div>
+</div>
+
 <div class="adm" id="pgmodal" hidden role="dialog" aria-modal="true" aria-labelledby="pgmtitle">
  <div class="box" style="width:min(560px,100%)">
   <div class="admhead"><h2 id="pgmtitle">Atur kertas &amp; margin</h2><button type="button" class="ghost sm" id="pgmclose">Tutup</button></div>
   <div id="pgmbody"></div>
-  <div class="btns">
-    <button type="button" id="pgm_doc">Cetak RPM / PDF</button>
-    <button type="button" id="pgm_lkpd" class="ghost">Cetak LKPD / PDF</button>
-    <button type="button" id="pgm_both" class="ghost">Cetak RPM + LKPD / PDF</button>
-    <button type="button" id="pgm_ases" class="ghost">Cetak Asesmen / PDF</button>
-    <button type="button" id="pgm_all" class="ghost">Cetak Semua / PDF</button>
-  </div>
  </div>
 </div>
 
@@ -1226,7 +1338,95 @@ async function loadHist(){
     box.innerHTML=rows.map(r=>`<div class="item"><div><b>${esc(r.topik||'(tanpa topik)')}</b><small>${esc(r.mata_pelajaran||'-')} · ${esc(r.fase||'')} · ${new Date(r.created_at).toLocaleString('id-ID')}</small></div><div class="acts"><button type="button" class="ghost" data-id="${esc(r.id)}">Buka</button><button type="button" class="ghost del" data-del="${esc(r.id)}">Hapus</button></div></div>`).join('');
   }catch(e){ box.innerHTML=`<p class="hint err">Gagal memuat RPP tersimpan: ${esc(e.message)}</p>`; }
 }
-$('histbtn').addEventListener('click',()=>{ const b=$('histbox'); b.hidden=!b.hidden; if(!b.hidden) loadHistGuru(); });
+const outp=$('outpanel');
+function mountPanel(toSaved){
+  if(toSaved){ $('savedviewer').appendChild(outp); outp.classList.add('mode-saved'); }
+  else{ $('view-make').appendChild(outp); outp.classList.remove('mode-saved'); }
+}
+function inViewer(){ return !$('savedviewer').hidden; }
+function canLeave(){ return !(editing&&dirty)||confirm('Ada perubahan yang belum disimpan. Tetap lanjut tanpa menyimpan?'); }
+function showList(){
+  $('savedviewer').hidden=true; $('histbox').hidden=false; loadHistGuru();
+}
+function showView(v){
+  const saved=v==='saved';
+  $('view-make').hidden=saved; $('view-saved').hidden=!saved;
+  $('nav-make').setAttribute('aria-current',saved?'false':'page');
+  $('nav-saved').setAttribute('aria-current',saved?'page':'false');
+  if(saved) showList(); else{ mountPanel(false); $('savedviewer').hidden=true; }
+  window.scrollTo({top:0});
+}
+function syncPrintChecks(){
+  const has={doc:!$('doc').hidden&&!!$('doc').innerText.trim(), lkpd:!$('lkpd').hidden&&!!$('lkpd').innerText.trim(), ases:!$('asesmen').hidden&&!!$('asesmen').innerText.trim()};
+  [['pc_doc','doc'],['pc_lkpd','lkpd'],['pc_ases','ases']].forEach(([id,k])=>{ const c=$(id); c.disabled=!has[k]; c.checked=has[k]; c.parentNode.style.opacity=has[k]?1:.5; });
+  updPrintBtn();
+}
+function updPrintBtn(){
+  const n=['pc_doc','pc_lkpd','pc_ases'].filter(id=>$(id).checked).length;
+  $('pc_go').disabled=!n;
+  $('pc_hint').textContent=n?'':'Centang dokumen yang ingin dicetak.';
+}
+function openViewer(title){
+  mountPanel(true);
+  $('histbox').hidden=true; $('savedviewer').hidden=false;
+  $('sv_title').textContent=title||'';
+  syncPrintChecks();
+}
+['pc_doc','pc_lkpd','pc_ases'].forEach(id=>$(id).addEventListener('change',updPrintBtn));
+['doc','lkpd','asesmen'].forEach(id=>new MutationObserver(()=>setTimeout(syncPrintChecks,0)).observe($(id),{attributes:true,attributeFilter:['hidden']}));
+syncPrintChecks();
+$('pc_go').addEventListener('click',()=>{
+  const sel=[]; if($('pc_doc').checked) sel.push('doc'); if($('pc_lkpd').checked) sel.push('lkpd'); if($('pc_ases').checked) sel.push('ases');
+  if(!sel.length) return;
+  document.body.dataset.sel=sel.join(' '); document.body.dataset.first=sel[0];
+  printOnly('sel');
+});
+window.addEventListener('afterprint',()=>{ delete document.body.dataset.sel; delete document.body.dataset.first; });
+$('pc_page').addEventListener('click',()=>$('pagebtn').click());
+
+/* ---- tutup proyek yang sedang dibuka / akan disusun ulang ---- */
+function closeProject(){
+  if(!$('doc').hidden){
+    const msg=(editing&&dirty)?'Ada perubahan yang belum disimpan. Tutup proyek tanpa menyimpan?'
+      :(curId==null?'RPM ini belum tersimpan di database. Tutup proyek?':'');
+    if(msg&&!confirm(msg)) return;
+  }
+  setEdit(false); setDirty(false);
+  ['doc','lkpd','asesmen'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
+  $('empty').hidden=false; lastText=''; curId=null;
+  ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall'].forEach(id=>$(id).disabled=true);
+  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('waktu').value='2 × 35 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
+  document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
+  lastText='';
+  if(inViewer()) showList(); else{ showView('make'); }
+  setStatus('Proyek ditutup.');
+}
+$('pc_close').addEventListener('click',closeProject);
+new MutationObserver(()=>{ $('pc_close').disabled=$('doc').hidden; }).observe($('doc'),{attributes:true,attributeFilter:['hidden']});
+
+/* ---- sidebar: expand / collapse / sembunyikan ---- */
+(function(){
+  const KEY='rpm_sb', B=document.body;
+  function set(v,save){
+    B.dataset.sb=v;
+    $('sb_collapse').setAttribute('aria-expanded',v==='expanded'?'true':'false');
+    const t=v==='expanded'?'Ciutkan menu':'Perluas menu';
+    $('sb_collapse').title=t; $('sb_collapse').setAttribute('aria-label',t);
+    if(save){ try{ localStorage.setItem(KEY,v); }catch(e){} }
+  }
+  let v='expanded'; try{ const x=localStorage.getItem(KEY); if(x==='collapsed'||x==='hidden'||x==='expanded') v=x; }catch(e){}
+  set(v,false);
+  $('sb_collapse').addEventListener('click',()=>set(B.dataset.sb==='expanded'?'collapsed':'expanded',true));
+  $('sb_hide').addEventListener('click',()=>set('hidden',true));
+  $('sb_show').addEventListener('click',()=>set('expanded',true));
+})();
+$('sv_back').addEventListener('click',()=>{ if(!canLeave()) return; setEdit(false); showList(); });
+$('pc_resusun').addEventListener('click',()=>{
+  if(!canLeave()) return;
+  setEdit(false); showView('make');
+  setStatus('Data RPP sudah terisi di form. Ubah bila perlu, lalu tekan Susun RPM.');
+});
+document.querySelectorAll('.sb-link').forEach(b=>b.addEventListener('click',()=>{ if(inViewer()&&!canLeave()) return; if(inViewer()) setEdit(false); showView(b.dataset.view); }));
 $('histguru').addEventListener('change',loadHist);
 $('histlist').addEventListener('click',async e=>{
   const d=e.target.closest('button[data-del]');
@@ -1247,7 +1447,7 @@ $('histlist').addEventListener('click',async e=>{
     }
     return;
   }
-  const b=e.target.closest('button[data-id]'); if(!b) return;
+  const b=e.target.closest('button[data-id]'); if(!b) return; if(!canLeave()) return;
   try{
     const r=(await sb(SB_DST,`/${encodeURIComponent(readCfgForm().tOut)}?id=eq.${encodeURIComponent(b.dataset.id)}&select=*`))[0];
     if(!r) throw new Error('Data tidak ditemukan.');
@@ -1262,7 +1462,7 @@ $('histlist').addEventListener('click',async e=>{
     else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true; }
     if(r.asesmen_html){ showAses(r.asesmen_html); } else resetAses();
     ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
-    curId=r.id; $('histbox').hidden=true; setEdit(false); setDirty(false);
+    curId=r.id; setEdit(false); setDirty(false); openViewer(r.topik);
     setStatus('Data dibuka dari database (mode baca). Tekan Edit untuk menyunting; perubahan disimpan dengan tombol Simpan ke database.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){ setStatus('Gagal membuka data: '+err.message,true); }
@@ -1594,7 +1794,6 @@ $('kepsekreload').addEventListener('click',reloadKepsek);
   const fs=$('pagefs'), modal=$('pgmodal'), body=$('pgmbody'); let home=null, nxt=null;
   function open(){
     home=fs.parentNode; nxt=fs.nextSibling; body.appendChild(fs);
-    $('pgm_doc').disabled=$('doc').hidden; $('pgm_lkpd').disabled=$('lkpdprint').disabled; $('pgm_both').disabled=$('printboth').disabled; $('pgm_ases').disabled=$('asesprint').disabled; $('pgm_all').disabled=$('printall').disabled;
     modal.hidden=false;
   }
   function close(){ modal.hidden=true; if(home&&fs.parentNode===body) home.insertBefore(fs,nxt); }
@@ -1602,11 +1801,6 @@ $('kepsekreload').addEventListener('click',reloadKepsek);
   $('pgmclose').addEventListener('click',close);
   modal.addEventListener('mousedown',e=>{ if(e.target===modal) close(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!modal.hidden) close(); });
-  $('pgm_doc').addEventListener('click',()=>{ close(); setTimeout(()=>printOnly('doc'),50); });
-  $('pgm_lkpd').addEventListener('click',()=>{ close(); setTimeout(()=>printOnly('lkpd'),50); });
-  $('pgm_both').addEventListener('click',()=>{ close(); setTimeout(()=>printOnly('both'),50); });
-  $('pgm_ases').addEventListener('click',()=>{ close(); setTimeout(()=>printOnly('ases'),50); });
-  $('pgm_all').addEventListener('click',()=>{ close(); setTimeout(()=>printOnly('all'),50); });
 })();
 async function loadSekolah(){
   try{
