@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penyusun RPM – Rencana Pembelajaran Mendalam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Source+Serif+4:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9f0ee; --panel:#ffffff; --ink:#14302b; --muted:#5b726c; --line:#cddbd7;
+  --accent:#0f6b5c; --accent-ink:#ffffff; --mark:#f2b441; --danger:#b3261e;
+  --paper:#ffffff; --paper-ink:#1b1b1b;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f1b19; --panel:#172624; --ink:#e4efec; --muted:#93aaa4; --line:#2a403c;
+    --accent:#3fbfa6; --accent-ink:#062018; --mark:#f2b441; --danger:#ff8a80; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{padding:28px clamp(16px,4vw,48px) 8px;display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;justify-content:space-between}
+h1{font-family:'Bricolage Grotesque',Inter,sans-serif;font-weight:700;font-size:clamp(28px,4vw,42px);line-height:1.05;margin:0;letter-spacing:-.02em}
+h1 span{background:linear-gradient(transparent 62%,var(--mark) 62% 92%,transparent 92%)}
+header p{margin:0;max-width:46ch;color:var(--muted);font-size:14px}
+main{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:20px;padding:16px clamp(16px,4vw,48px) 48px;align-items:start}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+form{position:sticky;top:12px}
+@media (max-width:900px){form{position:static}}
+fieldset{border:0;margin:0 0 16px;padding:0}
+legend{font-family:'Bricolage Grotesque',Inter,sans-serif;font-weight:700;font-size:16px;margin-bottom:8px;padding:0}
+label{display:block;font-size:13px;font-weight:500;margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+textarea{resize:vertical;min-height:64px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dims{display:grid;grid-template-columns:1fr;gap:2px}
+.dims label{display:flex;gap:8px;align-items:center;font-weight:400;margin:2px 0;cursor:pointer}
+.dims input{width:auto}
+.hint{font-size:12px;color:var(--muted);margin:4px 0 0}
+.keybox{border:1px dashed var(--line);border-radius:8px;padding:10px 12px;background:color-mix(in srgb,var(--mark) 10%,transparent)}
+.inline{display:flex;gap:8px;align-items:center;font-weight:400;font-size:12px;margin-top:8px}
+.inline input{width:auto}
+button{font:inherit;font-weight:600;font-size:14px;border-radius:6px;border:1px solid var(--accent);padding:10px 14px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent;color:var(--accent)}
+button:disabled{opacity:.55;cursor:wait}
+.gen{width:100%;font-size:15px;padding:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.status{font-size:13px;color:var(--muted);min-height:20px;margin-bottom:8px}
+.status.err{color:var(--danger)}
+.empty{padding:48px 16px;text-align:center;color:var(--muted)}
+.empty strong{display:block;font-family:'Bricolage Grotesque',Inter,sans-serif;font-size:20px;color:var(--ink);margin-bottom:6px}
+#doc{background:var(--paper);color:var(--paper-ink);border-radius:6px;padding:clamp(18px,4vw,44px);font-family:'Source Serif 4',Georgia,serif;font-size:15.5px;line-height:1.65;border:1px solid var(--line);outline:none}
+#doc h1{font-family:'Source Serif 4',Georgia,serif;font-size:22px;text-align:center;margin:0 0 4px;letter-spacing:0}
+#doc h2{font-size:17px;margin:26px 0 6px;padding-bottom:4px;border-bottom:2px solid #0f6b5c;font-family:'Source Serif 4',Georgia,serif}
+#doc h3{font-size:15.5px;margin:16px 0 4px}
+#doc p{margin:6px 0}
+#doc ul,#doc ol{margin:6px 0 6px 22px;padding:0}
+#doc table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;display:block;overflow-x:auto}
+#doc th,#doc td{border:1px solid #999;padding:6px 8px;vertical-align:top;text-align:left}
+#doc th{background:#e4efec}
+.sign{display:flex;justify-content:space-between;gap:24px;margin-top:36px}
+.sign>div{width:42%;text-align:left;line-height:1.5}
+.sign .sp{display:block;height:68px}
+.sign .nm{font-weight:700;text-decoration:underline}
+#doc .sign{break-inside:avoid;margin-top:48px}
+#doc,#lkpd{border:0;border-top:6px solid #0f6b5c;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 14px 32px -14px rgba(15,60,50,.35)}
+#lkpd{border-top-color:#f2b441;margin-top:28px;font-size:15px}
+#doc h1,#lkpd h1{background:#0f6b5c;color:#fff;padding:14px 18px;border-radius:4px;font-size:21px;letter-spacing:.04em;margin:0 0 16px}
+#lkpd h1{background:#f2b441;color:#2b1d00}
+#lkpd h1:not(:first-child){margin-top:56px}
+#doc h2,#lkpd h2{background:#e6f1ee;color:#0b4a40;border:0;border-left:6px solid #0f6b5c;padding:7px 12px;margin:28px 0 10px;font-size:16px;break-after:avoid}
+#lkpd h2{background:#fff3d9;color:#5a3d00;border-left-color:#f2b441}
+#doc h3,#lkpd h3{color:#0f6b5c;font-size:15.5px;margin:18px 0 4px;padding-left:10px;border-left:3px solid #f2b441;break-after:avoid}
+#doc th,#lkpd th{background:#0f6b5c;color:#fff;border-color:#0f6b5c}
+#lkpd th{background:#8a5a00;border-color:#8a5a00}
+#doc td,#lkpd td{border-color:#b9c9c5}
+#doc tr:nth-child(even) td,#lkpd tr:nth-child(even) td{background:#f5faf8}
+#doc td:first-child{font-weight:600}
+#lkpd td{height:34px}
+#doc strong{color:#0b4a40}
+#doc li::marker{color:#0f6b5c}
+.toolbar .sep{width:1px;background:var(--line);margin:0 4px}
+.loader{display:none;position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:60;width:min(480px,92vw);align-items:center;gap:16px;padding:16px 18px;border:1px solid var(--line);border-left:6px solid var(--mark);border-radius:10px;background:var(--panel);box-shadow:0 12px 36px -8px rgba(0,0,0,.35)}
+.loader.on{display:flex}
+.spin{flex:none;width:38px;height:38px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:sp .9s linear infinite}
+.loader b{display:block;font-size:15px}
+.loader small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.bar{height:5px;background:var(--line);border-radius:5px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:35%;background:var(--accent);border-radius:5px;animation:bar 1.4s ease-in-out infinite}
+#doc p,#doc li,#doc td,#lkpd p,#lkpd li,#lkpd td{text-align:justify}
+#doc,#lkpd,#doc h1,#doc h2,#doc h3,#lkpd h1,#lkpd h2,#lkpd h3{font-family:Inter,Arial,Helvetica,sans-serif}
+#doc,#lkpd{font-size:14.5px;line-height:1.6}
+.sign .sp img{height:68px;max-width:100%;object-fit:contain;mix-blend-mode:multiply}
+[hidden]{display:none!important}
+@media screen{#doc,#lkpd{max-width:var(--pw,210mm);margin-left:auto;margin-right:auto;padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes bar{from{margin-left:-35%}to{margin-left:100%}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.5s}.bar i{animation-duration:3s}}
+#lkpd{background:var(--paper);color:var(--paper-ink);padding:clamp(18px,4vw,44px);font-family:'Source Serif 4',Georgia,serif;line-height:1.65;outline:none}
+#lkpd h1,#lkpd h2,#lkpd h3{font-family:'Source Serif 4',Georgia,serif}
+#lkpd h1{text-align:center}
+#lkpd p{margin:6px 0}
+#lkpd ul,#lkpd ol{margin:6px 0 6px 22px;padding:0}
+#lkpd table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;display:block;overflow-x:auto}
+#lkpd th,#lkpd td{border:1px solid #b9c9c5;padding:6px 8px;vertical-align:top;text-align:left}
+#lkpd,#lkpd h1,#lkpd h2,#lkpd h3{font-family:Inter,Arial,Helvetica,sans-serif}
+#lkpd{font-size:14.5px;line-height:1.6}
+#lkpd p,#lkpd li,#lkpd td{text-align:justify}
+@media screen{#lkpd{padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
+@media print{
+  body{background:#fff}
+  header,form,.toolbar,.status{display:none!important}
+  main{display:block;padding:0}
+  .panel{border:0;padding:0}
+  #doc,#lkpd{border:0;padding:0;box-shadow:none;margin-top:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  tr{break-inside:avoid}
+  #lkpd h1:not(:first-child){break-before:page;margin-top:0}
+  body[data-p="lkpd"] #doc{display:none!important}
+  body[data-p="doc"] #lkpd{display:none!important}
+}
+
+button.sm{padding:4px 10px;font-size:12px;margin-top:6px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chips button{padding:3px 10px;font-size:12px;font-weight:500}
+details.keybox summary{cursor:pointer;font-family:'Bricolage Grotesque',Inter,sans-serif;font-weight:700;font-size:16px}
+details.keybox[open] summary{margin-bottom:6px}
+.hint.err{color:var(--danger)}
+.hist{margin-bottom:14px;border:1px solid var(--line);border-radius:8px;padding:12px}
+.hist h3{margin:0 0 8px;font-family:'Bricolage Grotesque',Inter,sans-serif;font-size:16px}
+.hist .item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.hist .item:first-of-type{border-top:0}
+.hist .item small{display:block;color:var(--muted)}
+.hist .item button{padding:5px 12px;font-size:12px;flex:none}
+pre.sql{font-size:11px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre-wrap;margin:6px 0}
+@media print{#histbox{display:none!important}}
+.adm{position:fixed;inset:0;z-index:80;background:rgba(8,22,19,.62);display:flex;align-items:flex-start;justify-content:center;padding:clamp(8px,3vw,32px);overflow:auto}
+.adm .box{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-top:6px solid var(--accent);border-radius:10px;width:min(960px,100%);padding:20px;box-shadow:0 20px 50px -12px rgba(0,0,0,.5)}
+.admhead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.admhead h2{margin:0;font-family:'Bricolage Grotesque',Inter,sans-serif;font-size:22px}
+.adm .tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 16px}
+.adm .tabs button{background:transparent;color:var(--ink);border-color:transparent;border-radius:6px 6px 0 0;margin-bottom:-1px}
+.adm .tabs button[aria-selected="true"]{border-color:var(--line);border-bottom-color:var(--panel);color:var(--accent);background:var(--panel)}
+.adm h3{font-family:'Bricolage Grotesque',Inter,sans-serif;font-size:16px;margin:18px 0 4px}
+.adm .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.adm .btns button,.adm button.sm{margin-top:0}
+table.at{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;display:block;overflow-x:auto}
+table.at th,table.at td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:middle}
+table.at th{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+table.at td input{padding:5px 8px;font-size:13px;min-width:140px}
+.okx{color:#1b7f4b;font-weight:600}.badx{color:var(--danger);font-weight:600}.mutex{color:var(--muted)}
+textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;min-height:150px;white-space:pre}
+@media print{.adm,#admopen{display:none!important}}
+.combo{position:relative}
+.combo input{padding-right:36px}
+.combo .cb-btn{position:absolute;right:3px;top:3px;bottom:3px;width:30px;margin:0;padding:0;border:0;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.combo .cb-btn:hover{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.cb-list{position:absolute;left:0;top:calc(100% + 4px);z-index:30;min-width:100%;width:max-content;max-width:min(380px,86vw);max-height:260px;overflow:auto;margin:0;padding:4px;list-style:none;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 28px -10px rgba(0,0,0,.4)}
+.cb-list li{padding:7px 10px;border-radius:5px;cursor:pointer;font-size:14px;line-height:1.35}
+.cb-list li.act{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.cb-list li[aria-selected="true"]{font-weight:600}
+.cb-list li.cb-h{font-size:11px;color:var(--muted);cursor:default;padding:6px 10px 2px;font-weight:600}
+.cb-list li.cb-e{color:var(--muted);cursor:default;font-size:13px}
+.tuto{padding-left:20px}.tuto li{margin:10px 0;line-height:1.5}.tuto ul{margin:6px 0;padding-left:18px}.tuto li li{margin:4px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Penyusun <span>RPM</span></h1>
+  <p>Isi data pembelajaran, AI menyusun Rencana Pembelajaran Mendalam (RPM) sesuai Kurikulum Merdeka dan 8 Dimensi Profil Lulusan. Hasilnya bisa Anda sunting langsung.</p>
+  <button type="button" class="ghost" id="admopen">Portal Admin</button>
+</header>
+
+<main>
+<form class="panel" id="f" autocomplete="off">
+  <fieldset>
+    <legend>Model AI</legend>
+    <div class="keybox">
+      <label for="model" style="margin-top:0">Model</label>
+      <input id="model" list="models" value="gemini-3.8-flash" autocomplete="off">
+      <datalist id="models">
+        <option value="gemini-3.8-flash">
+        <option value="gemini-3.8-pro">
+        <option value="gemini-flash-latest">
+        <option value="gemini-pro-latest">
+      </datalist>
+      <p class="hint">Bisa diketik manual. Jika muncul pesan model tidak tersedia, ganti dengan nama model terbaru dari Google AI Studio.</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Identitas</legend>
+    <label for="guru">Nama guru</label><input id="guru" required list="gurulist" placeholder="Pilih dari daftar atau ketik nama">
+    <datalist id="gurulist"></datalist>
+    <p class="hint" id="dbsrc">Memuat daftar guru…</p>
+    <button type="button" class="ghost sm" id="reloadSrc">Muat ulang data guru</button>
+    <input id="kepsek" type="hidden"><input id="sekolah" type="hidden">
+    <p class="hint" id="schoolinfo">Memuat data sekolah…</p>
+    <div class="row">
+      <div><label for="mapel">Mata pelajaran</label><input id="mapel" required list="mapellist" placeholder="mis. IPAS"><datalist id="mapellist"></datalist></div>
+      <div><label for="fase">Fase / kelas</label>
+        <select id="fase">
+          <option>Fase A / Kelas 1</option><option>Fase A / Kelas 2</option>
+          <option>Fase B / Kelas 3</option><option>Fase B / Kelas 4</option>
+          <option>Fase C / Kelas 5</option><option>Fase C / Kelas 6</option>
+          <option>Fase D / Kelas 7</option><option>Fase D / Kelas 8</option><option>Fase D / Kelas 9</option>
+          <option>Fase E / Kelas 10</option><option>Fase F / Kelas 11</option><option>Fase F / Kelas 12</option>
+        </select></div>
+    </div>
+    <div class="chips" id="mapelchips" hidden></div>
+    <div class="row">
+      <div><label for="semester">Semester</label><select id="semester"><option>Ganjil</option><option>Genap</option></select></div>
+      <div><label for="tahun">Tahun ajaran</label><input id="tahun" value="2026/2027"></div>
+    </div>
+      <button type="button" class="ghost sm" id="saveId">Simpan identitas ke database</button>
+    <p class="hint" id="idmsg">Identitas tersimpan per nama guru dan terisi otomatis saat nama guru dipilih lagi.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Pengaturan kertas</legend>
+    <div class="row">
+      <div><label for="paper">Ukuran kertas</label>
+        <select id="paper">
+          <option value="210,297">A4 (210 × 297 mm)</option>
+          <option value="215,330">F4 / Folio (215 × 330 mm)</option>
+          <option value="216,279">Letter (216 × 279 mm)</option>
+          <option value="216,356">Legal (216 × 356 mm)</option>
+        </select></div>
+      <div><label for="orient">Orientasi</label>
+        <select id="orient"><option value="p">Tegak</option><option value="l">Mendatar</option></select></div>
+    </div>
+    <label for="mpre">Margin</label>
+    <select id="mpre">
+      <option value="25.4,25.4,25.4,25.4">Normal (semua sisi 2,54 cm)</option>
+      <option value="12.7,12.7,12.7,12.7">Sempit (semua sisi 1,27 cm)</option>
+      <option value="25.4,19.1,25.4,19.1">Sedang (atas/bawah 2,54; kiri/kanan 1,91 cm)</option>
+      <option value="custom">Kustom (mm)</option>
+    </select>
+    <div id="mcustom" hidden>
+      <div class="row">
+        <div><label for="mt">Atas (mm)</label><input id="mt" type="number" min="0" max="60" step="any" value="25.4"></div>
+        <div><label for="mb">Bawah (mm)</label><input id="mb" type="number" min="0" max="60" step="any" value="25.4"></div>
+      </div>
+      <div class="row">
+        <div><label for="ml">Kiri (mm)</label><input id="ml" type="number" min="0" max="60" step="any" value="25.4"></div>
+        <div><label for="mr">Kanan (mm)</label><input id="mr" type="number" min="0" max="60" step="any" value="25.4"></div>
+      </div>
+    </div>
+    <p class="hint">Berlaku untuk pratinjau, cetak/PDF, dan file Word. Saat mencetak, pilih margin "Default" di dialog cetak browser.</p>
+    <button type="button" class="ghost sm" id="saveKertas">Simpan pengaturan kertas ke database</button>
+    <p class="hint" id="pgmsg">Berlaku untuk semua guru dan dimuat otomatis saat halaman dibuka.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Tanda tangan guru (opsional)</legend>
+    <label for="sigg" style="margin-top:0">Gambar tanda tangan guru</label>
+    <input id="sigg" type="file" accept="image/png,image/jpeg,image/webp">
+    <div class="btns"><button type="button" class="ghost sm" data-sigsave="1">Simpan ke storage</button><button type="button" class="ghost sm" data-sigdel="1">Hapus yang tersimpan</button></div>
+    <p class="hint">Gunakan PNG berlatar transparan atau foto tanda tangan di kertas putih. Gambar hanya diproses di browser Anda dan tidak dikirim ke AI. Tanda tangan guru tersimpan per nama guru dan dimuat otomatis saat nama dipilih. Tanda tangan kepala sekolah dipasang otomatis dan diunggah oleh admin.</p>
+    <p class="hint" id="sigmsg"></p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Materi</legend>
+    <label for="topik">Topik / materi pokok</label><input id="topik" required placeholder="mis. Siklus air dan dampaknya">
+    <label for="cp">Capaian Pembelajaran (opsional)</label>
+    <textarea id="cp" placeholder="Kosongkan agar AI merujuk CP resmi sesuai mapel dan fase"></textarea>
+    <div class="row">
+      <div><label for="pertemuan">Jumlah pertemuan</label><input id="pertemuan" type="number" min="1" max="12" value="2"></div>
+      <div><label for="waktu">Durasi per pertemuan</label><input id="waktu" value="2 × 35 menit"></div>
+    </div>
+    <label for="siswa">Karakteristik siswa</label>
+    <textarea id="siswa" placeholder="mis. 30 siswa, sebagian besar visual, 3 siswa butuh pendampingan membaca"></textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>Dimensi Profil Lulusan</legend>
+    <div class="dims" id="dims"></div>
+    <p class="hint">Tidak dipilih = AI menentukan 2–3 dimensi paling relevan.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Pendekatan</legend>
+    <label for="pedagogi">Praktik pedagogis</label>
+    <select id="pedagogi">
+      <option value="">Biarkan AI memilih</option>
+      <option>Inkuiri-Discovery Learning</option>
+      <option>Project-Based Learning</option>
+      <option>Problem-Based Learning</option>
+      <option>Game-Based Learning</option>
+      <option>Station Learning</option>
+    </select>
+    <label for="bahasa">Bahasa LKPD</label>
+    <select id="bahasa">
+      <option value="auto">Otomatis (ikuti mata pelajaran)</option>
+      <option>Indonesia</option><option>Inggris</option><option>Arab</option>
+      <option>Jawa</option><option>Sunda</option><option>Mandarin</option>
+      <option>Jepang</option><option>Jerman</option><option>Prancis</option>
+    </select>
+    <p class="hint">Otomatis: mapel Bahasa Inggris menghasilkan LKPD berbahasa Inggris, Bahasa Arab menghasilkan LKPD berbahasa Arab, dan seterusnya. Mapel lain memakai Bahasa Indonesia.</p>
+    <label for="catatan">Catatan tambahan</label>
+    <textarea id="catatan" placeholder="mis. sekolah belum punya proyektor; gunakan konteks lingkungan pesisir"></textarea>
+  </fieldset>
+
+  <button type="submit" class="gen" id="gen">Susun RPM</button>
+</form>
+
+<section class="panel" aria-live="polite">
+  <div class="toolbar">
+    <button type="button" class="ghost" id="copy" disabled>Salin RPM</button>
+    <button type="button" class="ghost" id="word" disabled>RPM ke Word</button>
+    <button type="button" class="ghost" id="print" disabled>Cetak RPM / PDF</button>
+    <button type="button" class="ghost" id="regen" disabled>Susun ulang</button>
+    <span class="sep"></span>
+    <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
+    <button type="button" class="ghost" id="lkpdword" disabled>LKPD ke Word</button>
+    <button type="button" class="ghost" id="lkpdprint" disabled>Cetak LKPD / PDF</button>
+    <span class="sep"></span>
+    <button type="button" class="ghost" id="savedb" disabled>Simpan ke database</button>
+    <button type="button" class="ghost" id="histbtn">Riwayat tersimpan</button>
+  </div>
+  <div class="hist" id="histbox" hidden>
+    <h3>Riwayat tersimpan</h3>
+    <label class="inline" style="margin:0 0 6px"><input type="checkbox" id="histme" checked> Hanya milik guru yang sedang dipilih</label>
+    <div id="histlist"></div>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="spin" aria-hidden="true"></div>
+    <div style="flex:1;min-width:0"><b id="ltxt"></b><small id="ltime"></small><div class="bar" aria-hidden="true"><i></i></div></div>
+  </div>
+  <div id="empty" class="empty"><strong>RPM Anda akan muncul di sini</strong>Lengkapi identitas dan topik di sebelah kiri, lalu pilih Susun RPM.</div>
+  <article id="doc" contenteditable="true" hidden></article>
+  <article id="lkpd" class="sheetx" contenteditable="true" hidden></article>
+</section>
+</main>
+
+<div class="adm" id="adm" hidden role="dialog" aria-modal="true" aria-labelledby="admtitle">
+ <div class="box">
+  <div class="admhead"><h2 id="admtitle">Portal Admin Guru</h2><button type="button" class="ghost sm" id="admclose">Tutup</button></div>
+
+  <div id="admgate">
+    <p class="hint" id="admgatemsg"></p>
+    <label for="admpw">Kata sandi admin</label>
+    <input type="password" id="admpw" autocomplete="off" style="max-width:320px">
+    <div class="btns"><button type="button" class="sm" id="admgo">Masuk</button><button type="button" class="ghost sm" id="admreset">Lupa sandi</button></div>
+    <p class="hint err" id="admgateerr"></p>
+    <p class="hint">Kata sandi ini hanya mengunci tampilan portal di browser ini. Keamanan data yang sebenarnya diatur lewat RLS di Supabase.</p>
+  </div>
+
+  <div id="admbody" hidden>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="sync" aria-selected="true">Sinkron E-Rapor</button>
+      <button type="button" role="tab" data-tab="guru" aria-selected="false">Data guru</button>
+      <button type="button" role="tab" data-tab="ks" aria-selected="false">Sekolah &amp; KS</button>
+    </div>
+
+    <section data-pane="sync">
+      <p class="hint" id="a_syncinfo"></p>
+      <p>Daftar guru dan mata pelajaran ditarik dari E-Rapor oleh server (Edge Function <b>sync-guru</b>), lalu disimpan ke tabel <b>guru_rpm</b>. Alamat dan kunci E-Rapor disimpan sebagai secret di Supabase, bukan di halaman ini.</p>
+      <label for="a_synctoken">Token sinkron</label>
+      <input id="a_synctoken" type="password" autocomplete="off" placeholder="Sama dengan secret SYNC_TOKEN di Supabase" style="max-width:360px">
+      <label class="inline"><input type="checkbox" id="a_syncdel" checked> Hapus guru hasil sinkron yang sudah tidak ada di E-Rapor (guru tambahan manual yang tidak ada di E-Rapor tidak disentuh)</label>
+      <div class="btns">
+        <button type="button" id="a_sync">Sinkron E-Rapor sekarang</button>
+        <button type="button" class="ghost" id="a_syncdry">Cek dulu (tanpa menyimpan)</button>
+      </div>
+      <p class="hint" id="a_syncmsg"></p>
+      <div id="a_syncres"></div>
+    </section>
+
+    <section data-pane="ks" hidden>
+      <h3>Data sekolah</h3>
+      <p class="hint">Nama kepala sekolah dan satuan pendidikan diatur di sini dan dipakai otomatis untuk semua guru.</p>
+      <label for="a_kepsek">Nama kepala sekolah</label><input id="a_kepsek">
+      <label for="a_sekolah">Satuan pendidikan</label><input id="a_sekolah">
+      <div class="btns"><button type="button" id="a_schsave">Simpan data sekolah</button></div>
+      <p class="hint" id="a_schmsg"></p>
+      <h3>Tanda tangan kepala sekolah</h3>
+      <p class="hint">Tanda tangan kepala sekolah diunggah di sini dan otomatis dipakai di dokumen semua guru. Gunakan PNG berlatar transparan atau foto tanda tangan di kertas putih.</p>
+      <label for="sigk">Gambar tanda tangan kepala sekolah</label>
+      <input id="sigk" type="file" accept="image/png,image/jpeg,image/webp">
+      <div id="a_ksprev" style="margin:12px 0;min-height:72px"></div>
+      <div class="btns"><button type="button" data-sigsave="0">Simpan ke storage</button><button type="button" class="ghost" data-sigdel="0">Hapus yang tersimpan</button></div>
+      <p class="hint" id="a_ksmsg"></p>
+    </section>
+
+    <section data-pane="guru" hidden>
+      <p class="hint">Daftar guru yang dipakai aplikasi, disimpan di tabel <b>guru_rpm</b>. Terisi lewat tab Sinkron E-Rapor; di sini cukup mengubah bila ada pengecualian.</p>
+      <div class="btns">
+        <button type="button" class="ghost" id="a_gload">Muat ulang</button>
+      </div>
+      <p class="hint" id="a_gmsg"></p>
+      <h3>Tambah guru</h3>
+      <div class="row">
+        <div><label for="a_gn">Nama guru</label><input id="a_gn"></div>
+        <div><label for="a_gm">Mata pelajaran (pisah koma)</label><input id="a_gm"></div>
+      </div>
+      <div class="btns"><button type="button" id="a_gadd">Tambah</button></div>
+      <details style="margin-top:14px"><summary><b>Cadangan: impor manual dengan menempel</b></summary>
+      <textarea id="a_gimp" placeholder="Satu guru per baris. Format: Nama | Mapel 1, Mapel 2&#10;Bisa langsung tempel dari Excel (kolom Nama lalu kolom Mapel)."></textarea>
+      <div class="btns">
+        <button type="button" class="ghost" id="a_gimpdb">Impor ke database</button>
+        <button type="button" class="ghost" id="a_gimploc">Simpan di browser ini saja</button>
+        <button type="button" class="ghost" id="a_gclrloc">Hapus data lokal</button>
+      </div>
+      <p class="hint" id="a_gimpmsg"></p>
+      </details>
+      <div id="a_glist"></div>
+    </section>
+  </div>
+ </div>
+</div>
+
+<script>
+const DIMS = [
+  "Keimanan dan Ketakwaan terhadap Tuhan YME","Kewargaan","Penalaran Kritis","Kreativitas",
+  "Kolaborasi","Kemandirian","Kesehatan","Komunikasi"
+];
+const $ = id => document.getElementById(id);
+// Endpoint server (Edge Function / Worker) yang menyimpan GEMINI_API_KEY sebagai secret.
+// Menerima {model, contents, generationConfig} dan meneruskan respons Gemini apa adanya.
+const AI_PROXY_URL = 'ISI_URL_ENDPOINT_ANDA';
+$('dims').innerHTML = DIMS.map((d,i)=>`<label><input type="checkbox" value="${d}"> ${d}</label>`).join('');
+
+// storage (aman bila diblokir)
+try{
+  localStorage.removeItem('rpm_key'); // bersihkan kunci lama yang pernah tersimpan di browser
+  const m = localStorage.getItem('rpm_model'); if(m && !/^gemini-2/.test(m)) $('model').value=m;
+}catch(e){}
+
+function setStatus(t, err){ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); }
+
+function buildPrompt(){
+  const dims=[...document.querySelectorAll('#dims input:checked')].map(i=>i.value);
+  return `Anda adalah pakar kurikulum dan pengembang pembelajaran di Indonesia. Susun dokumen RENCANA PEMBELAJARAN MENDALAM (RPM) yang lengkap, siap pakai, dan realistis untuk dilaksanakan guru, mengacu pada Kurikulum Merdeka terbaru dan pendekatan Pembelajaran Mendalam (deep learning) dari Kemendikdasmen: berkesadaran (mindful), bermakna (meaningful), dan menggembirakan (joyful), dengan 8 Dimensi Profil Lulusan (Keimanan dan Ketakwaan terhadap Tuhan YME, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi).
+
+DATA DARI GURU:
+- Nama guru: ${$('guru').value}
+- Nama kepala sekolah: ${$('kepsek').value}
+- Satuan pendidikan: ${$('sekolah').value}
+- Mata pelajaran: ${$('mapel').value}
+- Fase/Kelas: ${$('fase').value}
+- Semester/Tahun ajaran: ${$('semester').value} / ${$('tahun').value}
+- Topik/materi: ${$('topik').value}
+- Capaian Pembelajaran: ${$('cp').value.trim() || '(tidak diisi; rujuk CP resmi yang sesuai mapel dan fase, dan sebutkan elemennya)'}
+- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}
+- Karakteristik siswa: ${$('siswa').value.trim() || '(tidak diisi; buat asumsi umum dan nyatakan asumsinya)'}
+- Dimensi Profil Lulusan yang diinginkan: ${dims.length ? dims.join(', ') : '(pilih 2–3 yang paling relevan)'}
+- Praktik pedagogis: ${$('pedagogi').value || '(pilih yang paling cocok dan beri alasan singkat)'}
+- Catatan tambahan: ${$('catatan').value.trim() || '-'}
+
+STRUKTUR DOKUMEN (gunakan persis urutan dan judul bagian ini, format Markdown):
+# RENCANA PEMBELAJARAN MENDALAM (RPM)
+Tabel identitas 2 kolom (Satuan Pendidikan, Mata Pelajaran, Fase/Kelas, Semester, Topik, Alokasi Waktu, Nama Guru, Nama Kepala Sekolah).
+## A. Identifikasi
+### Peserta Didik
+### Materi Pelajaran
+### Capaian Dimensi Profil Lulusan
+## B. Desain Pembelajaran
+### Capaian Pembelajaran
+### Lintas Disiplin Ilmu
+### Tujuan Pembelajaran
+### Topik Pembelajaran Kontekstual
+### Praktik Pedagogis
+### Kemitraan Pembelajaran
+### Lingkungan Pembelajaran
+### Pemanfaatan Digital
+## C. Pengalaman Belajar
+Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan kolom: Tahap | Kegiatan Pembelajaran | Prinsip Pembelajaran Mendalam | Waktu. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Kolom Prinsip diisi berkesadaran, bermakna, atau menggembirakan beserta alasan singkat. Kolom Waktu berisi durasi menit, dan totalnya sesuai durasi per pertemuan.
+## D. Asesmen Pembelajaran
+### Asesmen Awal (diagnostik)
+### Asesmen Proses (formatif)
+### Asesmen Akhir (sumatif)
+Sertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
+Jangan membuat blok tanda tangan; aplikasi menambahkannya otomatis setelah bagian D.
+
+ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.`;
+}
+
+// konverter Markdown sederhana
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function inl(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*(?!\s)(.+?)\*/g,'$1<em>$2</em>');}
+function md(src){
+  const L=src.replace(/\r/g,'').split('\n'); let out='',i=0,list=null;
+  const close=()=>{ if(list){ out+=`</${list}>`; list=null; } };
+  while(i<L.length){
+    const line=L[i], t=line.trim();
+    if(!t){ close(); i++; continue; }
+    if(/^\|.*\|$/.test(t)){
+      close(); const rows=[];
+      while(i<L.length && /^\|.*\|$/.test(L[i].trim())){ rows.push(L[i].trim()); i++; }
+      const cells=r=>r.slice(1,-1).split('|').map(c=>c.trim());
+      const sep=rows.length>1 && /^[\s|:-]+$/.test(rows[1]);
+      out+='<table>';
+      rows.forEach((r,idx)=>{
+        if(sep && idx===1) return;
+        const tag = sep && idx===0 ? 'th':'td';
+        out+='<tr>'+cells(r).map(c=>`<${tag}>${inl(c).replace(/&lt;br\s*\/?&gt;/gi,'<br>')}</${tag}>`).join('')+'</tr>';
+      });
+      out+='</table>'; continue;
+    }
+    let m;
+    if((m=t.match(/^(#{1,3})\s+(.*)/))){ close(); out+=`<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`; i++; continue; }
+    if((m=t.match(/^[-*•]\s+(.*)/))){ if(list!=='ul'){close(); out+='<ul>'; list='ul';} out+=`<li>${inl(m[1])}</li>`; i++; continue; }
+    if((m=t.match(/^\d+[.)]\s+(.*)/))){ if(list!=='ol'){close(); out+='<ol>'; list='ol';} out+=`<li>${inl(m[1])}</li>`; i++; continue; }
+    close(); out+=`<p>${inl(t)}</p>`; i++;
+  }
+  close(); return out;
+}
+
+let lastText='';
+async function generate(){
+  if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
+  try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
+  const btns=[$('gen'),$('regen')]; btns.forEach(b=>b.disabled=true);
+  $('gen').textContent='Menyusun…';
+  setStatus('');
+  showLoader(['Menyusun RPM Anda…','Merumuskan tujuan pembelajaran…','Menyusun tabel pengalaman belajar…','Menyiapkan asesmen dan rubrik…','Hampir selesai, mohon tunggu…']);
+  try{
+    const res=await fetch(AI_PROXY_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:$('model').value.trim(),
+        contents:[{role:'user',parts:[{text:buildPrompt()}]}],
+        generationConfig:{temperature:0.7,maxOutputTokens:16384}
+      })
+    });
+    const data=await res.json();
+    if(!res.ok){
+      const msg=data?.error?.message||('HTTP '+res.status);
+      throw new Error(msg);
+    }
+    const text=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+    if(!text) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
+    lastText=text.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
+    const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); doc.hidden=false; $('empty').hidden=true;
+    ['copy','word','print','regen','lkpdbtn','savedb'].forEach(id=>$(id).disabled=false);
+    $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true;
+    curId=null;
+    setStatus('Selesai. Anda bisa menyunting teks langsung di dokumen sebelum mengunduh.');
+    doc.scrollIntoView({behavior:'smooth',block:'start'});
+    if(readCfgForm().auto) saveDb(true,'RPM selesai.');
+  }catch(e){
+    setStatus('Gagal: '+e.message,true);
+  }finally{
+    hideLoader(); $('gen').disabled=false; $('regen').disabled=!lastText; $('gen').textContent='Susun RPM';
+  }
+}
+
+$('f').addEventListener('submit',e=>{ e.preventDefault(); generate(); });
+$('regen').addEventListener('click',generate);
+$('copy').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText($('doc').innerText); setStatus('Teks disalin.'); }
+  catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); }
+});
+function printOnly(w){ document.body.dataset.p=w; window.print(); }
+window.addEventListener('afterprint',()=>{ delete document.body.dataset.p; });
+$('print').addEventListener('click',()=>printOnly('doc'));
+$('lkpdprint').addEventListener('click',()=>printOnly('lkpd'));
+$('word').addEventListener('click',()=>{
+  const css=DOC_CSS+wordPage();
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${docForWord($('doc'))}</div></body></html>`;
+  const blob=new Blob(['\ufeff',html],{type:'application/msword'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  const nama=($('mapel').value+'-'+$('topik').value).replace(/[^\w\-]+/g,'_').slice(0,60)||'RPM';
+  a.download='RPM_'+nama+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+
+const PAGE_IDS=['paper','orient','mpre','mt','mr','mb','ml'];
+function pageCfg(){
+  let [w,h]=$('paper').value.split(',').map(Number); const land=$('orient').value==='l';
+  if(land)[w,h]=[h,w];
+  const m=$('mpre').value==='custom'
+    ? ['mt','mr','mb','ml'].map(i=>Math.max(0,Math.min(60,parseFloat($(i).value)||0)))
+    : $('mpre').value.split(',').map(Number);
+  return {w,h,m,land};
+}
+function applyPage(){
+  const {w,h,m}=pageCfg(), r=document.documentElement.style;
+  r.setProperty('--pw',w+'mm'); r.setProperty('--mt',m[0]+'mm'); r.setProperty('--mr',m[1]+'mm');
+  r.setProperty('--mb',m[2]+'mm'); r.setProperty('--ml',m[3]+'mm');
+  $('mcustom').hidden=$('mpre').value!=='custom';
+  let st=$('pagestyle');
+  if(!st){ st=document.createElement('style'); st.id='pagestyle'; document.head.appendChild(st); }
+  st.textContent=`@page{size:${w}mm ${h}mm;margin:${m[0]}mm ${m[1]}mm ${m[2]}mm ${m[3]}mm}`;
+  try{ localStorage.setItem('rpm_page',JSON.stringify(PAGE_IDS.map(i=>$(i).value))); }catch(e){}
+}
+function wordPage(){
+  const {w,h,m,land}=pageCfg();
+  return `@page Section1{size:${w}mm ${h}mm;margin:${m[0]}mm ${m[1]}mm ${m[2]}mm ${m[3]}mm;mso-page-orientation:${land?'landscape':'portrait'}}div.Section1{page:Section1}`;
+}
+try{
+  const sv=JSON.parse(localStorage.getItem('rpm_page')||'null');
+  if(Array.isArray(sv)) PAGE_IDS.forEach((id,i)=>{ if(sv[i]!=null) $(id).value=sv[i]; });
+}catch(e){}
+PAGE_IDS.forEach(id=>{ $(id).addEventListener('input',applyPage); $(id).addEventListener('change',applyPage); });
+applyPage();
+
+const sigImg=[null,null], sigStored=[false,false];
+const sigTag=i=>sigImg[i]?`<img src="${sigImg[i]}" alt="Tanda tangan" height="68">`:'';
+function signHTML(){
+  const k=esc($('kepsek').value), g=esc($('guru').value);
+  return `<div class="sign"><div>Mengetahui,<br>Kepala Sekolah<span class="sp">${sigTag(0)}</span><span class="nm">${k}</span><br>NIP. ..................</div><div>…………, ……………… 20…<br>Guru Mata Pelajaran<span class="sp">${sigTag(1)}</span><span class="nm">${g}</span><br>NIP. ..................</div></div>`;
+}
+function applySigs(){
+  const sps=document.querySelectorAll('#doc .sign .sp');
+  sps.forEach((el,i)=>{ el.innerHTML=sigTag(i); });
+  const pv=$('a_ksprev'); if(pv) pv.innerHTML=sigImg[0]?`<img src="${sigImg[0]}" alt="Tanda tangan kepala sekolah" style="height:68px;max-width:100%;object-fit:contain;background:#fff;border:1px solid #ccc;border-radius:6px;padding:4px">`:'<span class="hint">Belum ada tanda tangan kepala sekolah.</span>';
+}
+const sigMsg=(i,t,err)=>msg(i===0?'a_ksmsg':'sigmsg',t,err);
+function loadSig(i,file){
+  if(!file){ sigImg[i]=null; applySigs(); return; }
+  if(!/^image\//.test(file.type)){ sigMsg(i,'File tanda tangan harus berupa gambar (PNG atau JPG).',true); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    const im=new Image();
+    im.onload=()=>{
+      const s=Math.min(1,400/im.width,200/im.height), c=document.createElement('canvas');
+      c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      sigImg[i]=c.toDataURL('image/png'); sigStored[i]=false; applySigs();
+      sigMsg(i,i===0?'Gambar dipasang. Tekan Simpan ke storage agar berlaku untuk semua guru.':'Tanda tangan dipasang.');
+    };
+    im.src=r.result;
+  };
+  r.readAsDataURL(file);
+}
+$('sigk').addEventListener('change',e=>loadSig(0,e.target.files[0]));
+$('sigg').addEventListener('change',e=>loadSig(1,e.target.files[0]));
+function docForWord(el){
+  const c=el.cloneNode(true), s=c.querySelector('.sign');
+  if(s){
+    const [a,b]=s.children, fix=h=>h.replace(/<span class="sp">([\s\S]*?)<\/span>/g,(m,im)=>im?im+'<br>':'<br><br><br>');
+    const td='width:50%;border:none;text-align:left;background:#fff';
+    s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td}">${fix(b.innerHTML)}</td></tr></table>`;
+  }
+  return c.innerHTML;
+}
+
+let loadTimer=null;
+function showLoader(msgs){
+  const el=$('loader'); let i=0,sec=0;
+  $('ltxt').textContent=msgs[0]; $('ltime').textContent='Berjalan 0 detik';
+  el.classList.add('on'); clearInterval(loadTimer);
+  loadTimer=setInterval(()=>{
+    sec++; $('ltime').textContent='Berjalan '+sec+' detik';
+    if(sec%7===0){ i=(i+1)%msgs.length; $('ltxt').textContent=msgs[i]; }
+  },1000);
+}
+function hideLoader(){ clearInterval(loadTimer); $('loader').classList.remove('on'); }
+
+const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:5px;vertical-align:top}th{background:#0f6b5c;color:#fff}h1{background:#0f6b5c;color:#fff;text-align:center;font-size:16pt;padding:8px}h2{background:#e6f1ee;color:#0b4a40;border-left:6px solid #0f6b5c;font-size:13pt;padding:4px 8px}h3{color:#0f6b5c;font-size:12pt}h1{page-break-before:always}h1:first-of-type{page-break-before:avoid}p,li,td{text-align:justify}';
+
+async function ask(prompt){
+  const res=await fetch(AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:$('model').value.trim(),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
+  const data=await res.json();
+  if(!res.ok) throw new Error(data?.error?.message||('HTTP '+res.status));
+  const t=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+  if(!t) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
+  return t.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
+}
+
+function lkpdPrompt(){
+  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
+
+BAHASA LKPD: ${$('bahasa').value==='auto'
+  ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
+  : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`}
+Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
+
+Format Markdown untuk tiap pertemuan:
+# LKPD PERTEMUAN n: judul kegiatan
+Tabel identitas 2 kolom untuk diisi siswa (Nama/Kelompok, Kelas, Hari/Tanggal) dengan sel isian kosong.
+## Tujuan Belajar (kalimat sederhana untuk siswa)
+## Petunjuk Pengerjaan
+## Alat dan Bahan (jika diperlukan)
+## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret)
+## Kegiatan 2: Mengaplikasi (tugas langkah demi langkah sesuai kegiatan inti RPM)
+## Kegiatan 3: Merefleksi (3–4 pertanyaan refleksi)
+## Penilaian (tabel rubrik singkat dengan kolom Kriteria, Skor 1–4, Paraf Guru)
+
+Aturan: tugas harus spesifik pada topik, bukan perintah umum. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
+
+RPM:
+${$('doc').innerText}`;
+}
+
+$('lkpdbtn').addEventListener('click',async()=>{
+  const b=$('lkpdbtn'); b.disabled=true; b.textContent='Menyusun LKPD…';
+  setStatus('');
+  showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
+  try{
+    const t=await ask(lkpdPrompt());
+    const el=$('lkpd'); el.innerHTML=md(t); el.hidden=false;
+    $('lkpdword').disabled=false; $('lkpdprint').disabled=false;
+    setStatus('LKPD selesai. Anda bisa menyunting langsung sebelum mengunduh atau mencetak.');
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
+  }catch(e){ setStatus('Gagal: '+e.message,true); }
+  finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
+});
+
+$('lkpdword').addEventListener('click',()=>{
+  const css=DOC_CSS.replace(/#0f6b5c/g,'#c98a12').replace(/#e6f1ee/g,'#fff3d9').replace(/#0b4a40/g,'#5a3d00')+wordPage();
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${$('lkpd').innerHTML}</div></body></html>`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
+  const nama=($('mapel').value+'-'+$('topik').value).replace(/[^\w\-]+/g,'_').slice(0,60)||'LKPD';
+  a.download='LKPD_'+nama+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+
+/* ================= SUPABASE ================= */
+const SB_DST={url:'https://jvunlziapbmvxmrrnphd.supabase.co/rest/v1',key:'sb_publishable_g0I7fYBQnCwIrbzub-3FYA_cZXlH6Im'};
+const SB_DEF={tOut:'rpm_hasil',auto:true};
+// kunci "publishable" bukan JWT: kirim lewat header apikey saja
+async function sb(cfg,path,opt={}){
+  const res=await fetch(cfg.url+path,{
+    method:opt.method||'GET',
+    headers:Object.assign({apikey:cfg.key,'Content-Type':'application/json'},opt.headers||{}),
+    body:opt.body!==undefined?JSON.stringify(opt.body):undefined
+  });
+  const txt=await res.text(); let data=null;
+  try{ data=txt?JSON.parse(txt):null; }catch(e){ data=txt; }
+  if(!res.ok){
+    const er=new Error((data&&(data.message||data.error||data.hint))||('HTTP '+res.status));
+    er.status=res.status; er.code=data&&data.code; throw er;
+  }
+  return data;
+}
+function getCfg(){
+  let c=Object.assign({},SB_DEF);
+  try{ Object.assign(c,JSON.parse(localStorage.getItem('rpm_sbcfg')||'{}')); }catch(e){}
+  return c;
+}
+let CFG=getCfg();
+const readCfgForm=()=>CFG;
+function saveCfg(c){ try{ localStorage.setItem('rpm_sbcfg',JSON.stringify(c)); }catch(e){} }
+
+let GURUS=[], ALL_MAPEL=[];
+function setSrcMsg(t){ const m=$('dbsrc'); m.textContent=t; m.className='hint'; }
+function fillList(id,arr){ $(id).innerHTML=[...new Set(arr)].map(v=>`<option value="${esc(v)}">`).join(''); }
+
+async function loadSource(){
+  setSrcMsg('Memuat daftar guru…');
+  if(await loadFallback()) return;
+  GURUS=[]; ALL_MAPEL=[]; fillList('gurulist',[]); fillList('mapellist',[]);
+  setSrcMsg('Daftar guru belum tersedia. Ketik nama dan mata pelajaran langsung, atau minta admin menekan Sinkron E-Rapor di Portal Admin.');
+}
+function onGuru(){
+  const n=$('guru').value.trim().toLowerCase(), box=$('mapelchips');
+  const g=GURUS.find(x=>x.nama.toLowerCase()===n);
+  box.hidden=true; box.innerHTML='';
+  if(!g) return;
+  fillList('mapellist',g.mapel.length?g.mapel:ALL_MAPEL);
+  if(g.mapel.length){
+    $('mapel').value=g.mapel[0];
+    if(g.mapel.length>1){
+      box.innerHTML='<span class="hint" style="margin:0">Guru ini mengampu:</span>'+g.mapel.map(m=>`<button type="button" class="ghost" data-m="${esc(m)}">${esc(m)}</button>`).join('');
+      box.hidden=false;
+    }
+  }
+}
+$('mapelchips').addEventListener('click',e=>{ const b=e.target.closest('button[data-m]'); if(b) $('mapel').value=b.dataset.m; });
+$('guru').addEventListener('input',onGuru);
+$('guru').addEventListener('change',onGuru);
+$('reloadSrc').addEventListener('click',loadSource);
+/* ---- simpan hasil ---- */
+let curId=null;
+function dbPayload(){
+  const c=document.getElementById('doc').cloneNode(true);
+  c.querySelectorAll('.sign img').forEach(i=>i.remove()); // gambar tanda tangan tidak ikut disimpan
+  return {
+    nama_guru:$('guru').value.trim(), kepala_sekolah:$('kepsek').value.trim(),
+    satuan_pendidikan:$('sekolah').value.trim(), mata_pelajaran:$('mapel').value.trim(),
+    fase:$('fase').value, semester:$('semester').value, tahun_ajaran:$('tahun').value.trim(),
+    topik:$('topik').value.trim(), jumlah_pertemuan:parseInt($('pertemuan').value)||null,
+    model:$('model').value.trim(), rpm_markdown:lastText, rpm_html:c.innerHTML,
+    lkpd_html:$('lkpd').hidden?null:$('lkpd').innerHTML
+  };
+}
+async function saveDb(auto,prefix){
+  const pre=prefix?prefix+' ':'', tbl=encodeURIComponent(readCfgForm().tOut);
+  const btn=$('savedb'); btn.disabled=true;
+  try{
+    const body=dbPayload(); let row=null;
+    if(curId){
+      const r=await sb(SB_DST,`/${tbl}?id=eq.${curId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})});
+      row=r&&r[0];
+    }
+    if(!row){
+      const r=await sb(SB_DST,`/${tbl}`,{method:'POST',headers:{Prefer:'return=representation'},body});
+      row=r&&r[0];
+    }
+    if(row&&row.id) curId=row.id;
+    setStatus(pre+'Tersimpan ke database.');
+  }catch(e){
+    let h=''; if(/relation|does not exist|schema cache|404|row-level|policy|permission/i.test(e.message)) h=' Hubungi pengembang untuk menyiapkan tabelnya.';
+    setStatus(pre+'Gagal menyimpan ke database: '+e.message+h,true);
+  }finally{ btn.disabled=false; }
+}
+$('savedb').addEventListener('click',()=>saveDb(false,''));
+
+/* ---- riwayat ---- */
+async function loadHist(){
+  const box=$('histlist'), tbl=encodeURIComponent(readCfgForm().tOut);
+  box.innerHTML='<p class="hint">Memuat…</p>';
+  let q=`/${tbl}?select=id,created_at,nama_guru,mata_pelajaran,topik,fase&order=created_at.desc&limit=30`;
+  const g=$('guru').value.trim();
+  if($('histme').checked&&g) q+=`&nama_guru=eq.${encodeURIComponent(g)}`;
+  try{
+    const rows=await sb(SB_DST,q);
+    if(!rows.length){ box.innerHTML='<p class="hint">Belum ada data tersimpan.</p>'; return; }
+    box.innerHTML=rows.map(r=>`<div class="item"><div><b>${esc(r.topik||'(tanpa topik)')}</b><small>${esc(r.nama_guru||'-')} · ${esc(r.mata_pelajaran||'-')} · ${esc(r.fase||'')} · ${new Date(r.created_at).toLocaleString('id-ID')}</small></div><button type="button" class="ghost" data-id="${esc(r.id)}">Buka</button></div>`).join('');
+  }catch(e){ box.innerHTML=`<p class="hint err">Gagal memuat riwayat: ${esc(e.message)}</p>`; }
+}
+$('histbtn').addEventListener('click',()=>{ const b=$('histbox'); b.hidden=!b.hidden; if(!b.hidden) loadHist(); });
+$('histme').addEventListener('change',loadHist);
+$('histlist').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-id]'); if(!b) return;
+  try{
+    const r=(await sb(SB_DST,`/${encodeURIComponent(readCfgForm().tOut)}?id=eq.${encodeURIComponent(b.dataset.id)}&select=*`))[0];
+    if(!r) throw new Error('Data tidak ditemukan.');
+    const set=(id,v)=>{ if(v!=null) $(id).value=v; };
+    set('guru',r.nama_guru);
+    set('mapel',r.mata_pelajaran); set('fase',r.fase); set('semester',r.semester); set('tahun',r.tahun_ajaran);
+    set('topik',r.topik); set('pertemuan',r.jumlah_pertemuan);
+    lastText=r.rpm_markdown||'';
+    const doc=$('doc'); doc.innerHTML=r.rpm_html||md(lastText); doc.hidden=false; $('empty').hidden=true; applySigs();
+    const lk=$('lkpd');
+    if(r.lkpd_html){ lk.innerHTML=r.lkpd_html; lk.hidden=false; $('lkpdword').disabled=false; $('lkpdprint').disabled=false; }
+    else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; }
+    ['copy','word','print','regen','lkpdbtn','savedb'].forEach(id=>$(id).disabled=false);
+    curId=r.id; $('histbox').hidden=true;
+    setStatus('Data dibuka dari database. Perubahan baru akan memperbarui data yang sama saat Anda menekan Simpan.');
+    doc.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(err){ setStatus('Gagal membuka data: '+err.message,true); }
+});
+
+/* ================= PORTAL ADMIN ================= */
+const LOC_KEY='rpm_guru_local', PW_KEY='rpm_admpw';
+
+function why(e){
+  const m=String(e&&e.message||e);
+  if(e instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(m)) return 'Tidak bisa terhubung ke server. Periksa URL, koneksi internet, atau apakah proyek Supabase sedang dijeda (paused).';
+  if(/invalid api key|no api key/i.test(m)) return 'Kunci API ditolak. Periksa kunci publishable/anon.';
+  if(e&&(e.status===404||e.code==='PGRST205')||/does not exist|schema cache/i.test(m)) return 'Tabel tidak ditemukan.';
+  if(e&&(e.status===401||e.status===403||e.code==='42501')||/permission|policy|row-level/i.test(m)) return 'Tidak ada izin baca (RLS atau grant untuk anon belum diatur).';
+  return m;
+}
+function msg(id,t,err){ const m=$(id); m.className='hint'+(err?' err':''); m.textContent=t; }
+
+/* --- kunci masuk --- */
+const hashPw=async s=>{ try{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('rpmadm:'+s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }catch(e){ return 'x'+btoa(unescape(encodeURIComponent('rpmadm:'+s))); } };
+function admShow(){ $('admgate').hidden=true; $('admbody').hidden=false; try{ $('a_synctoken').value=sessionStorage.getItem('rpm_synctoken')||''; }catch(e){} admTab('sync'); }
+function openAdm(){
+  $('adm').hidden=false; $('admgateerr').textContent='';
+  if(sessionStorage.getItem('rpm_adm')==='1'){ admShow(); return; }
+  $('admgate').hidden=false; $('admbody').hidden=true; $('admpw').value='';
+  const has=!!localStorage.getItem(PW_KEY);
+  $('admgatemsg').textContent=has?'Masukkan kata sandi admin.':'Belum ada kata sandi. Buat kata sandi admin (minimal 4 karakter).';
+  $('admgo').textContent=has?'Masuk':'Buat kata sandi';
+  setTimeout(()=>$('admpw').focus(),30);
+}
+async function admLogin(){
+  const pw=$('admpw').value; if(pw.length<4){ $('admgateerr').textContent='Kata sandi minimal 4 karakter.'; return; }
+  const h=await hashPw(pw), cur=localStorage.getItem(PW_KEY);
+  if(!cur){ localStorage.setItem(PW_KEY,h); }
+  else if(cur!==h){ $('admgateerr').textContent='Kata sandi salah.'; return; }
+  sessionStorage.setItem('rpm_adm','1'); admShow();
+}
+$('admopen').addEventListener('click',openAdm);
+$('admclose').addEventListener('click',()=>{ $('adm').hidden=true; });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('adm').hidden) $('adm').hidden=true; });
+$('admgo').addEventListener('click',admLogin);
+$('admpw').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); admLogin(); } });
+$('admreset').addEventListener('click',()=>{
+  if(!confirm('Hapus kata sandi admin di browser ini dan buat yang baru?')) return;
+  localStorage.removeItem(PW_KEY); sessionStorage.removeItem('rpm_adm'); openAdm();
+});
+function admTab(n){
+  document.querySelectorAll('#adm [data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===n)));
+  document.querySelectorAll('#adm [data-pane]').forEach(p=>p.hidden=p.dataset.pane!==n);
+  if(n==='sync') showSyncStamp();
+  if(n==='guru') agLoad();
+  if(n==='ks'){ loadSekolah(); loadSigKepsek(); }
+}
+document.querySelectorAll('#adm [data-tab]').forEach(b=>b.addEventListener('click',()=>admTab(b.dataset.tab)));
+
+/* --- data guru kelolaan --- */
+let AG=[];
+const locList=()=>{ try{ return JSON.parse(localStorage.getItem(LOC_KEY)||'[]'); }catch(e){ return []; } };
+async function agLoad(){
+  msg('a_gmsg','Memuat…');
+  try{
+    AG=await sb(SB_DST,'/guru_rpm?select=*&order=nama.asc&limit=2000');
+    msg('a_gmsg',AG.length+' guru di tabel guru_rpm. Data lokal di browser ini: '+locList().length+' guru.');
+  }catch(e){
+    AG=[]; msg('a_gmsg','Tabel guru_rpm belum bisa dipakai: '+why(e)+'',true);
+  }
+  agRender();
+}
+function agRender(){
+  $('a_glist').innerHTML=AG.length?'<table class="at"><thead><tr><th>Nama</th><th>Mata pelajaran (pisah koma)</th><th></th></tr></thead><tbody>'+AG.map((r,i)=>`<tr data-i="${i}"><td><input data-f="nama" value="${esc(r.nama||'')}"></td><td><input data-f="mapel" value="${esc(r.mapel||'')}"></td><td style="white-space:nowrap"><button type="button" class="sm" data-act="save">Simpan</button> <button type="button" class="ghost sm" data-act="del">Hapus</button></td></tr>`).join('')+'</tbody></table>':'';
+}
+$('a_gload').addEventListener('click',agLoad);
+$('a_gadd').addEventListener('click',async()=>{
+  const nama=$('a_gn').value.trim(), mapel=$('a_gm').value.trim();
+  if(!nama){ msg('a_gmsg','Nama guru wajib diisi.',true); return; }
+  try{ await sb(SB_DST,'/guru_rpm',{method:'POST',body:{nama,mapel}}); $('a_gn').value=''; $('a_gm').value=''; await agLoad(); loadSource(); }
+  catch(e){ msg('a_gmsg','Gagal menambah: '+why(e),true); }
+});
+$('a_glist').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  const tr=b.closest('tr'), r=AG[+tr.dataset.i];
+  try{
+    if(b.dataset.act==='save'){
+      const nama=tr.querySelector('[data-f=nama]').value.trim(), mapel=tr.querySelector('[data-f=mapel]').value.trim();
+      if(!nama) throw new Error('Nama tidak boleh kosong.');
+      await sb(SB_DST,`/guru_rpm?id=eq.${encodeURIComponent(r.id)}`,{method:'PATCH',body:{nama,mapel}});
+      msg('a_gmsg','Perubahan disimpan.');
+    }else{
+      if(!confirm('Hapus '+r.nama+'?')) return;
+      await sb(SB_DST,`/guru_rpm?id=eq.${encodeURIComponent(r.id)}`,{method:'DELETE'});
+      await agLoad();
+    }
+    loadSource();
+  }catch(err){ msg('a_gmsg','Gagal: '+why(err),true); }
+});
+function parseGuru(t){
+  const seen=new Set();
+  return t.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const k=l.search(/[\t|;]/);
+    return {nama:(k<0?l:l.slice(0,k)).trim(), mapel:k<0?'':l.slice(k+1).replace(/[\t|;]+/g,', ').replace(/,\s*$/,'').trim()};
+  }).filter(r=>r.nama&&!/^(no|nama|nama guru)$/i.test(r.nama)).filter(r=>{ const key=r.nama.toLowerCase(); if(seen.has(key)) return false; seen.add(key); return true; });
+}
+$('a_gimpdb').addEventListener('click',async()=>{
+  const rows=parseGuru($('a_gimp').value); if(!rows.length){ msg('a_gimpmsg','Tidak ada baris yang bisa diimpor.',true); return; }
+  const ada=new Set(AG.map(r=>String(r.nama||'').toLowerCase()));
+  const baru=rows.filter(r=>!ada.has(r.nama.toLowerCase()));
+  if(!baru.length){ msg('a_gimpmsg','Semua nama sudah ada di database.'); return; }
+  try{
+    for(let i=0;i<baru.length;i+=200) await sb(SB_DST,'/guru_rpm',{method:'POST',body:baru.slice(i,i+200)});
+    msg('a_gimpmsg',baru.length+' guru ditambahkan'+(rows.length>baru.length?', '+(rows.length-baru.length)+' dilewati karena sudah ada.':'.'));
+    $('a_gimp').value=''; await agLoad(); loadSource();
+  }catch(e){ msg('a_gimpmsg','Gagal impor: '+why(e)+' Bila tabel belum ada, hubungi pengembang untuk menyiapkannya.',true); }
+});
+$('a_gimploc').addEventListener('click',()=>{
+  const rows=parseGuru($('a_gimp').value); if(!rows.length){ msg('a_gimpmsg','Tidak ada baris yang bisa disimpan.',true); return; }
+  const map=new Map(locList().map(r=>[String(r.nama).toLowerCase(),r])); rows.forEach(r=>map.set(r.nama.toLowerCase(),r));
+  try{ localStorage.setItem(LOC_KEY,JSON.stringify([...map.values()])); }catch(e){ msg('a_gimpmsg','Browser menolak penyimpanan lokal.',true); return; }
+  msg('a_gimpmsg',rows.length+' guru disimpan di browser ini (total '+map.size+'). Data ini hanya terlihat di browser ini.'); $('a_gimp').value=''; loadSource();
+});
+$('a_gclrloc').addEventListener('click',()=>{ if(!confirm('Hapus semua data guru lokal di browser ini?')) return; localStorage.removeItem(LOC_KEY); msg('a_gimpmsg','Data lokal dihapus.'); loadSource(); });
+
+/* --- sinkron E-Rapor --- */
+const SYNC_KEY='rpm_lastsync';
+function showSyncStamp(){
+  let t=null; try{ t=JSON.parse(localStorage.getItem(SYNC_KEY)||'null'); }catch(e){}
+  $('a_syncinfo').textContent=t?`Sinkron terakhir di browser ini: ${new Date(t.t).toLocaleString('id-ID')} (${t.n} guru dari E-Rapor).`:'Belum pernah disinkronkan di browser ini.';
+}
+const FN_URL=()=>SB_DST.url.replace(/\/rest\/v1$/,'')+'/functions/v1/sync-guru';
+async function callSync(payload){
+  const token=$('a_synctoken').value.trim()||sessionStorage.getItem('rpm_synctoken')||'';
+  if(!token) throw new Error('Isi token sinkron dulu.');
+  const res=await fetch(FN_URL(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify(Object.assign({token},payload))});
+  const txt=await res.text(); let d=null; try{ d=txt?JSON.parse(txt):null; }catch(e){}
+  if(res.status===404) throw new Error('Edge Function sync-guru belum di-deploy di Supabase tujuan.');
+  if(res.status===401&&!(d&&d.error)) throw new Error('Edge Function menolak permintaan. Matikan "Verify JWT" pada function sync-guru.');
+  if(res.status===401){ sessionStorage.removeItem('rpm_synctoken'); }
+  else if(res.ok||res.status===409){ try{ sessionStorage.setItem('rpm_synctoken',token); }catch(e){} }
+  if(!res.ok&&res.status!==409) throw new Error((d&&d.error)||('HTTP '+res.status));
+  return {status:res.status,data:d};
+}
+async function syncErapor(dry){
+  const bs=[$('a_sync'),$('a_syncdry')]; bs.forEach(b=>b.disabled=true); $('a_syncres').innerHTML='';
+  try{
+    msg('a_syncmsg',dry?'Membandingkan dengan E-Rapor…':'Menyinkronkan dari E-Rapor…');
+    const hapus=$('a_syncdel').checked;
+    let r=await callSync({action:dry?'plan':'apply',hapus});
+    if(r.status===409){
+      if(!confirm('Sinkron ini akan menghapus '+r.data.hapus+' dari '+r.data.dari+' guru hasil sinkron. Lanjutkan?')){ msg('a_syncmsg','Sinkron dibatalkan.'); return; }
+      r=await callSync({action:'apply',hapus,konfirmasi_hapus:true});
+    }
+    const d=r.data;
+    const lst=(t,a)=>a&&a.length?`<p class="hint"><b>${t}:</b> ${a.map(esc).join(', ')}</p>`:'';
+    $('a_syncres').innerHTML=lst('Baru',d.daftar.baru)+lst('Diperbarui',d.daftar.diperbarui)+lst('Dihapus',d.daftar.dihapus);
+    msg('a_syncmsg',(dry?'Pratinjau: ':'Sinkron selesai: ')+`${d.baru} guru baru, ${d.diperbarui} diperbarui, ${d.sama} sama, ${d.dihapus} dihapus (E-Rapor: ${d.total_erapor} guru, ${d.tahun_ajaran}).`+(dry?' Belum ada yang disimpan.':''));
+    if(!dry){
+      try{ localStorage.setItem(SYNC_KEY,JSON.stringify({t:Date.now(),n:d.total_erapor})); }catch(e){}
+      showSyncStamp(); agLoad(); loadSource();
+    }
+  }catch(e){ msg('a_syncmsg',e instanceof TypeError?why(e):e.message,true); }
+  finally{ bs.forEach(b=>b.disabled=false); }
+}
+$('a_sync').addEventListener('click',()=>syncErapor(false));
+$('a_syncdry').addEventListener('click',()=>syncErapor(true));
+
+/* --- daftar guru hasil sinkron (dibaca halaman utama), cadangan data lokal --- */
+async function loadFallback(err){
+  let list=null, from='';
+  try{ const r=await sb(SB_DST,'/guru_rpm?select=nama,mapel&order=nama.asc&limit=2000'); if(Array.isArray(r)&&r.length){ list=r; from='daftar guru hasil sinkron E-Rapor'; } }catch(e){}
+  if(!list){ const l=locList(); if(l.length){ list=l; from='data lokal di browser ini'; } }
+  if(!list) return false;
+  const seen=new Set(); GURUS=[]; ALL_MAPEL=[];
+  list.forEach(r=>{
+    const n=String(r.nama||'').trim(); if(!n||seen.has(n.toLowerCase())) return; seen.add(n.toLowerCase());
+    const mapel=String(r.mapel||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+    GURUS.push({nama:n,mapel}); ALL_MAPEL.push(...mapel);
+  });
+  GURUS.sort((a,b)=>a.nama.localeCompare(b.nama,'id'));
+  fillList('gurulist',GURUS.map(g=>g.nama)); fillList('mapellist',ALL_MAPEL);
+  setSrcMsg(`${GURUS.length} guru dimuat dari ${from}.`+(GURUS.some(g=>g.mapel.length)?' Pilih nama guru, mata pelajaran terisi otomatis.':''));
+  onGuru(); return true;
+}
+
+/* ---- identitas guru (simpan & isi otomatis) ---- */
+const ID_FIELDS=[['mapel','mata_pelajaran'],['fase','fase'],['semester','semester'],['tahun','tahun_ajaran']];
+let idKey='';
+function idErr(e){
+  const w=why(e);
+  return /Tabel tidak ditemukan/.test(w)?'Tabel identitas_guru belum ada di database tujuan. Hubungi pengembang untuk menyiapkannya.':w;
+}
+async function saveIdentitas(){
+  const nama=$('guru').value.trim(); if(!nama){ msg('idmsg','Isi nama guru dulu.',true); return; }
+  const b=$('saveId'); b.disabled=true; msg('idmsg','Menyimpan…');
+  const body={nama_guru:nama,updated_at:new Date().toISOString()};
+  ID_FIELDS.forEach(([el,col])=>{ body[col]=$(el).value.trim(); });
+  try{
+    await sb(SB_DST,'/identitas_guru?on_conflict=nama_guru',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body});
+    idKey=nama.toLowerCase(); msg('idmsg','Identitas '+nama+' tersimpan di database.');
+  }catch(e){ msg('idmsg','Gagal menyimpan identitas: '+idErr(e),true); }
+  finally{ b.disabled=false; }
+}
+async function loadIdentitas(){
+  const nama=$('guru').value.trim(), key=nama.toLowerCase();
+  if(!nama||key===idKey) return; idKey=key; loadSigGuru();
+  try{
+    const r=await sb(SB_DST,`/identitas_guru?nama_guru=eq.${encodeURIComponent(nama)}&select=*&limit=1`);
+    if(r&&r[0]){
+      ID_FIELDS.forEach(([el,col])=>{ if(r[0][col]) $(el).value=r[0][col]; });
+      msg('idmsg','Identitas '+nama+' dimuat dari database.');
+    }else{
+      msg('idmsg','Belum ada identitas tersimpan untuk '+nama+'. Lengkapi lalu tekan "Simpan identitas ke database".');
+    }
+  }catch(e){ idKey=''; msg('idmsg','Lengkapi identitas lalu tekan "Simpan identitas ke database" agar terisi otomatis lain kali.'); }
+}
+$('saveId').addEventListener('click',saveIdentitas);
+$('guru').addEventListener('change',loadIdentitas);
+$('guru').addEventListener('input',()=>{ const n=$('guru').value.trim().toLowerCase(); if(GURUS.some(g=>g.nama.toLowerCase()===n)) loadIdentitas(); });
+
+/* ---- pengaturan kertas & tanda tangan (database + storage) ---- */
+const BUCKET='tanda-tangan';
+const stBase=()=>SB_DST.url.replace(/\/rest\/v1$/,'')+'/storage/v1';
+const slug=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const sigPath=i=>i===0?'kepsek.png':'guru/'+slug($('guru').value)+'.png';
+function tblErr(e,t){ return /Tabel tidak ditemukan/.test(why(e))?'Tabel '+t+' belum ada. Hubungi pengembang untuk menyiapkannya.':why(e); }
+function stErr(e){
+  const m=String(e&&e.message||e);
+  if(e instanceof TypeError) return why(e);
+  if(/bucket not found/i.test(m)) return 'Bucket "'+BUCKET+'" belum dibuat. Hubungi pengembang untuk menyiapkannya.';
+  if(/row-level|unauthorized|not allowed|403|policy/i.test(m)||(e&&e.status===403)) return 'Izin storage belum diatur. Hubungi pengembang untuk mengaturnya.';
+  if(/mime|size|too large|exceed/i.test(m)) return 'Gambar ditolak: harus PNG/JPG/WebP dan maksimal 1 MB.';
+  return m;
+}
+async function stReq(method,path,body,headers){
+  const go=async auth=>{
+    const h=Object.assign({apikey:SB_DST.key},headers||{}); if(auth) h.Authorization='Bearer '+SB_DST.key;
+    const res=await fetch(stBase()+path,{method,headers:h,body}); const t=await res.text(); let d=null;
+    try{ d=t?JSON.parse(t):null; }catch(e){ d=t; } return {res,d};
+  };
+  let {res,d}=await go(false);
+  if(!res.ok&&/jwt|authoriz/i.test(JSON.stringify(d||''))) ({res,d}=await go(true));
+  if(!res.ok){ const er=new Error((d&&(d.message||d.error))||('HTTP '+res.status)); er.status=res.status; throw er; }
+  return d;
+}
+async function fetchSig(path){
+  const r=await fetch(`${stBase()}/object/public/${BUCKET}/${path}?t=${Date.now()}`,{cache:'no-store'});
+  if(!r.ok) return null;
+  const b=await r.blob(); if(!/^image\//.test(b.type)) return null;
+  return await new Promise(res=>{ const f=new FileReader(); f.onload=()=>res(f.result); f.onerror=()=>res(null); f.readAsDataURL(b); });
+}
+async function saveSigStorage(i){
+  const who=i===0?'kepala sekolah':'guru';
+  if(!sigImg[i]){ sigMsg(i,'Pilih gambar tanda tangan '+who+' dulu.',true); return; }
+  if(i===1&&!slug($('guru').value)){ sigMsg(i,'Isi nama guru dulu.',true); return; }
+  sigMsg(i,'Mengunggah…');
+  try{
+    const blob=await (await fetch(sigImg[i])).blob();
+    await stReq('POST',`/object/${BUCKET}/${sigPath(i)}`,blob,{'Content-Type':'image/png','x-upsert':'true'});
+    sigStored[i]=true; sigMsg(i,'Tanda tangan '+who+(i?' '+$('guru').value.trim():'')+' tersimpan di storage.');
+  }catch(e){ sigMsg(i,'Gagal menyimpan tanda tangan: '+stErr(e),true); }
+}
+async function delSigStorage(i){
+  const who=i===0?'kepala sekolah':'guru';
+  if(i===1&&!slug($('guru').value)){ sigMsg(i,'Isi nama guru dulu.',true); return; }
+  if(!confirm('Hapus tanda tangan '+who+' yang tersimpan di storage?')) return;
+  try{
+    await stReq('DELETE',`/object/${BUCKET}/${sigPath(i)}`);
+    sigImg[i]=null; sigStored[i]=false; applySigs(); sigMsg(i,'Tanda tangan '+who+' dihapus dari storage.');
+  }catch(e){ sigMsg(i,'Gagal menghapus: '+stErr(e),true); }
+}
+async function loadSigGuru(){
+  if(!slug($('guru').value)) return;
+  try{
+    const d=await fetchSig(sigPath(1));
+    if(d){ sigImg[1]=d; sigStored[1]=true; applySigs(); msg('sigmsg','Tanda tangan '+$('guru').value.trim()+' dimuat dari storage.'); }
+    else if(sigStored[1]){ sigImg[1]=null; sigStored[1]=false; applySigs(); }
+  }catch(e){}
+}
+async function loadSigKepsek(){
+  try{ const d=await fetchSig(sigPath(0)); if(d&&!sigImg[0]){ sigImg[0]=d; sigStored[0]=true; applySigs(); } else applySigs(); }catch(e){}
+}
+document.querySelectorAll('[data-sigsave]').forEach(b=>b.addEventListener('click',()=>saveSigStorage(+b.dataset.sigsave)));
+document.querySelectorAll('[data-sigdel]').forEach(b=>b.addEventListener('click',()=>delSigStorage(+b.dataset.sigdel)));
+
+async function saveKertas(){
+  const nilai={}; PAGE_IDS.forEach(id=>{ nilai[id]=$(id).value; });
+  const b=$('saveKertas'); b.disabled=true; msg('pgmsg','Menyimpan…');
+  try{
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'kertas',nilai,updated_at:new Date().toISOString()}});
+    msg('pgmsg','Pengaturan kertas tersimpan di database dan akan dimuat otomatis.');
+  }catch(e){ msg('pgmsg','Gagal menyimpan pengaturan kertas: '+tblErr(e,'pengaturan_rpm'),true); }
+  finally{ b.disabled=false; }
+}
+function showSchool(){
+  const k=$('kepsek').value.trim(), sc=$('sekolah').value.trim();
+  $('schoolinfo').className='hint'+((k&&sc)?'':' err');
+  $('schoolinfo').textContent=(k&&sc)?`Satuan pendidikan: ${sc}. Kepala sekolah: ${k}. (Diatur oleh admin.)`:'Nama kepala sekolah dan satuan pendidikan belum diatur admin.';
+  if(document.activeElement!==$('a_kepsek')&&document.activeElement!==$('a_sekolah')){ $('a_kepsek').value=k; $('a_sekolah').value=sc; }
+  const sp=document.querySelectorAll('#doc .sign .nm'); if(sp[0]) sp[0].textContent=k;
+}
+async function loadSekolah(){
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.sekolah&select=nilai&limit=1');
+    const n=r&&r[0]&&r[0].nilai;
+    if(n){ $('kepsek').value=n.kepsek||''; $('sekolah').value=n.sekolah||''; }
+  }catch(e){}
+  showSchool();
+}
+async function saveSekolah(){
+  const kepsek=$('a_kepsek').value.trim(), sekolah=$('a_sekolah').value.trim();
+  if(!kepsek||!sekolah){ msg('a_schmsg','Nama kepala sekolah dan satuan pendidikan wajib diisi.',true); return; }
+  const b=$('a_schsave'); b.disabled=true; msg('a_schmsg','Menyimpan…');
+  try{
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'sekolah',nilai:{kepsek,sekolah},updated_at:new Date().toISOString()}});
+    $('kepsek').value=kepsek; $('sekolah').value=sekolah; showSchool();
+    msg('a_schmsg','Data sekolah tersimpan dan berlaku untuk semua guru.');
+  }catch(e){ msg('a_schmsg','Gagal menyimpan: '+tblErr(e,'pengaturan_rpm'),true); }
+  finally{ b.disabled=false; }
+}
+$('a_schsave').addEventListener('click',saveSekolah);
+async function loadKertas(){
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.kertas&select=nilai&limit=1');
+    const n=r&&r[0]&&r[0].nilai; if(!n) return;
+    PAGE_IDS.forEach(id=>{
+      const el=$(id), v=n[id]; if(v==null) return;
+      if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===String(v))) return;
+      el.value=v;
+    });
+    applyPage(); msg('pgmsg','Pengaturan kertas dimuat dari database.');
+  }catch(e){}
+}
+$('saveKertas').addEventListener('click',saveKertas);
+
+/* ---- mata pelajaran: dropdown + pencarian ---- */
+(function(){
+  const inp=$('mapel'); inp.removeAttribute('list');
+  const wrap=document.createElement('div'); wrap.className='combo';
+  inp.parentNode.insertBefore(wrap,inp); wrap.appendChild(inp);
+  const btn=document.createElement('button'); btn.type='button'; btn.className='cb-btn'; btn.tabIndex=-1;
+  btn.setAttribute('aria-label','Buka daftar mata pelajaran');
+  btn.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ul=document.createElement('ul'); ul.className='cb-list'; ul.id='mapellistbox'; ul.setAttribute('role','listbox'); ul.hidden=true;
+  wrap.append(btn,ul);
+  inp.setAttribute('role','combobox'); inp.setAttribute('aria-autocomplete','list'); inp.setAttribute('aria-controls','mapellistbox'); inp.setAttribute('aria-expanded','false'); inp.setAttribute('autocomplete','off');
+  let items=[], act=-1, closeT=null;
+  const lc=t=>String(t).toLowerCase();
+
+  function render(showAll){
+    const q=showAll?'':lc(inp.value.trim());
+    const g=GURUS.find(x=>lc(x.nama)===lc($('guru').value.trim()));
+    const mine=g?g.mapel:[], all=[...new Set(ALL_MAPEL)].sort((a,b)=>a.localeCompare(b,'id'));
+    const f=a=>q?a.filter(x=>lc(x).includes(q)):a;
+    const m=f(mine), rest=f(all).filter(x=>!m.includes(x));
+    items=[...m,...rest]; let html='', i=0;
+    const li=v=>`<li role="option" data-i="${i}" id="mp-opt-${i}" aria-selected="${v===inp.value.trim()}">${esc(v)}</li>`;
+    if(m.length){ html+='<li class="cb-h" role="presentation">Mapel guru ini</li>'; m.forEach(v=>{ html+=li(v); i++; }); }
+    if(rest.length){ if(m.length) html+='<li class="cb-h" role="presentation">Mapel lainnya</li>'; rest.forEach(v=>{ html+=li(v); i++; }); }
+    if(!items.length) html='<li class="cb-e" role="presentation">'+(all.length?'Tidak ada mapel yang cocok. Tekan Enter untuk memakai teks yang diketik.':'Daftar mapel belum termuat. Ketik manual, atau cek Portal Admin.')+'</li>';
+    ul.innerHTML=html;
+    act=showAll?items.findIndex(v=>v===inp.value.trim()):(items.length?0:-1);
+    mark(true);
+  }
+  function mark(scroll){
+    ul.querySelectorAll('li.act').forEach(e=>e.classList.remove('act'));
+    if(act<0){ inp.removeAttribute('aria-activedescendant'); return; }
+    const el=ul.querySelector(`li[data-i="${act}"]`); if(!el) return;
+    el.classList.add('act'); inp.setAttribute('aria-activedescendant',el.id);
+    if(scroll) el.scrollIntoView({block:'nearest'});
+  }
+  function open(showAll){ clearTimeout(closeT); render(showAll); ul.hidden=false; inp.setAttribute('aria-expanded','true'); }
+  function close(){ ul.hidden=true; inp.setAttribute('aria-expanded','false'); }
+  function choose(i){
+    if(i<0||i>=items.length) return;
+    inp.value=items[i]; close(); inp.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+
+  inp.addEventListener('focus',()=>{ if(ul.hidden) open(true); });
+  inp.addEventListener('click',()=>{ if(ul.hidden) open(true); });
+  inp.addEventListener('input',()=>open(false));
+  inp.addEventListener('blur',()=>{ closeT=setTimeout(close,120); });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault(); if(ul.hidden){ open(true); return; }
+      if(!items.length) return;
+      act=e.key==='ArrowDown'?Math.min(items.length-1,act+1):Math.max(0,act-1); mark(true);
+    }else if(e.key==='Enter'){
+      if(!ul.hidden){ e.preventDefault(); if(act>=0) choose(act); else close(); }
+    }else if(e.key==='Escape'){
+      if(!ul.hidden){ e.preventDefault(); close(); }
+    }
+  });
+  btn.addEventListener('mousedown',e=>e.preventDefault());
+  btn.addEventListener('click',()=>{ if(!ul.hidden){ close(); } else { open(true); inp.focus(); } });
+  ul.addEventListener('mousedown',e=>e.preventDefault());
+  ul.addEventListener('click',e=>{ const li=e.target.closest('li[data-i]'); if(li) choose(+li.dataset.i); });
+})();
+
+loadKertas(); loadSigKepsek(); loadSekolah();
+loadSource();
+</script>
+</body>
+</html>
