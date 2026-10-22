@@ -421,9 +421,8 @@ const DIMS = [
   "Kolaborasi","Kemandirian","Kesehatan","Komunikasi"
 ];
 const $ = id => document.getElementById(id);
-// Endpoint server (Edge Function / Worker) yang menyimpan GEMINI_API_KEY sebagai secret.
-// Menerima {model, contents, generationConfig} dan meneruskan respons Gemini apa adanya.
-const AI_PROXY_URL = 'ISI_URL_ENDPOINT_ANDA';
+// Edge Function gemini-proxy di Supabase tujuan; GEMINI_API_KEY disimpan sebagai secret di sana.
+const aiUrl = () => SB_DST.url.replace(/\/rest\/v1$/,'')+'/functions/v1/gemini-proxy';
 $('dims').innerHTML = DIMS.map((d,i)=>`<label><input type="checkbox" value="${d}"> ${d}</label>`).join('');
 
 // storage (aman bila diblokir)
@@ -521,9 +520,9 @@ async function generate(){
   setStatus('');
   showLoader(['Menyusun RPM Anda…','Merumuskan tujuan pembelajaran…','Menyusun tabel pengalaman belajar…','Menyiapkan asesmen dan rubrik…','Hampir selesai, mohon tunggu…']);
   try{
-    const res=await fetch(AI_PROXY_URL,{
+    const res=await fetch(aiUrl(),{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json',apikey:SB_DST.key},
       body:JSON.stringify({
         model:$('model').value.trim(),
         contents:[{role:'user',parts:[{text:buildPrompt()}]}],
@@ -657,7 +656,7 @@ function hideLoader(){ clearInterval(loadTimer); $('loader').classList.remove('o
 const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:5px;vertical-align:top}th{background:#0f6b5c;color:#fff}h1{background:#0f6b5c;color:#fff;text-align:center;font-size:16pt;padding:8px}h2{background:#e6f1ee;color:#0b4a40;border-left:6px solid #0f6b5c;font-size:13pt;padding:4px 8px}h3{color:#0f6b5c;font-size:12pt}h1{page-break-before:always}h1:first-of-type{page-break-before:avoid}p,li,td{text-align:justify}';
 
 async function ask(prompt){
-  const res=await fetch(AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+  const res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},
     body:JSON.stringify({model:$('model').value.trim(),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
   const data=await res.json();
   if(!res.ok) throw new Error(data?.error?.message||('HTTP '+res.status));
