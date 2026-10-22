@@ -1021,18 +1021,19 @@ Tabel identitas 2 kolom dengan baris judul "Komponen | Keterangan" (Satuan Pendi
 ### Capaian Pembelajaran
 ### Lintas Disiplin Ilmu
 ### Tujuan Pembelajaran
+Tulis bernomor TP1, TP2, dst (satu kalimat per TP, kata kerja operasional) agar bisa dirujuk oleh LKPD dan asesmen.
 ### Topik Pembelajaran Kontekstual
 ### Praktik Pedagogis
 ### Kemitraan Pembelajaran
 ### Lingkungan Pembelajaran
 ### Pemanfaatan Digital
 ## C. Pengalaman Belajar
-Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan kolom: Tahap | Kegiatan Pembelajaran | Prinsip Pembelajaran Mendalam | Waktu. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Kolom Prinsip diisi berkesadaran, bermakna, atau menggembirakan beserta alasan singkat. Kolom Waktu berisi durasi menit, dan totalnya sesuai durasi per pertemuan.
+Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan kolom: Tahap | Kegiatan Pembelajaran | Prinsip Pembelajaran Mendalam | Waktu. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Pada tahap Memahami, Mengaplikasi, dan Merefleksi, sebutkan secara eksplisit apa yang dikerjakan siswa dan hasil/produk yang dihasilkan (misalnya tabel pengamatan, sketsa, jawaban refleksi), karena LKPD dan asesmen akan disusun langsung dari langkah-langkah ini. Kolom Prinsip diisi berkesadaran, bermakna, atau menggembirakan beserta alasan singkat. Kolom Waktu berisi durasi menit, dan totalnya sesuai durasi per pertemuan.
 ## D. Asesmen Pembelajaran
 ### Asesmen Awal (diagnostik)
 ### Asesmen Proses (formatif)
 ### Asesmen Akhir (sumatif)
-Sertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
+Untuk tiap jenis asesmen tulis: teknik, instrumen, waktu pelaksanaan (sebut pertemuan dan tahap), TP yang diukur (TP1, dst), dan hasil/produk siswa yang dinilai. Asesmen proses harus menilai hasil kerja yang dihasilkan pada tahap Mengaplikasi dan Merefleksi di Bagian C. Sertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
 Jangan membuat blok tanda tangan; aplikasi menambahkannya otomatis setelah bagian D.
 
 ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.`;
@@ -1329,29 +1330,123 @@ async function ask(prompt){
   return t.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
 }
 
+/* ================= PETA RPM: rujukan terstruktur untuk LKPD dan Asesmen ================= */
+function cellLines(c){
+  const h=c.cloneNode(true); h.querySelectorAll('br').forEach(b=>b.replaceWith('\n'));
+  return h.textContent.split('\n').map(x=>x.trim()).filter(Boolean);
+}
+function tblText(t){
+  return [...t.rows].map(r=>[...r.cells].map(c=>cellLines(c).join(' / ')).join(' | ')).join('\n');
+}
+function tahapKey(x){
+  x=(x||'').toLowerCase();
+  if(/memahami/.test(x)) return 'Memahami';
+  if(/mengaplikasi/.test(x)) return 'Mengaplikasi';
+  if(/merefleksi/.test(x)) return 'Merefleksi';
+  if(/penutup/.test(x)) return 'Penutup';
+  if(/awal|pembuka|pendahuluan/.test(x)) return 'Awal';
+  return x.replace(/^inti\s*[\u2013-]\s*/,'').trim()||'Kegiatan';
+}
+function rpmBlueprint(){
+  const tp=[], meets=[]; let inTP=false, inC=false, cur=null;
+  [...$('doc').children].forEach(el=>{
+    const tag=el.tagName, tx=(el.textContent||'').trim();
+    if(tag==='H2'){ inC=/pengalaman belajar/i.test(tx); inTP=false; cur=null; return; }
+    if(tag==='H3'){
+      inTP=/tujuan pembelajaran/i.test(tx);
+      if(inC){ cur={judul:tx,tahap:[]}; meets.push(cur); }
+      return;
+    }
+    if(inTP){
+      if(tag==='UL'||tag==='OL') [...el.children].forEach(li=>{ const v=li.textContent.trim(); if(v) tp.push(v); });
+      else if(tag==='P'&&tx) tp.push(tx);
+    }
+    if(inC&&tag==='TABLE'&&!el.classList.contains('kop')){
+      if(!cur){ cur={judul:'Pertemuan '+(meets.length+1),tahap:[]}; meets.push(cur); }
+      [...el.rows].forEach(r=>{
+        const c=[...r.cells]; if(c.length<2) return;
+        if(c[0].tagName==='TH' || /^tahap$/i.test(c[0].textContent.trim())) return;
+        const steps=cellLines(c[1]).map(l=>l.replace(/^\s*\d+\s*[.)]\s*/,'').trim()).filter(Boolean);
+        cur.tahap.push({key:tahapKey(c[0].textContent), label:c[0].textContent.trim(), steps,
+          prinsip:c[2]?cellLines(c[2]).join(' ; '):'', waktu:c[3]?c[3].textContent.trim():''});
+      });
+    }
+  });
+  return {tp,meets};
+}
+function blueprintText(){
+  const b=rpmBlueprint(); if(!b.meets.some(m=>m.tahap.length)) return '';
+  let o='';
+  if(b.tp.length) o+='TUJUAN PEMBELAJARAN (kode TP dipakai sebagai rujukan):\n'+b.tp.map((t,i)=>'TP'+(i+1)+'. '+t.replace(/^(TP\s*\d+\s*[:.)-]?\s*|\d+\s*[.)]\s*)/i,'')).join('\n')+'\n\n';
+  b.meets.forEach(m=>{
+    o+=m.judul.toUpperCase()+'\n';
+    m.tahap.forEach(t=>{
+      o+='['+t.key+'] ('+t.label+') waktu: '+(t.waktu||'-')+' | prinsip: '+(t.prinsip||'-')+'\n';
+      t.steps.forEach((x,i)=>{ o+='  '+t.key+'-'+(i+1)+'. '+x+'\n'; });
+    });
+    o+='\n';
+  });
+  return o.trim();
+}
+/* teks bersih dokumen (tanpa kop, tanda tangan, logo); tabel dijadikan baris "a | b | c" */
+function docText(root,bp){
+  let out='', skipC=false;
+  [...root.children].forEach(el=>{
+    const tag=el.tagName;
+    if(el.classList.contains('sign')||el.classList.contains('pb')||tag==='HR') return;
+    if(tag==='TABLE'&&el.classList.contains('kop')){ const h=el.querySelector('h1'); out+='\n# '+(h?h.textContent.trim():'')+'\n'; return; }
+    if(tag==='H2'){
+      skipC=!!bp&&/pengalaman belajar/i.test(el.textContent);
+      out+='\n## '+el.textContent.trim()+'\n';
+      if(skipC) out+='(Rincian per pertemuan ada di PETA LANGKAH RPM; kode langkah, mis. Memahami-2, dipakai sebagai rujukan.)\n'+bp+'\n';
+      return;
+    }
+    if(skipC) return;
+    if(tag==='H1'||tag==='H3') out+='\n### '+el.textContent.trim()+'\n';
+    else if(tag==='TABLE') out+=tblText(el)+'\n';
+    else if(tag==='UL'||tag==='OL') out+=[...el.children].map((li,i)=>(tag==='OL'?(i+1)+'. ':'- ')+li.textContent.trim()).join('\n')+'\n';
+    else { const v=el.textContent.trim(); if(v) out+=v+'\n'; }
+  });
+  return out.trim();
+}
+function rpmContext(){ return docText($('doc'),blueprintText()); }
+function lkpdContext(){ return ($('lkpd').hidden||!$('lkpd').textContent.trim())?'':docText($('lkpd'),''); }
+
 function lkpdPrompt(){
-  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
+  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. LKPD adalah turunan langsung dari bagian C. Pengalaman Belajar di RPM, jadi urutan, isi, dan jenis aktivitasnya HARUS sama dengan PETA LANGKAH RPM di bawah (tiap langkah punya kode, misalnya Memahami-2). Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
+
+ATURAN KESESUAIAN DENGAN RPM (wajib, akan diperiksa guru):
+1. Satu LKPD per pertemuan, berurutan sesuai pertemuan di RPM, dan judulnya diambil dari fokus pertemuan itu.
+2. Tahap kegiatan LKPD mengikuti tahap RPM persis dan berurutan: Pemantik (tahap Awal), Kegiatan 1 Memahami, Kegiatan 2 Mengaplikasi, Kegiatan 3 Merefleksi. Bila RPM memiliki tahap Penutup dengan langkah untuk siswa, gabungkan sebagai butir terakhir Kegiatan 3 (kesimpulan dan tindak lanjut).
+3. Setiap langkah RPM yang dikerjakan siswa (mengamati, membaca, berdiskusi, mencoba, membuat, mempresentasikan, menjawab, menilai diri) WAJIB menjadi satu butir tugas atau pertanyaan pada tahap yang sama dan dalam urutan yang sama, dengan kata kerja dan objek kerja yang sama seperti di RPM. Langkah yang hanya dilakukan guru (salam, presensi, penjelasan guru) tidak dijadikan butir tugas; bila perlu cukup menjadi bacaan atau informasi singkat.
+4. DILARANG menambah aktivitas, produk, media, atau alat yang tidak ada di RPM, dan DILARANG melewatkan langkah siswa. Bentuk kerja (individu, pasangan, kelompok), media, dan produk yang disebut RPM dipakai persis.
+5. Di bawah judul tiap kegiatan tulis "Waktu: n menit" sesuai kolom waktu tahap itu di RPM.
+6. Tujuan Belajar di LKPD adalah TP RPM yang dicapai pada pertemuan itu (sebut kodenya, misalnya TP1) dalam bahasa siswa.
+7. Penilaian: 3 sampai 5 kriteria rubrik diturunkan dari hasil atau produk yang diminta pada Kegiatan 2 dan 3, dan selaras dengan rubrik serta dimensi profil lulusan di bagian D RPM.
+8. Akhiri tiap LKPD dengan "## Keterkaitan dengan RPM (untuk guru)", berupa tabel 3 kolom: Langkah RPM | Ringkasan langkah | Butir LKPD. Tabel ini memuat SEMUA langkah RPM pertemuan itu; langkah yang hanya dilakukan guru ditulis "Dilakukan guru" pada kolom Butir LKPD. Bagian ini selalu Bahasa Indonesia.
 
 BAHASA LKPD: ${$('bahasa').value==='auto'
   ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
   : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`}
-Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
+Berlaku untuk semua teks LKPD yang dibaca siswa: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
 
 Format Markdown untuk tiap pertemuan:
 # LKPD PERTEMUAN n: judul kegiatan
 Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, dan Pertemuan ke-n (sudah terisi), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
-## Tujuan Belajar (kalimat sederhana untuk siswa)
+## Tujuan Belajar
 ## Petunjuk Pengerjaan
-## Alat dan Bahan (jika diperlukan)
-## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret)
-## Kegiatan 2: Mengaplikasi (tugas langkah demi langkah sesuai kegiatan inti RPM)
-## Kegiatan 3: Merefleksi (3–4 pertanyaan refleksi)
+## Alat dan Bahan (hanya yang disebut di RPM)
+## Pemantik (tahap Awal: pertanyaan atau stimulus konkret sesuai langkah Awal di RPM)
+## Kegiatan 1: Memahami (bacaan singkat, data, atau pertanyaan sesuai langkah Memahami di RPM)
+## Kegiatan 2: Mengaplikasi (tugas berurutan sesuai langkah Mengaplikasi di RPM)
+## Kegiatan 3: Merefleksi (pertanyaan refleksi sesuai langkah Merefleksi dan Penutup di RPM)
 ## Penilaian (tabel rubrik singkat dengan kolom Kriteria, Skor 1–4, Paraf Guru)
+## Keterkaitan dengan RPM (untuk guru)
 
-Aturan: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Jika tugas meminta siswa menggambar, membuat sketsa, atau menempel sesuatu, sediakan tabel berisi baris judul kolom lalu SATU baris isi yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa garis titik); aplikasi menyesuaikan ukuran bingkainya. Pilihan ganda atau centang ditulis dengan awalan "- [ ] ". Beri nomor berurutan tanpa mengulang dari 1. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
+Aturan isi: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa titik-titik); aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Beri nomor berurutan dan jangan mengulang dari 1 di tengah LKPD. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
 
 RPM:
-${$('doc').innerText}`;
+${rpmContext()}`;
 }
 
 $('lkpdbtn').addEventListener('click',async()=>{
@@ -1385,21 +1480,30 @@ function asesBahasa(){
 function asesDetail(k){
   if(k==='diagnostik') return `ISI KHUSUS ASESMEN DIAGNOSTIK
 Tujuan: memetakan kesiapan dan karakter siswa SEBELUM pembelajaran dimulai.
-- ## B. Instrumen terdiri dari dua bagian. "Bagian 1: Asesmen Kognitif" berisi 6–8 soal kemampuan prasyarat (campuran pilihan ganda dan isian singkat) yang runtut dari mudah ke sulit. "Bagian 2: Asesmen Non-Kognitif" berisi 5–6 pernyataan skala 1–4 atau pertanyaan singkat tentang minat, gaya belajar, kesiapan, dan kondisi belajar siswa terkait topik.
-- ## E. Pengolahan Hasil dan Tindak Lanjut wajib memuat rentang skor untuk tiga kelompok (sudah paham, paham sebagian, belum paham) dan strategi pembelajaran berdiferensiasi yang konkret untuk tiap kelompok, selaras dengan Pengalaman Belajar di RPM.`;
+- ## A. Kisi-kisi: kolom "Pertemuan & Langkah RPM" diisi dengan langkah Awal dan Memahami Pertemuan 1 yang membutuhkan kemampuan prasyarat itu.
+- ## B. Instrumen terdiri dari dua bagian. "Bagian 1: Asesmen Kognitif" berisi 6–8 soal kemampuan prasyarat (campuran pilihan ganda dan isian singkat) yang runtut dari mudah ke sulit; soal hanya menguji prasyarat yang benar-benar dibutuhkan untuk mengikuti langkah-langkah di PETA RPM dan mengarah ke TP, bukan materi yang baru diajarkan. "Bagian 2: Asesmen Non-Kognitif" berisi 5–6 pernyataan skala 1–4 atau pertanyaan singkat tentang minat, gaya belajar, kesiapan, dan kondisi belajar siswa terkait topik dan bentuk kerja yang dipakai di RPM (individu, kelompok, praktik, dan sebagainya).
+- ## E. Pengolahan Hasil dan Tindak Lanjut wajib memuat rentang skor untuk tiga kelompok (sudah paham, paham sebagian, belum paham) dan strategi pembelajaran berdiferensiasi yang konkret untuk tiap kelompok, dengan menyebut langkah RPM (kode tahap-nomor) yang disesuaikan untuk kelompok itu.`;
   if(k==='formatif') return `ISI KHUSUS ASESMEN FORMATIF
-Tujuan: memantau dan memberi umpan balik SELAMA proses pembelajaran.
-- Kisi-kisi dibuat per pertemuan.
-- ## B. Instrumen dibagi per pertemuan (### Pertemuan n, sesuai jumlah pertemuan di RPM). Tiap pertemuan berisi: (1) tiket keluar (exit ticket) 3 soal singkat yang spesifik pada materi pertemuan itu, dan (2) satu instrumen proses sesuai kegiatan pertemuan, yaitu lembar observasi kinerja/diskusi, penilaian diri, atau penilaian sejawat. Lembar observasi dibuat sebagai tabel dengan kolom No | Nama Siswa | kriteria-kriteria | Skor | Keterangan; isi kolom No dengan 1 sampai 5, kolom lain dibiarkan kosong.
-- ## E. Pengolahan Hasil dan Tindak Lanjut: cara merekap skor proses, kriteria umpan balik, dan tindak lanjut (penguatan atau perbaikan) per kelompok capaian.`;
+Tujuan: memantau dan memberi umpan balik SELAMA proses pembelajaran, pada langkah-langkah yang sama dengan PETA LANGKAH RPM dan hasil kerja pada LKPD.
+- ## A. Kisi-kisi dibuat per pertemuan: setiap baris menyebut pertemuan dan kode langkah RPM yang dinilai.
+- ## B. Instrumen dibagi per pertemuan (### Pertemuan n, persis sebanyak pertemuan di RPM dan dalam urutan yang sama). Tiap pertemuan berisi: (1) tiket keluar (exit ticket) 3 soal singkat yang hanya menguji hal yang dipelajari pada tahap Memahami dan Mengaplikasi pertemuan itu, dan (2) satu instrumen proses yang menilai kegiatan tahap Mengaplikasi pertemuan itu, yaitu lembar observasi kinerja/diskusi, penilaian diri, atau penilaian sejawat. Kriteria pada instrumen proses WAJIB berasal dari kata kerja dan hasil kerja pada langkah Mengaplikasi (dan Merefleksi) pertemuan itu serta butir LKPD-nya, bukan kriteria umum. Lembar observasi dibuat sebagai tabel dengan kolom No | Nama Siswa | kriteria-kriteria | Skor | Keterangan; isi kolom No dengan 1 sampai 5, kolom lain dibiarkan kosong.
+- ## C. Kunci jawaban tiket keluar dan pedoman skor per butir, per pertemuan.
+- ## E. Pengolahan Hasil dan Tindak Lanjut: cara merekap skor proses, kriteria umpan balik, dan tindak lanjut (penguatan atau perbaikan) per kelompok capaian, dengan menyebut langkah RPM yang diulang atau diperkaya.`;
   return `ISI KHUSUS ASESMEN SUMATIF
-Tujuan: mengukur ketercapaian seluruh tujuan pembelajaran di AKHIR pembelajaran.
-- ## B. Instrumen terdiri dari "Bagian 1: Tes Tertulis" (10–15 soal pilihan ganda dengan 4 opsi, ditambah 4–5 soal uraian yang menuntut penalaran tingkat tinggi) dan "Bagian 2: Asesmen Kinerja/Produk" (satu tugas kinerja, produk, atau proyek yang sesuai topik dan mata pelajaran, lengkap dengan petunjuk dan hasil yang diharapkan).
+Tujuan: mengukur ketercapaian seluruh tujuan pembelajaran di AKHIR pembelajaran, berdasarkan hal yang telah dipelajari dan dikerjakan siswa pada PETA LANGKAH RPM dan LKPD.
+- ## B. Instrumen terdiri dari "Bagian 1: Tes Tertulis" (10–15 soal pilihan ganda dengan 4 opsi, ditambah 4–5 soal uraian yang menuntut penalaran tingkat tinggi) dan "Bagian 2: Asesmen Kinerja/Produk". Tugas kinerja/produk harus SEJENIS dengan produk dan aktivitas pada tahap Mengaplikasi di RPM/LKPD (konteks baru, tingkat tantangan lebih tinggi), lengkap dengan petunjuk dan hasil yang diharapkan. Semua soal harus menguji TP yang tercantum di kisi-kisi dan hanya memakai konteks, istilah, dan keterampilan yang sudah dilatihkan.
 - ## C. Kunci Jawaban dan Pedoman Penskoran: tabel kunci pilihan ganda (No | Kunci | Level Kognitif), jawaban model soal uraian dengan pedoman skor per rentang, dan bobot tiap bagian.
-- ## E. Pengolahan Nilai dan Tindak Lanjut: rumus nilai akhir beserta bobotnya, kriteria ketercapaian tujuan pembelajaran, serta program remedial dan pengayaan yang konkret.`;
+- ## E. Pengolahan Nilai dan Tindak Lanjut: rumus nilai akhir beserta bobotnya, kriteria ketercapaian tiap TP (TP1, dst), serta program remedial dan pengayaan yang konkret dengan merujuk langkah RPM yang diulang atau diperkaya.`;
 }
 function asesPrompt(j){
-  return `Berdasarkan RPM berikut, susun dokumen ASESMEN ${j.label.toUpperCase()} yang LENGKAP dan siap pakai oleh guru untuk fase ${$('fase').value}. Dokumen WAJIB memuat kisi-kisi, instrumen, kunci atau pedoman penskoran, dan rubrik penilaian. Semua isi harus spesifik pada topik "${$('topik').value}" dan selaras dengan tujuan pembelajaran serta pengalaman belajar di RPM, bukan perintah umum.
+  const lk=(j.k==='diagnostik')?'':lkpdContext();
+  return `Berdasarkan RPM berikut, susun dokumen ASESMEN ${j.label.toUpperCase()} yang LENGKAP dan siap pakai oleh guru untuk fase ${$('fase').value}. Dokumen WAJIB memuat kisi-kisi, instrumen, kunci atau pedoman penskoran, dan rubrik penilaian. Semua isi harus spesifik pada topik "${$('topik').value}" dan SELARAS dengan tujuan pembelajaran, langkah pada Pengalaman Belajar RPM, serta LKPD (bila tersedia), bukan perintah umum.
+
+ATURAN KESESUAIAN DENGAN RPM (wajib, akan diperiksa guru):
+1. Gunakan TP persis seperti di RPM, lengkap dengan kodenya (TP1, TP2, dst), dan semua TP harus terwakili di kisi-kisi.
+2. Tiap baris kisi-kisi menyebut pertemuan dan kode langkah RPM tempat kompetensi itu dilatihkan (contoh: "P2 Mengaplikasi-3"). Soal atau tugas hanya boleh menguji hal yang benar-benar dipelajari dan dikerjakan siswa pada langkah itu (konteks, istilah, data, jenis tugas, bentuk produk). Dilarang memasukkan materi atau keterampilan yang tidak muncul di PETA LANGKAH RPM.
+3. Bagian D RPM sudah menetapkan teknik, instrumen, waktu pelaksanaan, dan rubrik asesmen. Jadikan itu dasar: kembangkan, jangan bertentangan. Kriteria dan dimensi profil lulusan pada rubrik harus selaras dengan rubrik di bagian D RPM.
+4. Bila LKPD tersedia di bawah, instrumen dan rubrik untuk kegiatan proses atau produk harus menilai hasil kerja pada butir LKPD itu, dan kriteria skornya selaras dengan bagian Penilaian LKPD.
 
 BAHASA: Kisi-kisi, rubrik, pedoman, dan seluruh petunjuk untuk guru memakai Bahasa Indonesia baku. ${asesBahasa()}
 
@@ -1407,7 +1511,7 @@ FORMAT MARKDOWN (ikuti persis urutan ini):
 # ${j.judul}: judul topik singkat
 Tabel identitas 2 kolom dengan baris judul "Komponen | Keterangan", berisi Mata Pelajaran, Topik, Fase/Kelas, Jenis Asesmen, Alokasi Waktu, dan Nama Guru (semua sudah terisi dari RPM). Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
 ## A. Kisi-Kisi
-Satu tabel dengan kolom: No | Tujuan Pembelajaran | Materi | Indikator Soal/Tugas | Level Kognitif (C1–C6) | Bentuk | No. Soal | Skor. Setiap tujuan pembelajaran di RPM harus terwakili, dan nomor soal harus cocok dengan Instrumen di bagian B. Di bawah tabel tulis total skor dan komposisi level kognitif.
+Satu tabel dengan kolom: No | Tujuan Pembelajaran (kode TP) | Pertemuan & Langkah RPM | Indikator Soal/Tugas (sebut materinya) | Level Kognitif (C1–C6) | Bentuk | No. Soal | Skor. Nomor soal harus cocok dengan Instrumen di bagian B. Di bawah tabel tulis total skor dan komposisi level kognitif.
 ## B. Instrumen
 Petunjuk pengerjaan singkat, lalu soal atau tugas. Soal pilihan ganda ditulis: nomor dan pertanyaan pada satu baris ("1. pertanyaan"), lalu tiap opsi pada baris sendiri diawali huruf ("A. opsi"). Penomoran harus berurutan dan tidak diulang dari 1 di tengah dokumen. Jangan membuat tempat jawaban dengan titik-titik panjang atau sel kosong total.
 ## C. Kunci Jawaban dan Pedoman Penskoran
@@ -1421,7 +1525,10 @@ ${asesDetail(j.k)}
 ATURAN: Jangan mengarang nomor regulasi atau kutipan. Pilihan ganda hanya satu jawaban benar dengan pengecoh yang masuk akal. Tulis rumus dalam teks biasa. Keluarkan hanya dokumen asesmen, tanpa kalimat pembuka atau penutup.
 
 RPM:
-${$('doc').innerText}`;
+${rpmContext()}${lk?`
+
+LKPD YANG SUDAH DISUSUN (dikerjakan siswa; rujukan untuk instrumen dan rubrik):
+${lk}`:''}`;
 }
 function resetAses(){
   const el=$('asesmen'); el.innerHTML=''; el.hidden=true;
