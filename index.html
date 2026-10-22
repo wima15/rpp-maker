@@ -54,7 +54,18 @@ button{font:inherit;font-weight:600;font-size:14px;border-radius:6px;border:1px 
 button.ghost{background:transparent;color:var(--accent)}
 button:disabled{opacity:.55;cursor:wait}
 .gen{width:100%;font-size:15px;padding:12px}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:10px;margin-bottom:14px}
+.tgroup{border:1px solid var(--line);border-radius:10px;padding:9px 11px 11px;background:rgba(15,107,92,.04);align-self:start}
+.tlabel{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.tbtns{display:flex;flex-wrap:wrap;gap:6px}
+.toolbar button{padding:7px 12px;font-size:13px}
+.tbtns[hidden],#editextra[hidden]{display:none!important}
+.editnote{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);color:#3a2a00}
+#savedb.dirty{background:var(--mark);border-color:var(--mark);color:#3a2a00}
+.tgroup.tedit.active{border-color:var(--mark);box-shadow:0 0 0 2px rgba(242,180,65,.28)}
+@media screen{body.editing #doc,body.editing #lkpd,body.editing #asesmen{box-shadow:0 0 0 3px rgba(242,180,65,.55)}
+  #doc[contenteditable=false],#lkpd[contenteditable=false],#asesmen[contenteditable=false]{cursor:default}}
 .status{font-size:13px;color:var(--muted);min-height:20px;margin-bottom:8px}
 .status.err{color:var(--danger)}
 .empty{padding:48px 16px;text-align:center;color:var(--muted)}
@@ -422,26 +433,58 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 
 <section class="panel" aria-live="polite">
   <div class="toolbar">
-    <button type="button" class="ghost" id="copy" disabled>Salin RPM</button>
-    <button type="button" class="ghost" id="word" disabled>RPM ke Word</button>
-    <button type="button" class="ghost" id="print" disabled>Cetak RPM / PDF</button>
-    <button type="button" class="ghost" id="regen" disabled>Susun ulang</button>
-    <span class="sep"></span>
-    <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
-    <button type="button" class="ghost" id="lkpdword" disabled>LKPD ke Word</button>
-    <button type="button" class="ghost" id="lkpdprint" disabled>Cetak LKPD / PDF</button>
-    <button type="button" id="printboth" disabled>Cetak RPM + LKPD / PDF</button>
-    <span class="sep"></span>
-    <button type="button" id="asesbtn" disabled>Buat Asesmen</button>
-    <button type="button" class="ghost" id="asesword" disabled>Asesmen ke Word</button>
-    <button type="button" class="ghost" id="asesprint" disabled>Cetak Asesmen / PDF</button>
-    <button type="button" id="printall" disabled>Cetak Semua / PDF</button>
-    <span class="sep"></span>
-    <button type="button" class="ghost" id="savedb" disabled>Simpan ke database</button>
-    <button type="button" class="ghost" id="histbtn">RPP tersimpan</button>
-    <span class="sep"></span>
-    <button type="button" class="ghost" id="pagebtn" title="Ukuran kertas, orientasi, dan margin untuk cetak/PDF">Atur kertas &amp; margin</button>
-    <button type="button" class="ghost" id="kepsekreload" title="Ambil ulang nama kepala sekolah, satuan pendidikan, dan tanda tangan dari database">Muat ulang kepala sekolah</button>
+    <div class="tgroup">
+      <span class="tlabel">RPM</span>
+      <div class="tbtns">
+        <button type="button" class="ghost" id="copy" disabled>Salin</button>
+        <button type="button" class="ghost" id="word" disabled>Ke Word</button>
+        <button type="button" class="ghost" id="print" disabled>Cetak / PDF</button>
+        <button type="button" class="ghost" id="regen" disabled>Susun ulang</button>
+      </div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">LKPD</span>
+      <div class="tbtns">
+        <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
+        <button type="button" class="ghost" id="lkpdword" disabled>Ke Word</button>
+        <button type="button" class="ghost" id="lkpdprint" disabled>Cetak / PDF</button>
+      </div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Asesmen</span>
+      <div class="tbtns">
+        <button type="button" id="asesbtn" disabled>Buat Asesmen</button>
+        <button type="button" class="ghost" id="asesword" disabled>Ke Word</button>
+        <button type="button" class="ghost" id="asesprint" disabled>Cetak / PDF</button>
+      </div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Cetak gabungan</span>
+      <div class="tbtns">
+        <button type="button" class="ghost" id="printboth" disabled>RPM + LKPD</button>
+        <button type="button" class="ghost" id="printall" disabled>Semua dokumen</button>
+      </div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Database</span>
+      <div class="tbtns">
+        <button type="button" class="ghost" id="savedb" disabled>Simpan ke database</button>
+        <button type="button" class="ghost" id="histbtn">RPP tersimpan</button>
+      </div>
+    </div>
+    <div class="tgroup tedit" id="editgroup">
+      <span class="tlabel">Sunting dokumen</span>
+      <div class="tbtns">
+        <button type="button" class="ghost" id="editbtn" disabled>Edit</button>
+      </div>
+      <div id="editextra" hidden>
+        <div class="tbtns" style="margin-top:8px">
+          <button type="button" class="ghost" id="pagebtn" title="Ukuran kertas, orientasi, dan margin untuk cetak/PDF">Atur kertas &amp; margin</button>
+          <button type="button" class="ghost" id="kepsekreload" title="Ambil ulang nama kepala sekolah, satuan pendidikan, dan tanda tangan dari database">Muat ulang kepala sekolah</button>
+        </div>
+        <p class="editnote">Mode edit aktif. Klik teks di dokumen untuk menyunting, lalu tekan Simpan.</p>
+      </div>
+    </div>
   </div>
   <div class="hist" id="histbox" hidden>
     <h3>RPP tersimpan</h3>
@@ -455,9 +498,9 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <div style="flex:1;min-width:0"><b id="ltxt"></b><small id="ltime"></small><div class="bar" aria-hidden="true"><i></i></div></div>
   </div>
   <div id="empty" class="empty"><strong>RPM Anda akan muncul di sini</strong>Lengkapi identitas dan topik di sebelah kiri, lalu pilih Susun RPM.</div>
-  <article id="doc" contenteditable="true" hidden></article>
-  <article id="lkpd" class="sheetx" contenteditable="true" hidden></article>
-  <article id="asesmen" class="sheetx" contenteditable="true" hidden></article>
+  <article id="doc" contenteditable="false" hidden></article>
+  <article id="lkpd" class="sheetx" contenteditable="false" hidden></article>
+  <article id="asesmen" class="sheetx" contenteditable="false" hidden></article>
 </section>
 </main>
 
@@ -664,6 +707,25 @@ function md(src){
   close(); return out;
 }
 
+/* ---- mode edit: dokumen hanya-baca sampai tombol Edit ditekan ---- */
+let editing=false, dirty=false;
+function setDirty(v){ dirty=v; $('savedb').classList.toggle('dirty',v); $('savedb').textContent=v?'Simpan perubahan':'Simpan ke database'; }
+function setEdit(on){
+  editing=!!on;
+  ['doc','lkpd','asesmen'].forEach(id=>{ $(id).contentEditable=editing?'true':'false'; });
+  document.body.classList.toggle('editing',editing);
+  $('editbtn').textContent=editing?'Selesai edit':'Edit';
+  $('editbtn').classList.toggle('on',editing);
+  $('editgroup').classList.toggle('active',editing);
+  $('editextra').hidden=!editing;
+}
+$('editbtn').addEventListener('click',()=>{
+  setEdit(!editing);
+  if(editing) setStatus('Mode edit aktif. Klik teks di dokumen untuk menyunting.');
+  else setStatus(dirty?'Mode edit ditutup. Ada perubahan yang belum disimpan: tekan Simpan perubahan.':'Mode edit ditutup.');
+});
+['doc','lkpd','asesmen'].forEach(id=>$(id).addEventListener('input',()=>{ if(editing) setDirty(true); }));
+
 let lastText='';
 async function generate(){
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
@@ -691,11 +753,12 @@ async function generate(){
     if(!text) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
     lastText=text.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
     const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
-    ['copy','word','print','regen','lkpdbtn','asesbtn','savedb'].forEach(id=>$(id).disabled=false);
+    ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
     $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true;
     resetAses();
+    setEdit(false); setDirty(false);
     curId=null;
-    setStatus('Selesai. Anda bisa menyunting teks langsung di dokumen sebelum mengunduh.');
+    setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'RPM selesai.');
   }catch(e){
@@ -928,7 +991,7 @@ $('lkpdbtn').addEventListener('click',async()=>{
     const t=await ask(lkpdPrompt());
     const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
     $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
-    setStatus('LKPD selesai. Anda bisa menyunting langsung sebelum mengunduh atau mencetak.');
+    setStatus('LKPD selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
   }catch(e){ setStatus('Gagal: '+e.message,true); }
@@ -1010,7 +1073,7 @@ $('asesbtn').addEventListener('click',async()=>{
       out+=(out?'\n\n':'')+t; n++;
       showAses(md(out));
     }
-    setStatus('Asesmen diagnostik, formatif, dan sumatif selesai. Anda bisa menyunting langsung sebelum mengunduh atau mencetak.');
+    setStatus('Asesmen diagnostik, formatif, dan sumatif selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     $('asesmen').scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'Asesmen selesai.');
   }catch(e){
@@ -1124,6 +1187,7 @@ async function saveDb(auto,prefix,skipAses){
       row=r&&r[0];
     }
     if(row&&row.id) curId=row.id;
+    setDirty(false);
     if(skipAses) setStatus(pre+'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.',true);
     else setStatus(pre+'Tersimpan ke database.');
   }catch(e){
@@ -1195,9 +1259,9 @@ $('histlist').addEventListener('click',async e=>{
     if(r.lkpd_html){ lk.innerHTML=r.lkpd_html; styleDoc(lk,'lkpd'); lk.hidden=false; $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false; }
     else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true; }
     if(r.asesmen_html){ showAses(r.asesmen_html); } else resetAses();
-    ['copy','word','print','regen','lkpdbtn','asesbtn','savedb'].forEach(id=>$(id).disabled=false);
-    curId=r.id; $('histbox').hidden=true;
-    setStatus('Data dibuka dari database. Perubahan baru akan memperbarui data yang sama saat Anda menekan Simpan.');
+    ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
+    curId=r.id; $('histbox').hidden=true; setEdit(false); setDirty(false);
+    setStatus('Data dibuka dari database (mode baca). Tekan Edit untuk menyunting; perubahan disimpan dengan tombol Simpan ke database.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){ setStatus('Gagal membuka data: '+err.message,true); }
 });
