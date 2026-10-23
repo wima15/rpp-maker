@@ -443,6 +443,10 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
   .panel{border:0;padding:0;box-shadow:none}
   #doc,#lkpd,#asesmen{border:0;padding:0;box-shadow:none;margin-top:0}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* rumus panjang (.mt = nowrap) melebihi lebar kertas -> Chrome mengecilkan SELURUH halaman (font jadi ~8pt). Izinkan turun baris saat cetak. */
+  .mt{white-space:normal!important;overflow-wrap:anywhere}
+  #doc,#lkpd,#asesmen{overflow-wrap:break-word}
+  #doc img,#lkpd img,#asesmen img{max-width:100%}
   tr{break-inside:avoid}
   .pb{margin:0;border:0}
   table.kop,hr.kop-rule{break-after:avoid}
