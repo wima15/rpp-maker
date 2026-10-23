@@ -447,6 +447,18 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
   .mt{white-space:normal!important;overflow-wrap:anywhere}
   #doc,#lkpd,#asesmen{overflow-wrap:break-word}
   #doc img,#lkpd img,#asesmen img{max-width:100%}
+  /* cegah Chrome menyusutkan halaman: apa pun yang melebar tidak boleh memperbesar lebar cetak */
+  #doc,#lkpd,#asesmen{overflow-x:clip}
+  #doc table,#lkpd table,#asesmen table{max-width:100%}
+  /* ukuran font cetak dalam pt (sama dengan ekspor Word) agar terbaca jelas di PDF */
+  #doc,#lkpd,#asesmen{font-size:11pt!important;line-height:1.5}
+  #doc table,#lkpd table,#asesmen table{font-size:10.5pt!important}
+  #doc table.lebar,#lkpd table.lebar,#asesmen table.lebar{font-size:10pt!important}
+  #doc h2,#lkpd h2,#asesmen h2{font-size:12.5pt!important}
+  #doc h3,#lkpd h3,#asesmen h3{font-size:11.5pt!important}
+  #doc .kop h1,#lkpd .kop h1,#asesmen .kop h1{font-size:16pt!important}
+  .kop .sch{font-size:10pt!important}
+  .kop .sub{font-size:9.5pt!important}
   tr{break-inside:avoid}
   .pb{margin:0;border:0}
   table.kop,hr.kop-rule{break-after:avoid}
@@ -1176,7 +1188,22 @@ $('copy').addEventListener('click',async()=>{
   try{ await navigator.clipboard.writeText($('doc').innerText); setStatus('Teks disalin.'); }
   catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); }
 });
-function printOnly(w){ document.body.dataset.p=w; window.print(); }
+let _titleAsli=null;
+function namaCetak(w){
+  const v=id=>($(id)&&$(id).value||'').trim();
+  const awal={doc:'RPM',lkpd:'LKPD',ases:'Asesmen',both:'RPM+LKPD',all:'RPM-LKPD-Asesmen',sel:'RPM'}[w]||'RPM';
+  const sel=(document.body.dataset.sel||'').split(' ').filter(Boolean);
+  const pref=w==='sel'?{doc:'RPM',lkpd:'LKPD',ases:'Asesmen'}[sel[0]]&&sel.map(k=>({doc:'RPM',lkpd:'LKPD',ases:'Asesmen'}[k])).join('-'):awal;
+  const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
+  return [pref||awal,v('mapel'),v('topik'),v('guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
+}
+function printOnly(w){
+  document.body.dataset.p=w;
+  if(_titleAsli===null) _titleAsli=document.title;
+  document.title=namaCetak(w);   // Chrome memakai judul halaman sebagai nama file "Simpan sebagai PDF"
+  window.print();
+}
+window.addEventListener('afterprint',()=>{ if(_titleAsli!==null){ document.title=_titleAsli; _titleAsli=null; } });
 window.addEventListener('afterprint',()=>{ delete document.body.dataset.p; });
 $('print').addEventListener('click',()=>printOnly('doc'));
 $('lkpdprint').addEventListener('click',()=>printOnly('lkpd'));
