@@ -312,13 +312,23 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 
 /* Loader */
 .loader{
-  display:none;position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:60;
-  width:min(440px,92vw);align-items:center;gap:16px;padding:16px 20px;
+  display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;
+  width:min(460px,92vw);align-items:center;gap:18px;padding:24px 26px;
   border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;
   background:var(--panel);box-shadow:0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
 }
 .loader.on{display:flex}
-.spin{flex:none;width:32px;height:32px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
+.ovl{display:none;position:fixed;inset:0;z-index:59;background:rgba(15,23,42,.5)}
+.ovl.on{display:block}
+.resov{display:none;position:fixed;inset:0;z-index:90;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:16px}
+.resov.on{display:flex}
+.resbox{width:min(440px,100%);max-height:86vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:28px 24px 20px;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,.35)}
+.resico{width:60px;height:60px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;line-height:1;color:#fff;background:#16a34a}
+.resbox.err .resico{background:var(--danger)}
+.resbox h3{margin:0 0 10px;font-size:19px}
+#resmsg p{margin:0 0 8px;font-size:14px;line-height:1.55;color:var(--ink);word-break:break-word}
+.resbox button{min-width:130px;margin-top:10px}
+.spin{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
 .loader b{display:block;font-size:14px;color:var(--ink)}
 .loader small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .keyov{display:none;position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:16px}
@@ -449,7 +459,7 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
 
 @media print{
   body{background:#fff}
-  header,form,.toolbar,.status,.sidebar,#sb_show{display:none!important}
+  header,form,.toolbar,.status,.sidebar,#sb_show,.resov,.ovl,.loader{display:none!important}
   main,main.view-saved,.view-saved{display:block;padding:0!important;margin:0!important}
   .panel{border:0;padding:0;box-shadow:none}
   #doc,#lkpd,#asesmen,#lampiran{border:0;padding:0;box-shadow:none;margin-top:0}
@@ -933,6 +943,15 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <div class="keybtns"><button type="button" class="ghost" id="keycancel">Batal</button><button type="button" id="keyok">OK</button></div>
     </div>
   </div>
+  <div class="ovl" id="lovl"></div>
+  <div class="resov" id="resov" role="alertdialog" aria-modal="true" aria-labelledby="restitle">
+    <div class="resbox" id="resbox">
+      <div class="resico" id="resico" aria-hidden="true">&#10003;</div>
+      <h3 id="restitle">Berhasil</h3>
+      <div id="resmsg"></div>
+      <button type="button" id="resok">OK</button>
+    </div>
+  </div>
   <div class="loader" id="loader" role="status" aria-live="polite">
     <div class="spin" aria-hidden="true"></div>
     <div style="flex:1;min-width:0"><b id="ltxt"></b><small id="ltime"></small><div class="bar" aria-hidden="true"><i></i></div></div>
@@ -1221,10 +1240,12 @@ async function generate(){
     setEdit(false); setDirty(false);
     curId=null;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
+    notify(true,'RPM berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'RPM selesai.');
   }catch(e){
     setStatus('Gagal: '+e.message,true);
+    notify(false,'RPM gagal disusun: '+e.message);
   }finally{
     hideLoader(); $('gen').disabled=false; $('regen').disabled=!lastText; $('gen').textContent='Susun RPM';
   }
@@ -1352,17 +1373,37 @@ function docForWord(el){
   return c.innerHTML;
 }
 
+/* ---- pemberitahuan di tengah layar (sukses / gagal) + tombol OK ---- */
+function setRes(ok){
+  $('resbox').classList.toggle('err',!ok);
+  $('resico').innerHTML=ok?'&#10003;':'&#10005;';
+  $('restitle').textContent=ok?'Berhasil':'Gagal';
+}
+function notify(ok,msg){
+  const ov=$('resov'), box=$('resmsg');
+  if(ov.classList.contains('on')){
+    const p=document.createElement('p'); p.textContent=msg; box.appendChild(p);
+    if(!ok) setRes(false);
+    return;
+  }
+  box.innerHTML=''; const p=document.createElement('p'); p.textContent=msg; box.appendChild(p);
+  setRes(ok); ov.classList.add('on'); $('resok').focus();
+}
+function closeNotify(){ $('resov').classList.remove('on'); }
+$('resok').addEventListener('click',closeNotify);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('resov').classList.contains('on')) closeNotify(); });
+
 let loadTimer=null;
 function showLoader(msgs){
   const el=$('loader'); let i=0,sec=0; msgs=msgs.map(m=>m+keyTag());
   $('ltxt').textContent=msgs[0]; $('ltime').textContent='Berjalan 0 detik';
-  el.classList.add('on'); clearInterval(loadTimer);
+  el.classList.add('on'); $('lovl').classList.add('on'); clearInterval(loadTimer);
   loadTimer=setInterval(()=>{
     sec++; $('ltime').textContent='Berjalan '+sec+' detik';
     if(sec%7===0){ i=(i+1)%msgs.length; $('ltxt').textContent=msgs[i]; }
   },1000);
 }
-function hideLoader(){ clearInterval(loadTimer); $('loader').classList.remove('on'); }
+function hideLoader(){ clearInterval(loadTimer); $('loader').classList.remove('on'); $('lovl').classList.remove('on'); }
 
 /* ---- kop surat (logo sekolah + logo SMK Bisa) & tabel identitas di tengah ---- */
 const LOGO={
@@ -1702,9 +1743,10 @@ $('lkpdbtn').addEventListener('click',async()=>{
     const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
     $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
     setStatus('LKPD selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
+    notify(true,'LKPD berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
-  }catch(e){ setStatus('Gagal: '+e.message,true); }
+  }catch(e){ setStatus('Gagal: '+e.message,true); notify(false,'LKPD gagal disusun: '+e.message); }
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
 });
 
@@ -1786,10 +1828,12 @@ $('asesbtn').addEventListener('click',async()=>{
       showAses(md(out));
     }
     setStatus('Asesmen diagnostik, formatif, dan sumatif selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
+    notify(true,'Asesmen diagnostik, formatif, dan sumatif berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     $('asesmen').scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'Asesmen selesai.');
   }catch(e){
     setStatus((n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.',true);
+    notify(false,(n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.');
   }finally{ hideLoader(); b.disabled=false; b.textContent='Buat Asesmen'; }
 });
 
@@ -1868,9 +1912,10 @@ $('lampbtn').addEventListener('click',async()=>{
     const t=await ask(lampPrompt());
     const el=showLamp(md(t));
     setStatus('Lampiran selesai. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru. Tekan Edit untuk menyunting.');
+    notify(true,'Lampiran berhasil disusun. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'Lampiran selesai.');
-  }catch(e){ setStatus('Gagal: '+e.message,true); }
+  }catch(e){ setStatus('Gagal: '+e.message,true); notify(false,'Lampiran gagal disusun: '+e.message); }
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat Lampiran'; }
 });
 $('lampword').addEventListener('click',()=>{
@@ -1970,14 +2015,15 @@ async function saveDb(auto,prefix,skipAses,skipLamp){
     }
     if(row&&row.id) curId=row.id;
     setDirty(false);
-    if(skipAses) setStatus(pre+'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.',true);
-    else if(skipLamp) setStatus(pre+'RPM, LKPD, dan asesmen tersimpan, tetapi lampiran belum tersimpan: kolom lampiran_html belum ada di database. Jalankan tambah-kolom-lampiran.sql di Supabase.',true);
-    else setStatus(pre+'Tersimpan ke database.');
+    if(skipAses){ setStatus(pre+'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.',true); notify(false,'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.'); }
+    else if(skipLamp){ setStatus(pre+'RPM, LKPD, dan asesmen tersimpan, tetapi lampiran belum tersimpan: kolom lampiran_html belum ada di database. Jalankan tambah-kolom-lampiran.sql di Supabase.',true); notify(false,'RPM, LKPD, dan asesmen tersimpan, tetapi lampiran belum tersimpan: kolom lampiran_html belum ada di database. Jalankan tambah-kolom-lampiran.sql di Supabase.'); }
+    else{ setStatus(pre+'Tersimpan ke database.'); if(!auto||$('resov').classList.contains('on')) notify(true,'Tersimpan ke database.'); }
   }catch(e){
     if(!skipAses&&!$('asesmen').hidden&&/asesmen_html/i.test(e.message)){ btn.disabled=false; return saveDb(auto,prefix,true,skipLamp); }
     if(!skipLamp&&!$('lampiran').hidden&&/lampiran_html/i.test(e.message)){ btn.disabled=false; return saveDb(auto,prefix,skipAses,true); }
     let h=''; if(/relation|does not exist|schema cache|404|row-level|policy|permission/i.test(e.message)) h=' Hubungi pengembang untuk menyiapkan tabelnya.';
     setStatus(pre+'Gagal menyimpan ke database: '+e.message+h,true);
+    notify(false,'Gagal menyimpan ke database: '+e.message+h);
   }finally{ btn.disabled=false; }
 }
 $('savedb').addEventListener('click',()=>saveDb(false,''));
