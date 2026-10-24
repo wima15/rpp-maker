@@ -285,8 +285,8 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .tgroup.tedit.active{border-color:var(--mark);box-shadow:0 0 0 2px var(--mark-light)}
 
 @media screen{
-  body.editing #doc,body.editing #lkpd,body.editing #asesmen{box-shadow:0 0 0 3px var(--mark)}
-  #doc[contenteditable=false],#lkpd[contenteditable=false],#asesmen[contenteditable=false]{cursor:default}
+  body.editing #doc,body.editing #lkpd,body.editing #asesmen,body.editing #lampiran{box-shadow:0 0 0 3px var(--mark)}
+  #doc[contenteditable=false],#lkpd[contenteditable=false],#asesmen[contenteditable=false],#lampiran[contenteditable=false]{cursor:default}
 }
 .status{font-size:13px;color:var(--muted);min-height:20px;margin-bottom:12px;font-weight:500}
 .status.err{color:var(--danger)}
@@ -337,10 +337,10 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 
 [hidden]{display:none!important}
 
-@media screen{#doc,#lkpd,#asesmen{max-width:var(--pw,210mm);margin-left:auto;margin-right:auto;padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
+@media screen{#doc,#lkpd,#asesmen,#lampiran{max-width:var(--pw,210mm);margin-left:auto;margin-right:auto;padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
 
 /* ===== Dokumen Paper Preview ===== */
-#doc,#lkpd,#asesmen{
+#doc,#lkpd,#asesmen,#lampiran{
   background:var(--paper);
   color:var(--paper-ink);
   font-family:'Plus Jakarta Sans',Arial,sans-serif;
@@ -352,17 +352,17 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
   border-radius:8px;
   box-shadow:0 4px 6px -1px rgba(0,0,0,.05), 0 10px 15px -3px rgba(0,0,0,.03);
 }
-#lkpd,#asesmen{margin-top:32px}
-#doc p,#doc li,#doc td,#lkpd p,#asesmen p,#lkpd li,#asesmen li,#lkpd td,#asesmen td{text-align:justify}
-#doc p,#lkpd p,#asesmen p{margin:6px 0}
-#doc ul,#doc ol,#lkpd ul,#asesmen ul,#lkpd ol,#asesmen ol{margin:6px 0 6px 20px;padding:0}
-#doc li>ul,#doc li>ol,#lkpd li>ul,#lkpd li>ol,#asesmen li>ul,#asesmen li>ol{margin:2px 0 2px 18px}
-#doc li>ul,#lkpd li>ul,#asesmen li>ul{list-style:circle}
-#doc li::marker,#lkpd li::marker,#asesmen li::marker{color:#1e3a8a;font-weight:600}
-#doc strong,#lkpd strong,#asesmen strong{color:#0f172a}
+#lkpd,#asesmen,#lampiran{margin-top:32px}
+#doc p,#doc li,#doc td,#lkpd p,#asesmen p,#lampiran p,#lkpd li,#asesmen li,#lampiran li,#lkpd td,#asesmen td,#lampiran td{text-align:justify}
+#doc p,#lkpd p,#asesmen p,#lampiran p{margin:6px 0}
+#doc ul,#doc ol,#lkpd ul,#asesmen ul,#lampiran ul,#lkpd ol,#asesmen ol,#lampiran ol{margin:6px 0 6px 20px;padding:0}
+#doc li>ul,#doc li>ol,#lkpd li>ul,#lkpd li>ol,#asesmen li>ul,#lampiran li>ul,#asesmen li>ol,#lampiran li>ol{margin:2px 0 2px 18px}
+#doc li>ul,#lkpd li>ul,#asesmen li>ul,#lampiran li>ul{list-style:circle}
+#doc li::marker,#lkpd li::marker,#asesmen li::marker,#lampiran li::marker{color:#1e3a8a;font-weight:600}
+#doc strong,#lkpd strong,#asesmen strong,#lampiran strong{color:#0f172a}
 
 /* Judul Bagian Dokumen */
-#doc h2,#lkpd h2,#asesmen h2{
+#doc h2,#lkpd h2,#asesmen h2,#lampiran h2{
   font-size:15px;
   font-weight:700;
   color:#1e3a8a;
@@ -374,7 +374,7 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
   margin:24px 0 12px;
   break-after:avoid;
 }
-#doc h3,#lkpd h3,#asesmen h3{
+#doc h3,#lkpd h3,#asesmen h3,#lampiran h3{
   font-size:14px;
   font-weight:700;
   color:#0f172a;
@@ -388,29 +388,29 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 }
 
 /* Tabel Dokumen */
-#doc table,#lkpd table,#asesmen table{border-collapse:collapse;width:100%;max-width:100%;margin:12px 0;font-size:13px;display:table}
-#doc th,#doc td,#lkpd th,#lkpd td,#asesmen th,#asesmen td{overflow-wrap:break-word;word-break:normal;hyphens:manual}
+#doc table,#lkpd table,#asesmen table,#lampiran table{border-collapse:collapse;width:100%;max-width:100%;margin:12px 0;font-size:13px;display:table}
+#doc th,#doc td,#lkpd th,#lkpd td,#asesmen th,#lampiran th,#asesmen td,#lampiran td{overflow-wrap:break-word;word-break:normal;hyphens:manual}
 /* tabel lebar (5+ kolom, mis. rubrik): font & padding lebih ringkas, kolom tidak lebih sempit dari kata terpanjang, rata kiri agar tidak renggang */
-#doc table.lebar,#lkpd table.lebar,#asesmen table.lebar{font-size:12px}
-#doc table.lebar th,#doc table.lebar td,#lkpd table.lebar th,#lkpd table.lebar td,#asesmen table.lebar th,#asesmen table.lebar td{padding:6px 6px;text-align:left}
-#doc table.lebar td:first-child,#lkpd table.lebar td:first-child,#asesmen table.lebar td:first-child{min-width:78px}
-#doc table.lebar th:last-child,#lkpd table.lebar th:last-child,#asesmen table.lebar th:last-child,#doc table.lebar td:last-child,#lkpd table.lebar td:last-child,#asesmen table.lebar td:last-child{min-width:70px}
-#doc th,#doc td,#lkpd th,#asesmen th,#lkpd td,#asesmen td{border:1px solid #cbd5e1;padding:7px 10px;vertical-align:top;text-align:left}
+#doc table.lebar,#lkpd table.lebar,#asesmen table.lebar,#lampiran table.lebar{font-size:12px}
+#doc table.lebar th,#doc table.lebar td,#lkpd table.lebar th,#lkpd table.lebar td,#asesmen table.lebar th,#lampiran table.lebar th,#asesmen table.lebar td,#lampiran table.lebar td{padding:6px 6px;text-align:left}
+#doc table.lebar td:first-child,#lkpd table.lebar td:first-child,#asesmen table.lebar td:first-child,#lampiran table.lebar td:first-child{min-width:78px}
+#doc table.lebar th:last-child,#lkpd table.lebar th:last-child,#asesmen table.lebar th:last-child,#lampiran table.lebar th:last-child,#doc table.lebar td:last-child,#lkpd table.lebar td:last-child,#asesmen table.lebar td:last-child,#lampiran table.lebar td:last-child{min-width:70px}
+#doc th,#doc td,#lkpd th,#asesmen th,#lampiran th,#lkpd td,#asesmen td,#lampiran td{border:1px solid #cbd5e1;padding:7px 10px;vertical-align:top;text-align:left}
 #lkpd td,#lkpd li,#lkpd p{text-align:justify}   /* LKPD rata kiri-kanan (kop & identitas tetap) */
-#doc th,#lkpd th,#asesmen th{background:#1e3a8a;color:#fff;border-color:#1e3a8a;font-weight:600}
-#doc tr:nth-child(even) td,#lkpd tr:nth-child(even) td,#asesmen tr:nth-child(even) td{background:#f8fafc}
-#doc td:first-child,#lkpd td:first-child,#asesmen td:first-child{font-weight:600}
-#lkpd td,#asesmen td{height:32px}
-#doc table.gambar,#lkpd table.gambar,#asesmen table.gambar{table-layout:fixed}
-#doc table.gambar td,#lkpd table.gambar td,#asesmen table.gambar td{background:#fff!important}
-#doc li.cb,#lkpd li.cb,#asesmen li.cb{list-style:none;margin-left:-4px}
-#doc li.cb::before,#lkpd li.cb::before,#asesmen li.cb::before{content:'\2610';color:#1e3a8a;margin-right:8px;font-size:1.05em}
-#doc li.cb.on::before,#lkpd li.cb.on::before,#asesmen li.cb.on::before{content:'\2611'}
-#doc table.draw td,#lkpd table.draw td,#asesmen table.draw td{background:#fff!important}
-#doc table.draw,#lkpd table.draw,#asesmen table.draw{table-layout:fixed}
+#doc th,#lkpd th,#asesmen th,#lampiran th{background:#1e3a8a;color:#fff;border-color:#1e3a8a;font-weight:600}
+#doc tr:nth-child(even) td,#lkpd tr:nth-child(even) td,#asesmen tr:nth-child(even) td,#lampiran tr:nth-child(even) td{background:#f8fafc}
+#doc td:first-child,#lkpd td:first-child,#asesmen td:first-child,#lampiran td:first-child{font-weight:600}
+#lkpd td,#asesmen td,#lampiran td{height:32px}
+#doc table.gambar,#lkpd table.gambar,#asesmen table.gambar,#lampiran table.gambar{table-layout:fixed}
+#doc table.gambar td,#lkpd table.gambar td,#asesmen table.gambar td,#lampiran table.gambar td{background:#fff!important}
+#doc li.cb,#lkpd li.cb,#asesmen li.cb,#lampiran li.cb{list-style:none;margin-left:-4px}
+#doc li.cb::before,#lkpd li.cb::before,#asesmen li.cb::before,#lampiran li.cb::before{content:'\2610';color:#1e3a8a;margin-right:8px;font-size:1.05em}
+#doc li.cb.on::before,#lkpd li.cb.on::before,#asesmen li.cb.on::before,#lampiran li.cb.on::before{content:'\2611'}
+#doc table.draw td,#lkpd table.draw td,#asesmen table.draw td,#lampiran table.draw td{background:#fff!important}
+#doc table.draw,#lkpd table.draw,#asesmen table.draw,#lampiran table.draw{table-layout:fixed}
 
 /* ===== Aksara Jawa, tulisan Arab, rumus ===== */
-#doc,#lkpd,#asesmen{font-family:'Plus Jakarta Sans','Amiri','Noto Naskh Arabic','Noto Sans Javanese','Javanese Text','Traditional Arabic',Arial,sans-serif}
+#doc,#lkpd,#asesmen,#lampiran{font-family:'Plus Jakarta Sans','Amiri','Noto Naskh Arabic','Noto Sans Javanese','Javanese Text','Traditional Arabic',Arial,sans-serif}
 .ar{font-family:'Amiri','Noto Naskh Arabic','Traditional Arabic','Scheherazade New',Arial,serif;font-size:1.3em;line-height:1.35;direction:rtl;unicode-bidi:isolate;font-weight:400}
 .jv{font-family:'Noto Sans Javanese','Javanese Text',serif;font-size:1.15em;line-height:1.55;font-weight:400}
 .mt{white-space:nowrap}
@@ -428,20 +428,20 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 }
 
 /* Kop Dokumen */
-#doc table.kop,#lkpd table.kop,#asesmen table.kop{display:table;width:100%;margin:2px 0 0;border:0}
-#doc table.kop td,#lkpd table.kop td,#asesmen table.kop td{border:0;background:none;padding:0 6px;height:auto;vertical-align:middle;text-align:center;font-weight:400}
-#doc table.kop td.kl,#lkpd table.kop td.kl,#asesmen table.kop td.kl,#doc table.kop td.kr,#lkpd table.kop td.kr,#asesmen table.kop td.kr{width:110px}
-#doc table.kop img,#lkpd table.kop img,#asesmen table.kop img{display:block;margin:0 auto;max-width:100%;height:auto}
+#doc table.kop,#lkpd table.kop,#asesmen table.kop,#lampiran table.kop{display:table;width:100%;margin:2px 0 0;border:0}
+#doc table.kop td,#lkpd table.kop td,#asesmen table.kop td,#lampiran table.kop td{border:0;background:none;padding:0 6px;height:auto;vertical-align:middle;text-align:center;font-weight:400}
+#doc table.kop td.kl,#lkpd table.kop td.kl,#asesmen table.kop td.kl,#lampiran table.kop td.kl,#doc table.kop td.kr,#lkpd table.kop td.kr,#asesmen table.kop td.kr,#lampiran table.kop td.kr{width:110px}
+#doc table.kop img,#lkpd table.kop img,#asesmen table.kop img,#lampiran table.kop img{display:block;margin:0 auto;max-width:100%;height:auto}
 .kop .sch{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1e3a8a;text-align:center}
-#doc .kop h1,#lkpd .kop h1,#asesmen .kop h1{font-size:18px;line-height:1.3;font-weight:800;letter-spacing:.02em;color:#0f172a;text-align:center;background:none;padding:0;margin:4px 0 2px;border:0}
+#doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1{font-size:18px;line-height:1.3;font-weight:800;letter-spacing:.02em;color:#0f172a;text-align:center;background:none;padding:0;margin:4px 0 2px;border:0}
 .kop .sub{font-size:11.5px;color:#475569;text-align:center}
 hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;border-bottom:1px solid #f59e0b;background:none}
 
 /* Identitas Dokumen */
-#doc table.idt,#lkpd table.idt,#asesmen table.idt{display:table;width:85%;margin:8px auto 20px}
-#doc table.idt th,#doc table.idt td,#lkpd table.idt th,#asesmen table.idt th,#lkpd table.idt td,#asesmen table.idt td{text-align:left;vertical-align:middle;padding:6px 12px}
-#doc table.idt td:first-child,#lkpd table.idt td:first-child,#asesmen table.idt td:first-child{width:36%;background:#f1f5f9;color:#0f172a;font-weight:600}
-#doc table.idt td:not(:first-child),#lkpd table.idt td:not(:first-child),#asesmen table.idt td:not(:first-child){background:#fff}
+#doc table.idt,#lkpd table.idt,#asesmen table.idt,#lampiran table.idt{display:table;width:85%;margin:8px auto 20px}
+#doc table.idt th,#doc table.idt td,#lkpd table.idt th,#asesmen table.idt th,#lampiran table.idt th,#lkpd table.idt td,#asesmen table.idt td,#lampiran table.idt td{text-align:left;vertical-align:middle;padding:6px 12px}
+#doc table.idt td:first-child,#lkpd table.idt td:first-child,#asesmen table.idt td:first-child,#lampiran table.idt td:first-child{width:36%;background:#f1f5f9;color:#0f172a;font-weight:600}
+#doc table.idt td:not(:first-child),#lkpd table.idt td:not(:first-child),#asesmen table.idt td:not(:first-child),#lampiran table.idt td:not(:first-child){background:#fff}
 
 @keyframes sp{to{transform:rotate(360deg)}}
 @keyframes bar{from{margin-left:-35%}to{margin-left:100%}}
@@ -452,22 +452,22 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
   header,form,.toolbar,.status,.sidebar,#sb_show{display:none!important}
   main,main.view-saved,.view-saved{display:block;padding:0!important;margin:0!important}
   .panel{border:0;padding:0;box-shadow:none}
-  #doc,#lkpd,#asesmen{border:0;padding:0;box-shadow:none;margin-top:0}
+  #doc,#lkpd,#asesmen,#lampiran{border:0;padding:0;box-shadow:none;margin-top:0}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   /* rumus panjang (.mt = nowrap) melebihi lebar kertas -> Chrome mengecilkan SELURUH halaman (font jadi ~8pt). Izinkan turun baris saat cetak. */
   .mt{white-space:normal!important;overflow-wrap:anywhere}
-  #doc,#lkpd,#asesmen{overflow-wrap:break-word}
-  #doc img,#lkpd img,#asesmen img{max-width:100%}
+  #doc,#lkpd,#asesmen,#lampiran{overflow-wrap:break-word}
+  #doc img,#lkpd img,#asesmen img,#lampiran img{max-width:100%}
   /* cegah Chrome menyusutkan halaman: apa pun yang melebar tidak boleh memperbesar lebar cetak */
-  #doc,#lkpd,#asesmen{overflow-x:clip}
-  #doc table,#lkpd table,#asesmen table{max-width:100%}
+  #doc,#lkpd,#asesmen,#lampiran{overflow-x:clip}
+  #doc table,#lkpd table,#asesmen table,#lampiran table{max-width:100%}
   /* ukuran font cetak dalam pt (sama dengan ekspor Word) agar terbaca jelas di PDF */
-  #doc,#lkpd,#asesmen{font-size:11pt!important;line-height:1.5}
-  #doc table,#lkpd table,#asesmen table{font-size:10.5pt!important}
-  #doc table.lebar,#lkpd table.lebar,#asesmen table.lebar{font-size:10pt!important}
-  #doc h2,#lkpd h2,#asesmen h2{font-size:12.5pt!important}
-  #doc h3,#lkpd h3,#asesmen h3{font-size:11.5pt!important}
-  #doc .kop h1,#lkpd .kop h1,#asesmen .kop h1{font-size:16pt!important}
+  #doc,#lkpd,#asesmen,#lampiran{font-size:11pt!important;line-height:1.5}
+  #doc table,#lkpd table,#asesmen table,#lampiran table{font-size:10.5pt!important}
+  #doc table.lebar,#lkpd table.lebar,#asesmen table.lebar,#lampiran table.lebar{font-size:10pt!important}
+  #doc h2,#lkpd h2,#asesmen h2,#lampiran h2{font-size:12.5pt!important}
+  #doc h3,#lkpd h3,#asesmen h3,#lampiran h3{font-size:11.5pt!important}
+  #doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1{font-size:16pt!important}
   .kop .sch{font-size:10pt!important}
   .kop .sub{font-size:9.5pt!important}
   tr{break-inside:avoid}
@@ -478,7 +478,9 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
   body[data-p="both"] #lkpd{break-before:page;margin-top:0}
   body[data-p="lkpd"] #asesmen,body[data-p="doc"] #asesmen,body[data-p="both"] #asesmen{display:none!important}
   body[data-p="ases"] #doc,body[data-p="ases"] #lkpd{display:none!important}
-  body[data-p="all"] #lkpd,body[data-p="all"] #asesmen{break-before:page;margin-top:0}
+  body[data-p="all"] #lkpd,body[data-p="all"] #asesmen,body[data-p="all"] #lampiran{break-before:page;margin-top:0}
+  body[data-p="lkpd"] #lampiran,body[data-p="doc"] #lampiran,body[data-p="both"] #lampiran,body[data-p="ases"] #lampiran{display:none!important}
+  body[data-p="lamp"] #doc,body[data-p="lamp"] #lkpd,body[data-p="lamp"] #asesmen{display:none!important}
 }
 
 button.sm{padding:4px 10px;font-size:12px;margin-top:6px}
@@ -529,14 +531,14 @@ main[hidden],.view-saved[hidden]{display:none!important}
 .pchecks input{width:auto}
 #g-resusun{display:none}
 #outpanel.mode-saved #g-resusun{display:block}
-#g-both,#print,#lkpdprint,#asesprint{display:none!important}
-#outpanel.mode-saved #g-rpm,#outpanel.mode-saved #g-lkpd,#outpanel.mode-saved #g-ases,#outpanel.mode-saved #g-both{display:none}
+#g-both,#print,#lkpdprint,#asesprint,#lampprint{display:none!important}
+#outpanel.mode-saved #g-rpm,#outpanel.mode-saved #g-lkpd,#outpanel.mode-saved #g-ases,#outpanel.mode-saved #g-lamp,#outpanel.mode-saved #g-both{display:none}
 #outpanel.mode-saved #editgroup{order:1}#outpanel.mode-saved #g-db{order:2}#outpanel.mode-saved #g-savedprint{order:3}#outpanel.mode-saved #g-resusun{order:4}#outpanel.mode-saved #g-close{order:5}
 @media print{
-  body[data-p="sel"] #doc,body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen{display:none!important}
-  body[data-p="sel"][data-sel~="doc"] #doc,body[data-p="sel"][data-sel~="lkpd"] #lkpd,body[data-p="sel"][data-sel~="ases"] #asesmen{display:block!important}
-  body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen{break-before:page;margin-top:0}
-  body[data-p="sel"][data-first="lkpd"] #lkpd,body[data-p="sel"][data-first="ases"] #asesmen{break-before:auto}
+  body[data-p="sel"] #doc,body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen,body[data-p="sel"] #lampiran{display:none!important}
+  body[data-p="sel"][data-sel~="doc"] #doc,body[data-p="sel"][data-sel~="lkpd"] #lkpd,body[data-p="sel"][data-sel~="ases"] #asesmen,body[data-p="sel"][data-sel~="lamp"] #lampiran{display:block!important}
+  body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen,body[data-p="sel"] #lampiran{break-before:page;margin-top:0}
+  body[data-p="sel"][data-first="lkpd"] #lkpd,body[data-p="sel"][data-first="ases"] #asesmen,body[data-p="sel"][data-first="lamp"] #lampiran{break-before:auto}
   .sv-top{display:none!important}
 }
 
@@ -863,6 +865,14 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
         <button type="button" class="ghost" id="asesprint" disabled>Cetak / PDF</button>
       </div>
     </div>
+    <div class="tgroup" id="g-lamp">
+      <span class="tlabel">Glosarium &amp; Pustaka</span>
+      <div class="tbtns">
+        <button type="button" id="lampbtn" disabled>Buat Lampiran</button>
+        <button type="button" class="ghost" id="lampword" disabled>Ke Word</button>
+        <button type="button" class="ghost" id="lampprint" disabled>Cetak / PDF</button>
+      </div>
+    </div>
     <div class="tgroup" id="g-both">
       <span class="tlabel">Cetak gabungan</span>
       <div class="tbtns">
@@ -876,6 +886,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
         <label><input type="checkbox" id="pc_doc"> RPM</label>
         <label><input type="checkbox" id="pc_lkpd"> LKPD</label>
         <label><input type="checkbox" id="pc_ases"> Asesmen</label>
+        <label><input type="checkbox" id="pc_lamp"> Lampiran</label>
       </div>
       <div class="tbtns" style="margin-top:8px">
         <button type="button" id="pc_go" disabled>Cetak / PDF</button>
@@ -930,6 +941,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   <article id="doc" contenteditable="false" hidden></article>
   <article id="lkpd" class="sheetx" contenteditable="false" hidden></article>
   <article id="asesmen" class="sheetx" contenteditable="false" hidden></article>
+  <article id="lampiran" class="sheetx" contenteditable="false" hidden></article>
 </section>
 </main>
 
@@ -1053,7 +1065,7 @@ try{
 function setStatus(t, err){ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); }
 
 
-const NOTASI=`\n\nPENULISAN RUMUS DAN HURUF KHUSUS (WAJIB): (1) JANGAN memakai LaTeX atau tanda dolar. Tulis rumus dengan simbol Unicode dalam teks biasa, misalnya 3 × 3 × 3, 12 ÷ 4, √16, x², a₁, ½, ≤, ≥, ≠, π. Pangkat boleh ditulis 3^3 atau 3³. (2) Tulisan Arab ditulis dengan huruf Arab Unicode asli (bukan gambar, bukan hanya transliterasi), lengkap dengan harakat bila dibutuhkan siswa. (3) Aksara Jawa ditulis dengan karakter Unicode asli (blok Javanese, U+A980–U+A9DF). Sertakan transliterasi Latin atau arti dalam kurung bila membantu siswa.`;
+const NOTASI=`\n\nPENULISAN RUMUS DAN HURUF KHUSUS (WAJIB): (1) JANGAN memakai LaTeX atau tanda dolar. Tulis rumus dengan simbol Unicode dalam teks biasa, misalnya 3 × 3 × 3, 12 ÷ 4, √16, x², a₁, ½, ≤, ≥, ≠, π. Pangkat boleh ditulis 3^3 atau 3³. (2) Tulisan Arab ditulis dengan huruf Arab Unicode asli (bukan gambar, bukan hanya transliterasi), lengkap dengan harakat bila dibutuhkan siswa. (3) Aksara Jawa ditulis dengan karakter Unicode asli (blok Javanese, U+A980–U+A9DF). Sertakan transliterasi Latin atau arti dalam kurung bila membantu siswa. (4) TABEL: tulis setiap tabel dalam Markdown dengan tanda | di AWAL dan di AKHIR setiap baris, baris pemisah judul berbentuk |---|---|---|, satu baris tabel per satu baris teks, tanpa baris kosong di dalam tabel. Jangan menulis garis pemisah --- di luar tabel.`;
 function buildPrompt(){
   const dims=[...document.querySelectorAll('#dims input:checked')].map(i=>i.value);
   return `Anda adalah pakar kurikulum dan pengembang pembelajaran di Indonesia. Susun dokumen RENCANA PEMBELAJARAN MENDALAM (RPM) yang lengkap, siap pakai, dan realistis untuk dilaksanakan guru, mengacu pada Kurikulum Merdeka terbaru dan pendekatan Pembelajaran Mendalam (deep learning) dari Kemendikdasmen: berkesadaran (mindful), bermakna (meaningful), dan menggembirakan (joyful), dengan 8 Dimensi Profil Lulusan (Keimanan dan Ketakwaan terhadap Tuhan YME, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi).
@@ -1104,16 +1116,30 @@ ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja op
 // konverter Markdown sederhana
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function inl(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*(?!\s)(.+?)\*/g,'$1<em>$2</em>');}
+const SEPRX=/^[\s|:-]+$/;
 function md(src){
   const L=src.replace(/\r/g,'').split('\n'); let out='',i=0,list=null;
+  /* awal tabel: baris berpipa di awal-akhir, ATAU baris berisi | yang diikuti baris pemisah (---|---), walau pipa tepi dihilangkan AI */
+  const isSep=x=>{ x=(x||'').trim(); return x.includes('|')&&x.includes('-')&&SEPRX.test(x); };
+  const isTblStart=k=>{ const a=(L[k]||'').trim(); if(!a) return false; if(/^\|.*\|$/.test(a)) return true; return a.includes('|')&&isSep(L[k+1]); };
   const close=()=>{ if(list){ out+=`</${list}>`; list=null; } };
   while(i<L.length){
     const line=L[i], t=line.trim();
     if(!t){ close(); i++; continue; }
-    if(/^\|.*\|$/.test(t)){
+    if(isTblStart(i)){
       close(); const rows=[];
-      while(i<L.length && /^\|.*\|$/.test(L[i].trim())){ rows.push(L[i].trim()); i++; }
-      const cells=r=>r.slice(1,-1).split('|').map(c=>c.trim());
+      const cells=r=>{ let x=r.trim(); if(x.startsWith('|')) x=x.slice(1); if(x.endsWith('|')) x=x.slice(0,-1); return x.split('|').map(c=>c.trim()); };
+      while(i<L.length){
+        const r=L[i].trim();
+        if(r&&r.includes('|')&&!/^#/.test(r)){ rows.push(r); i++; continue; }
+        if(!r&&rows.length){            // baris kosong di tengah tabel: lanjut bila baris berikutnya masih baris tabel (bukan tabel baru)
+          let j=i; while(j<L.length&&!L[j].trim()) j++;
+          const nx=j<L.length?L[j].trim():'';
+          if(nx&&nx.includes('|')&&!/^(#|[-*•]\s|\d+[.)]\s)/.test(nx)&&!isSep(L[j+1])&&(nx.startsWith('|')||cells(nx).length===cells(rows[0]).length)){ i=j; continue; }
+        }
+        break;
+      }
+
       const sep=rows.length>1 && /^[\s|:-]+$/.test(rows[1]);
       // sel kosong = hanya spasi, &nbsp;, atau <br>
       const blank=c=>!c.replace(/&nbsp;|&#160;|<br\s*\/?>|\s/gi,'');
@@ -1144,6 +1170,7 @@ function md(src){
       });
       out+='</table>'; continue;
     }
+    if(/^(-{3,}|_{3,}|\*{3,})$/.test(t)){ close(); i++; continue; }   // garis pemisah liar: dibuang (kop sudah punya garis)
     let m;
     if((m=t.match(/^(#{1,3})\s+(.*)/))){ close(); out+=`<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`; i++; continue; }
     if((m=t.match(/^[-*•]\s+(.*)/))){ if(list!=='ul'){close(); out+='<ul>'; list='ul';}
@@ -1161,7 +1188,7 @@ let editing=false, dirty=false;
 function setDirty(v){ dirty=v; $('savedb').classList.toggle('dirty',v); $('savedb').textContent=v?'Simpan perubahan':'Simpan ke database'; }
 function setEdit(on){
   editing=!!on;
-  ['doc','lkpd','asesmen'].forEach(id=>{ $(id).contentEditable=editing?'true':'false'; });
+  ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ $(id).contentEditable=editing?'true':'false'; });
   document.body.classList.toggle('editing',editing);
   $('editbtn').textContent=editing?'Selesai edit':'Edit';
   $('editbtn').classList.toggle('on',editing);
@@ -1170,11 +1197,11 @@ function setEdit(on){
 }
 $('editbtn').addEventListener('click',()=>{
   const wasEditing=editing; setEdit(!editing);
-  if(wasEditing) ['doc','lkpd','asesmen'].forEach(id=>{ if(!$(id).hidden) fixText($(id)); });
+  if(wasEditing) ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ if(!$(id).hidden) fixText($(id)); });
   if(editing) setStatus('Mode edit aktif. Klik teks di dokumen untuk menyunting.');
   else setStatus(dirty?'Mode edit ditutup. Ada perubahan yang belum disimpan: tekan Simpan perubahan.':'Mode edit ditutup.');
 });
-['doc','lkpd','asesmen'].forEach(id=>$(id).addEventListener('input',()=>{ if(editing) setDirty(true); }));
+['doc','lkpd','asesmen','lampiran'].forEach(id=>$(id).addEventListener('input',()=>{ if(editing) setDirty(true); }));
 
 let lastText='';
 async function generate(){
@@ -1188,9 +1215,9 @@ async function generate(){
   try{
     lastText=await ask(buildPrompt());
     const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
-    ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
+    ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
     $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true;
-    resetAses();
+    resetAses(); resetLamp();
     setEdit(false); setDirty(false);
     curId=null;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
@@ -1212,9 +1239,9 @@ $('copy').addEventListener('click',async()=>{
 let _titleAsli=null;
 function namaCetak(w){
   const v=id=>($(id)&&$(id).value||'').trim();
-  const awal={doc:'RPM',lkpd:'LKPD',ases:'Asesmen',both:'RPM+LKPD',all:'RPM-LKPD-Asesmen',sel:'RPM'}[w]||'RPM';
+  const awal={doc:'RPM',lkpd:'LKPD',ases:'Asesmen',both:'RPM+LKPD',all:'RPM-LKPD-Asesmen-Lampiran',lamp:'Lampiran',sel:'RPM'}[w]||'RPM';
   const sel=(document.body.dataset.sel||'').split(' ').filter(Boolean);
-  const pref=w==='sel'?{doc:'RPM',lkpd:'LKPD',ases:'Asesmen'}[sel[0]]&&sel.map(k=>({doc:'RPM',lkpd:'LKPD',ases:'Asesmen'}[k])).join('-'):awal;
+  const pref=w==='sel'?{doc:'RPM',lkpd:'LKPD',ases:'Asesmen',lamp:'Lampiran'}[sel[0]]&&sel.map(k=>({doc:'RPM',lkpd:'LKPD',ases:'Asesmen',lamp:'Lampiran'}[k])).join('-'):awal;
   const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
   return [pref||awal,v('mapel'),v('topik'),v('guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
 }
@@ -1229,6 +1256,7 @@ window.addEventListener('afterprint',()=>{ delete document.body.dataset.p; });
 $('print').addEventListener('click',()=>printOnly('doc'));
 $('lkpdprint').addEventListener('click',()=>printOnly('lkpd'));
 $('asesprint').addEventListener('click',()=>printOnly('ases'));
+$('lampprint').addEventListener('click',()=>printOnly('lamp'));
 $('printall').addEventListener('click',()=>printOnly('all'));
 $('printboth').addEventListener('click',()=>{ if($('lkpd').hidden||!$('lkpd').innerText.trim()){ setStatus('LKPD belum dibuat. Tekan Buat LKPD dulu.',true); return; } printOnly('both'); });
 $('word').addEventListener('click',()=>{
@@ -1507,7 +1535,29 @@ function fixPengalaman(root){
     t.querySelectorAll('.prinsip').forEach(x=>x.style.removeProperty('font-size'));   // dokumen lama: samakan ukuran
   });
 }
+/* perbaiki tabel yang terlanjur tersimpan sebagai paragraf berpipa ("a | b" + "---|---") */
+function fixPipeTables(root){
+  const txt=p=>{ const c=p.cloneNode(true);
+    c.querySelectorAll('strong').forEach(x=>x.replaceWith('**'+x.textContent+'**'));
+    c.querySelectorAll('em').forEach(x=>x.replaceWith('*'+x.textContent+'*'));
+    c.querySelectorAll('br').forEach(x=>x.replaceWith(' <br> '));
+    return c.textContent.trim(); };
+  const sepOk=x=>x.includes('|')&&x.includes('-')&&SEPRX.test(x);
+  [...root.querySelectorAll(':scope > p')].forEach(p=>{
+    if(!p.isConnected) return;
+    const t=txt(p); if(!sepOk(t)) return;
+    const head=p.previousElementSibling;
+    if(!head||head.tagName!=='P'||!txt(head).includes('|')) return;
+    const lines=[txt(head),t], rm=[head,p];
+    let n=p.nextElementSibling;
+    while(n&&n.tagName==='P'){ const x=txt(n); if(!x.includes('|')) break; lines.push(x); rm.push(n); n=n.nextElementSibling; }
+    const tpl=document.createElement('template'); tpl.innerHTML=md(lines.join('\n'));
+    head.before(tpl.content); rm.forEach(e=>e.remove());
+  });
+  root.querySelectorAll(':scope > p').forEach(p=>{ if(/^[-–—_*]{3,}$/.test(p.textContent.trim())) p.remove(); });
+}
 function styleDoc(root,kind){
+  fixPipeTables(root);
   const school=esc($('sekolah').value.trim()), ta=esc($('tahun').value.trim()), sm=esc($('semester').value.trim());
   const sub=kind==='lkpd' ? (ta?'T.A. '+ta:'') : [ta?'Tahun Ajaran '+ta:'', sm?'Semester '+sm:''].filter(Boolean).join(' · ');
   root.querySelectorAll('h1').forEach(h=>{
@@ -1714,7 +1764,8 @@ ${$('doc').innerText}`;
 }
 function resetAses(){
   const el=$('asesmen'); el.innerHTML=''; el.hidden=true;
-  ['asesword','asesprint','printall'].forEach(id=>$(id).disabled=true);
+  ['asesword','asesprint'].forEach(id=>$(id).disabled=true);
+  $('printall').disabled=$('lampiran').hidden;
 }
 function showAses(html){
   const el=$('asesmen'); el.innerHTML=html; styleDoc(el,'ases'); el.hidden=false;
@@ -1760,6 +1811,74 @@ $('asesword').addEventListener('click',()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
   const nama=($('mapel').value+'-'+$('topik').value).replace(/[^\w\-]+/g,'_').slice(0,60)||'Asesmen';
   a.download='Asesmen_'+nama+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+
+/* ---- Lampiran: Glosarium dan Daftar Pustaka ---- */
+function lampPrompt(){
+  const cut=(el,n)=>(!el.hidden&&el.innerText.trim())?el.innerText.trim().slice(0,n):'';
+  const lk=cut($('lkpd'),6000), as=cut($('asesmen'),6000);
+  const asal=['RPM',lk?'LKPD':'',as?'asesmen':''].filter(Boolean).join(', ');
+  return `Berdasarkan dokumen pembelajaran berikut, susun LAMPIRAN yang berisi GLOSARIUM dan DAFTAR PUSTAKA untuk mata pelajaran "${$('mapel').value}" fase ${$('fase').value}, topik "${$('topik').value}".
+
+BAHASA: Judul, petunjuk, dan pengertian ditulis dalam Bahasa Indonesia baku. Jika mata pelajaran ini adalah mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), kolom Istilah ditulis dalam bahasa tersebut dan kolom Pengertian tetap Bahasa Indonesia.
+
+FORMAT MARKDOWN (ikuti persis urutan ini, tanpa kalimat pembuka dan penutup):
+# LAMPIRAN: GLOSARIUM DAN DAFTAR PUSTAKA
+## A. Glosarium
+Satu tabel dengan baris judul "Istilah | Pengertian". Isi 15–25 istilah penting yang BENAR-BENAR muncul di ${asal} di bawah, diurutkan abjad. Pengertian 1–2 kalimat, tepat untuk topik ini, dan mudah dipahami siswa fase ${$('fase').value}. Jangan mengulang istilah yang sama. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
+## B. Daftar Pustaka
+Gaya APA edisi 7, diurutkan abjad berdasarkan nama penulis atau lembaga. Setiap sumber ditulis sebagai SATU paragraf sendiri, tanpa nomor, tanpa bullet, tanpa tabel. Judul buku ditulis miring dengan tanda bintang (*judul*).
+
+ATURAN DAFTAR PUSTAKA (WAJIB, karena akan dicetak dan dipakai guru): hanya cantumkan sumber yang Anda YAKIN benar-benar ada, yaitu dokumen resmi pemerintah (misalnya Capaian Pembelajaran, Panduan Pembelajaran dan Asesmen, atau Kurikulum Merdeka dari Kemendikbudristek/BSKAP), serta buku teks resmi atau karya terkenal yang Anda tahu pasti judul dan penulisnya. JANGAN mengarang judul, nama penulis, tahun, penerbit, URL, DOI, ISBN, atau halaman. Jika ragu pada tahun atau penerbit, hilangkan bagian itu, jangan menebak. Lebih baik 5–8 sumber yang pasti ada daripada banyak sumber karangan. Jangan menulis URL.${NOTASI}
+
+RPM:
+${$('doc').innerText}${lk?'\n\nLKPD:\n'+lk:''}${as?'\n\nASESMEN:\n'+as:''}`;
+}
+function fixLamp(root){
+  root.querySelectorAll('table:not(.kop)').forEach(t=>{
+    t.style.tableLayout='fixed';
+    if(t.rows[0]) [...t.rows[0].cells].forEach((c,i)=>{ const w=i===0?'28%':'72%'; c.style.width=w; c.setAttribute('width',w); });
+  });
+  let pus=false;
+  [...root.children].forEach(el=>{
+    if(/^H[1-3]$/.test(el.tagName)){ pus=/daftar\s+pustaka/i.test(el.textContent); return; }
+    if(!pus) return;
+    const lst=el.tagName==='UL'||el.tagName==='OL';
+    const items=lst?[...el.children]:(el.tagName==='P'?[el]:[]);
+    items.forEach(x=>{ x.style.margin='4pt 0 4pt 36pt'; x.style.textIndent='-36pt'; x.style.textAlign='left'; if(x.tagName==='LI') x.style.listStyle='none'; });
+    if(lst){ el.style.listStyle='none'; el.style.margin='0'; el.style.padding='0'; }
+  });
+}
+function resetLamp(){
+  const el=$('lampiran'); el.innerHTML=''; el.hidden=true;
+  ['lampword','lampprint'].forEach(id=>$(id).disabled=true);
+  $('printall').disabled=$('asesmen').hidden;
+}
+function showLamp(html){
+  const el=$('lampiran'); el.innerHTML=html; styleDoc(el,'lamp'); fixLamp(el); el.hidden=false;
+  ['lampword','lampprint','printall'].forEach(id=>$(id).disabled=false);
+  return el;
+}
+$('lampbtn').addEventListener('click',async()=>{
+  if($('doc').hidden||!$('doc').innerText.trim()){ setStatus('RPM belum dibuat.',true); return; }
+  if(!(await pickKey())) return;
+  const b=$('lampbtn'); b.disabled=true; b.textContent='Menyusun lampiran…'; setStatus('');
+  showLoader(['Menyusun glosarium…','Memilih istilah penting dari RPM…','Menyusun daftar pustaka…','Hampir selesai, mohon tunggu…']);
+  try{
+    const t=await ask(lampPrompt());
+    const el=showLamp(md(t));
+    setStatus('Lampiran selesai. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru. Tekan Edit untuk menyunting.');
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    if(readCfgForm().auto) saveDb(true,'Lampiran selesai.');
+  }catch(e){ setStatus('Gagal: '+e.message,true); }
+  finally{ hideLoader(); b.disabled=false; b.textContent='Buat Lampiran'; }
+});
+$('lampword').addEventListener('click',()=>{
+  const css=DOC_CSS+wordPage();
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${lkpdForWord($('lampiran'))}</div></body></html>`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
+  const nama=($('mapel').value+'-'+$('topik').value).replace(/[^\w\-]+/g,'_').slice(0,60)||'Lampiran';
+  a.download='Lampiran_'+nama+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
 
 
@@ -1830,15 +1949,17 @@ function dbPayload(){
     topik:$('topik').value.trim(), jumlah_pertemuan:parseInt($('pertemuan').value)||null,
     model:$('model').value.trim(), rpm_markdown:lastText, rpm_html:c.innerHTML,
     lkpd_html:$('lkpd').hidden?null:stripLogos($('lkpd')).innerHTML,
-    asesmen_html:$('asesmen').hidden?null:stripLogos($('asesmen')).innerHTML
+    asesmen_html:$('asesmen').hidden?null:stripLogos($('asesmen')).innerHTML,
+    lampiran_html:$('lampiran').hidden?null:stripLogos($('lampiran')).innerHTML
   };
 }
-async function saveDb(auto,prefix,skipAses){
+async function saveDb(auto,prefix,skipAses,skipLamp){
   const pre=prefix?prefix+' ':'', tbl=encodeURIComponent(readCfgForm().tOut);
   const btn=$('savedb'); btn.disabled=true;
   try{
     const body=dbPayload(); let row=null;
     if(skipAses||$('asesmen').hidden) delete body.asesmen_html;
+    if(skipLamp||$('lampiran').hidden) delete body.lampiran_html;
     if(curId){
       const r=await sb(SB_DST,`/${tbl}?id=eq.${curId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})});
       row=r&&r[0];
@@ -1850,9 +1971,11 @@ async function saveDb(auto,prefix,skipAses){
     if(row&&row.id) curId=row.id;
     setDirty(false);
     if(skipAses) setStatus(pre+'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.',true);
+    else if(skipLamp) setStatus(pre+'RPM, LKPD, dan asesmen tersimpan, tetapi lampiran belum tersimpan: kolom lampiran_html belum ada di database. Jalankan tambah-kolom-lampiran.sql di Supabase.',true);
     else setStatus(pre+'Tersimpan ke database.');
   }catch(e){
-    if(!skipAses&&!$('asesmen').hidden&&/asesmen_html/i.test(e.message)){ btn.disabled=false; return saveDb(auto,prefix,true); }
+    if(!skipAses&&!$('asesmen').hidden&&/asesmen_html/i.test(e.message)){ btn.disabled=false; return saveDb(auto,prefix,true,skipLamp); }
+    if(!skipLamp&&!$('lampiran').hidden&&/lampiran_html/i.test(e.message)){ btn.disabled=false; return saveDb(auto,prefix,skipAses,true); }
     let h=''; if(/relation|does not exist|schema cache|404|row-level|policy|permission/i.test(e.message)) h=' Hubungi pengembang untuk menyiapkan tabelnya.';
     setStatus(pre+'Gagal menyimpan ke database: '+e.message+h,true);
   }finally{ btn.disabled=false; }
@@ -1904,12 +2027,12 @@ function showView(v){
   window.scrollTo({top:0});
 }
 function syncPrintChecks(){
-  const has={doc:!$('doc').hidden&&!!$('doc').innerText.trim(), lkpd:!$('lkpd').hidden&&!!$('lkpd').innerText.trim(), ases:!$('asesmen').hidden&&!!$('asesmen').innerText.trim()};
-  [['pc_doc','doc'],['pc_lkpd','lkpd'],['pc_ases','ases']].forEach(([id,k])=>{ const c=$(id); c.disabled=!has[k]; c.checked=has[k]; c.parentNode.style.opacity=has[k]?1:.5; });
+  const has={doc:!$('doc').hidden&&!!$('doc').innerText.trim(), lkpd:!$('lkpd').hidden&&!!$('lkpd').innerText.trim(), ases:!$('asesmen').hidden&&!!$('asesmen').innerText.trim(), lamp:!$('lampiran').hidden&&!!$('lampiran').innerText.trim()};
+  [['pc_doc','doc'],['pc_lkpd','lkpd'],['pc_ases','ases'],['pc_lamp','lamp']].forEach(([id,k])=>{ const c=$(id); c.disabled=!has[k]; c.checked=has[k]; c.parentNode.style.opacity=has[k]?1:.5; });
   updPrintBtn();
 }
 function updPrintBtn(){
-  const n=['pc_doc','pc_lkpd','pc_ases'].filter(id=>$(id).checked).length;
+  const n=['pc_doc','pc_lkpd','pc_ases','pc_lamp'].filter(id=>$(id).checked).length;
   $('pc_go').disabled=!n;
   $('pc_hint').textContent=n?'':'Centang dokumen yang ingin dicetak.';
 }
@@ -1919,11 +2042,11 @@ function openViewer(title){
   $('sv_title').textContent=title||'';
   syncPrintChecks();
 }
-['pc_doc','pc_lkpd','pc_ases'].forEach(id=>$(id).addEventListener('change',updPrintBtn));
-['doc','lkpd','asesmen'].forEach(id=>new MutationObserver(()=>setTimeout(syncPrintChecks,0)).observe($(id),{attributes:true,attributeFilter:['hidden']}));
+['pc_doc','pc_lkpd','pc_ases','pc_lamp'].forEach(id=>$(id).addEventListener('change',updPrintBtn));
+['doc','lkpd','asesmen','lampiran'].forEach(id=>new MutationObserver(()=>setTimeout(syncPrintChecks,0)).observe($(id),{attributes:true,attributeFilter:['hidden']}));
 syncPrintChecks();
 $('pc_go').addEventListener('click',()=>{
-  const sel=[]; if($('pc_doc').checked) sel.push('doc'); if($('pc_lkpd').checked) sel.push('lkpd'); if($('pc_ases').checked) sel.push('ases');
+  const sel=[]; if($('pc_doc').checked) sel.push('doc'); if($('pc_lkpd').checked) sel.push('lkpd'); if($('pc_ases').checked) sel.push('ases'); if($('pc_lamp').checked) sel.push('lamp');
   if(!sel.length) return;
   document.body.dataset.sel=sel.join(' '); document.body.dataset.first=sel[0];
   printOnly('sel');
@@ -1939,9 +2062,9 @@ function closeProject(){
     if(msg&&!confirm(msg)) return;
   }
   setEdit(false); setDirty(false);
-  ['doc','lkpd','asesmen'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
+  ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
   $('empty').hidden=false; lastText=''; curId=null;
-  ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall'].forEach(id=>$(id).disabled=true);
+  ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
   $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
   lastText='';
@@ -2008,7 +2131,8 @@ $('histlist').addEventListener('click',async e=>{
     if(r.lkpd_html){ lk.innerHTML=r.lkpd_html; styleDoc(lk,'lkpd'); lk.hidden=false; $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false; }
     else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true; }
     if(r.asesmen_html){ showAses(r.asesmen_html); } else resetAses();
-    ['copy','word','print','regen','lkpdbtn','asesbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
+    if(r.lampiran_html){ showLamp(r.lampiran_html); } else resetLamp();
+    ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
     curId=r.id; setEdit(false); setDirty(false); openViewer(r.topik);
     setStatus('Data dibuka dari database (mode baca). Tekan Edit untuk menyunting; perubahan disimpan dengan tombol Simpan ke database.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
@@ -2338,12 +2462,12 @@ function applySchoolToDoc(){
       if(el) el.textContent=tg;
     }
   }
-  document.querySelectorAll('#doc table.idt tr, #lkpd table.idt tr, #asesmen table.idt tr').forEach(r=>{
+  document.querySelectorAll('#doc table.idt tr, #lkpd table.idt tr, #asesmen table.idt tr, #lampiran table.idt tr').forEach(r=>{
     if(r.cells.length<2) return; const lb=r.cells[0].textContent;
     if(k&&/kepala\s*sekolah|principal|headmaster/i.test(lb)) r.cells[1].textContent=k;
     else if(sc&&/satuan\s*pendidikan|school/i.test(lb)) r.cells[1].textContent=sc;
   });
-  if(sc) document.querySelectorAll('#doc .kop .sch, #lkpd .kop .sch, #asesmen .kop .sch').forEach(e=>{ e.textContent=sc; });
+  if(sc) document.querySelectorAll('#doc .kop .sch, #lkpd .kop .sch, #asesmen .kop .sch, #lampiran .kop .sch').forEach(e=>{ e.textContent=sc; });
 }
 async function reloadKepsek(){
   const b=$('kepsekreload'); b.disabled=true; setStatus('Memuat data kepala sekolah…');
