@@ -360,6 +360,11 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .spin{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
 .loader b{display:block;font-size:14px;color:var(--ink)}
 .loader small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+/* mode tulis langsung: loader mengecil ke bawah, dokumen terlihat di belakangnya */
+.loader.live{top:auto;bottom:16px;transform:translateX(-50%);padding:12px 16px;gap:12px;width:min(520px,94vw)}
+.loader.live .spin{width:24px;height:24px;border-width:2px}
+.ovl.clear{background:transparent}
+.streaming{outline:2px dashed var(--accent);outline-offset:6px;border-radius:4px}
 .keyov{display:none;position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:16px}
 .keyov.on{display:flex}
 .keybox{width:min(420px,100%);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 20px 25px -5px rgba(0,0,0,.25)}
@@ -1428,6 +1433,7 @@ async function generate(){
   setStatus('');
   showLoader(['Menyusun RPM Anda…','Merumuskan tujuan pembelajaran…','Menyusun tabel pengalaman belajar…','Menyiapkan asesmen dan rubrik…','Hampir selesai, mohon tunggu…']);
   try{
+    liveSet($('doc'),'','rpm');
     lastText=await ask(buildPrompt(),'RPM');
     const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
     ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
@@ -1596,17 +1602,59 @@ function closeNotify(){ $('resov').classList.remove('on'); }
 $('resok').addEventListener('click',closeNotify);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('resov').classList.contains('on')) closeNotify(); });
 
-let loadTimer=null;
+let loadTimer=null, liveInfo='';
 function showLoader(msgs){
   const el=$('loader'); let i=0,sec=0; msgs=msgs.map(m=>m+keyTag());
+  liveInfo=''; el.classList.remove('live'); $('lovl').classList.remove('clear');
   $('ltxt').textContent=msgs[0]; $('ltime').textContent='Berjalan 0 detik';
   el.classList.add('on'); $('lovl').classList.add('on'); clearInterval(loadTimer);
   loadTimer=setInterval(()=>{
-    sec++; $('ltime').textContent='Berjalan '+sec+' detik';
-    if(sec%7===0){ i=(i+1)%msgs.length; $('ltxt').textContent=msgs[i]; }
+    sec++; $('ltime').textContent='Berjalan '+sec+' detik'+(liveInfo?' · '+liveInfo:'');
+    if(sec%7===0 && !(LIVE&&LIVE.on)){ i=(i+1)%msgs.length; $('ltxt').textContent=msgs[i]; }
   },1000);
 }
-function hideLoader(){ clearInterval(loadTimer); $('loader').classList.remove('on'); $('lovl').classList.remove('on'); }
+function hideLoader(){
+  clearInterval(loadTimer); clearTimeout(_liveTimer); _liveTimer=null;
+  if(LIVE&&LIVE.el) LIVE.el.classList.remove('streaming');
+  LIVE=null; liveInfo='';
+  $('loader').classList.remove('on','live'); $('lovl').classList.remove('on','clear');
+}
+
+/* ---- tulis langsung: teks dari AI tampil di dokumen selagi diterima ---- */
+let LIVE=null, LIVE_BASE='', _liveTimer=null, _liveFull='';
+function liveSet(el,pre,kind){ LIVE={el:el,pre:pre||'',kind:kind||'',on:false}; LIVE_BASE=''; _liveFull=''; }
+function liveHeading(t){
+  const m=t.match(/^(?:#{1,4}[ \t]+.+?|\*\*[^*\n]{3,80}\*\*)[ \t]*$/gm);
+  return m?m[m.length-1].replace(/^#+[ \t]*|\*\*/g,'').trim():'';
+}
+function liveUpdate(t){
+  if(!LIVE) return;
+  _liveFull=t;
+  if(!_liveTimer) _liveTimer=setTimeout(liveFlush,200);   // gambar ulang paling sering 5x per detik
+}
+function liveFlush(){
+  _liveTimer=null; if(!LIVE) return;
+  const el=LIVE.el, own=LIVE_BASE+_liveFull, txt=LIVE.pre+own.replace(/^\s*```(?:markdown)?\s*/,'');
+  const near=!LIVE.on || el.getBoundingClientRect().bottom<=innerHeight+160;   // ikuti ke bawah hanya bila pengguna tidak menggulir menjauh
+  el.innerHTML=md(txt);
+  if(!LIVE.on){
+    LIVE.on=true; el.hidden=false; $('empty').hidden=true; el.classList.add('streaming');
+    if(!LIVE.pre) el.scrollIntoView({block:'start'});
+    $('lovl').classList.add('clear'); $('loader').classList.add('live');
+  }else if(near){
+    const b=el.getBoundingClientRect().bottom;
+    if(b>innerHeight-120) window.scrollBy(0,b-innerHeight+160);
+  }
+  const h=liveHeading(own);
+  $('ltxt').textContent='Menulis… '+(h?h.slice(0,70):'');
+  let info=own.length.toLocaleString('id-ID')+' karakter';
+  if(LIVE.kind==='rpm'||LIVE.kind==='lkpd'){
+    const tot=parseInt($('pertemuan').value)||0; let mx=0, r, rx=/pertemuan\s*(?:ke)?[\s\-]*(\d{1,2})/gi;
+    while((r=rx.exec(own))) mx=Math.max(mx,+r[1]);
+    if(mx&&tot) info='Pertemuan '+Math.min(mx,tot)+' dari '+tot+' · '+info;
+  }
+  liveInfo=info;
+}
 
 /* ---- kop surat (logo sekolah + logo SMK Bisa) & tabel identitas di tengah ---- */
 const LOGO={
@@ -1913,6 +1961,7 @@ async function readStream(res){
       buf+=dec.decode(r.value,{stream:true});
       const parts=buf.split(/\r?\n\r?\n/); buf=parts.pop(); parts.forEach(eat);
       setStatus('Menerima hasil… '+text.length.toLocaleString('id-ID')+' karakter');
+      liveUpdate(text);
     }
     buf+=dec.decode(); if(buf.trim()) eat(buf);
   }catch(e){
@@ -1966,6 +2015,7 @@ async function ask(prompt,key){
     const contents=[{role:'user',parts:[{text:base}]}];
     if(acc) contents.push({role:'model',parts:[{text:acc}]},{role:'user',parts:[{text:CONT_PROMPT}]});
     let r;
+    LIVE_BASE=acc;
     try{ r=await askRaw(contents,chunk); }
     catch(e){
       if(e.text) acc+=e.text;
@@ -1984,6 +2034,7 @@ async function ask(prompt,key){
     draftSave(key,base,acc);                       // terpotong karena panjang: lanjut otomatis
     if(round===MAX_CONT){ const e=new Error('Hasil terlalu panjang dan masih terpotong setelah '+(MAX_CONT+1)+' potongan.'); e.partial=acc; throw e; }
   }
+  clearTimeout(_liveTimer); _liveTimer=null;      // hasil akhir dirender oleh pemanggil
   acc=acc.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
   DONE[key]=acc; if(DRAFT&&DRAFT.key===key) draftClear();
   return acc;
@@ -2031,6 +2082,7 @@ $('lkpdbtn').addEventListener('click',async()=>{
   setStatus('');
   showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
   try{
+    liveSet($('lkpd'),'','lkpd');
     const t=await ask(lkpdPrompt(),'LKPD');
     const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
     $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
@@ -2117,6 +2169,7 @@ $('asesbtn').addEventListener('click',async()=>{
     for(const j of ASES_JENIS){
       b.textContent=`Menyusun asesmen ${n+1}/3…`;
       showLoader([`Menyusun asesmen ${j.k} (${n+1} dari 3)…`,'Membuat kisi-kisi…','Menyusun instrumen dan kunci jawaban…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
+      liveSet($('asesmen'),out?out+'\n\n':'','ases');
       const t=await ask(asesPrompt(j),'Asesmen:'+j.k);
       out+=(out?'\n\n':'')+t; n++;
       showAses(md(out));
@@ -2206,6 +2259,7 @@ $('lampbtn').addEventListener('click',async()=>{
   const b=$('lampbtn'); b.disabled=true; b.textContent='Menyusun lampiran…'; setStatus('');
   showLoader(['Menyusun glosarium…','Memilih istilah penting dari RPM…','Menyusun daftar pustaka…','Hampir selesai, mohon tunggu…']);
   try{
+    liveSet($('lampiran'),'','lamp');
     const t=await ask(lampPrompt(),'Lampiran');
     const el=showLamp(md(t));
     setStatus('Lampiran selesai. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru. Tekan Edit untuk menyunting.');
