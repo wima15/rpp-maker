@@ -321,6 +321,17 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .spin{flex:none;width:32px;height:32px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
 .loader b{display:block;font-size:14px;color:var(--ink)}
 .loader small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.keyov{display:none;position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:16px}
+.keyov.on{display:flex}
+.keybox{width:min(420px,100%);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 20px 25px -5px rgba(0,0,0,.25)}
+.keybox h3{margin:0 0 4px;font-size:16px}
+.keybox p{margin:0 0 12px;color:var(--muted);font-size:12.5px}
+#keylist{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto}
+#keylist label{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
+#keylist label:has(input:checked){border-color:var(--accent);background:var(--accent-light);color:var(--accent-hover)}
+#keylist small{color:var(--muted)}
+#keymsg{color:var(--danger);font-size:12px;margin-top:8px;min-height:14px}
+.keybtns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;width:35%;background:var(--accent);border-radius:4px;animation:bar 1.4s ease-in-out infinite}
 
@@ -902,6 +913,15 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     </div>
   </div>
   <div class="status" id="status"></div>
+  <div class="keyov" id="keyov" role="dialog" aria-modal="true" aria-labelledby="keyttl">
+    <div class="keybox">
+      <h3 id="keyttl">Pilih API Key</h3>
+      <p>Proses penyusunan akan memakai API key yang Anda pilih.</p>
+      <div id="keylist"></div>
+      <div id="keymsg"></div>
+      <div class="keybtns"><button type="button" class="ghost" id="keycancel">Batal</button><button type="button" id="keyok">OK</button></div>
+    </div>
+  </div>
   <div class="loader" id="loader" role="status" aria-live="polite">
     <div class="spin" aria-hidden="true"></div>
     <div style="flex:1;min-width:0"><b id="ltxt"></b><small id="ltime"></small><div class="bar" aria-hidden="true"><i></i></div></div>
@@ -1159,6 +1179,7 @@ $('editbtn').addEventListener('click',()=>{
 let lastText='';
 async function generate(){
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
+  if(!(await pickKey())) return;
   try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
   const btns=[$('gen'),$('regen')]; btns.forEach(b=>b.disabled=true);
   $('gen').textContent='Menyusun…';
@@ -1305,7 +1326,7 @@ function docForWord(el){
 
 let loadTimer=null;
 function showLoader(msgs){
-  const el=$('loader'); let i=0,sec=0;
+  const el=$('loader'); let i=0,sec=0; msgs=msgs.map(m=>m+keyTag());
   $('ltxt').textContent=msgs[0]; $('ltime').textContent='Berjalan 0 detik';
   el.classList.add('on'); clearInterval(loadTimer);
   loadTimer=setInterval(()=>{
@@ -1542,18 +1563,53 @@ function stripLogos(el){ const c=el.cloneNode(true); c.querySelectorAll('img[dat
 
 const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2433}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c3cfe3;padding:5px;vertical-align:top}th{background:#1f3a6e;color:#fff}h1{font-size:15pt;color:#14284f;text-align:center;margin:3pt 0;letter-spacing:1pt}h2{background:#e8eef8;color:#14284f;border-left:5pt solid #2f6bb3;font-size:12.5pt;padding:3pt 8pt;margin-top:14pt}h3{color:#14284f;font-size:12pt;font-weight:bold;border-left:4pt solid #f2b441;border-bottom:1pt solid #e3c56b;padding:1pt 0 2pt 8pt;margin-top:12pt}p,li,td{text-align:justify}.sch{font-size:9.5pt;font-weight:bold;letter-spacing:2pt;color:#2f6bb3;text-align:center}.sub{font-size:9pt;color:#5a6b8c;text-align:center}hr.kop-rule{border:0;border-top:3pt solid #1f3a6e;border-bottom:1pt solid #f2b441;height:2pt}.ar{font-family:"Traditional Arabic","Amiri","Arial",serif;mso-bidi-font-family:"Traditional Arabic";font-size:16pt;mso-bidi-font-size:16pt}.jv{font-family:"Javanese Text","Noto Sans Javanese",serif;mso-ascii-font-family:"Javanese Text";mso-hansi-font-family:"Javanese Text";mso-fareast-font-family:"Javanese Text";font-size:13pt}.mt{white-space:nowrap}table.pengalaman td,table.pengalaman th{padding:3pt 5pt;line-height:110%}';
 
+/* ---- pilih API key (key asli tetap di server, browser hanya mengirim nomor) ---- */
+let KEY_COUNT=null, KEY_SLOT='auto';
+try{ KEY_SLOT=localStorage.getItem('rpm_keyslot')||'auto'; }catch(e){}
+const keyTag=()=>KEY_SLOT==='auto'?'':' (API KEY '+KEY_SLOT+')';
+async function loadKeyCount(){
+  if(KEY_COUNT!==null) return KEY_COUNT;
+  try{
+    const res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify({action:'info'})});
+    const d=await res.json();
+    if(res.ok && Number.isInteger(d.keys) && d.keys>0) KEY_COUNT=d.keys;
+  }catch(e){}
+  return KEY_COUNT;
+}
+async function pickKey(){
+  const ov=$('keyov'), list=$('keylist');
+  list.innerHTML='<small>Memuat daftar API key…</small>'; $('keymsg').textContent='';
+  $('keyok').disabled=true; ov.classList.add('on');
+  const n=await loadKeyCount();
+  let cur=KEY_SLOT; if(cur!=='auto' && (!n || +cur>n)) cur='auto';
+  const opts=[['auto','Otomatis (bergiliran, pindah sendiri bila gagal)']];
+  for(let i=1;i<=(n||0);i++) opts.push([String(i),'API KEY '+i]);
+  list.innerHTML=opts.map(o=>`<label><input type="radio" name="keyopt" value="${o[0]}"${o[0]===cur?' checked':''}> ${o[1]}</label>`).join('');
+  if(!n) $('keymsg').textContent='Daftar API key tidak bisa dimuat. Pastikan gemini-proxy versi terbaru sudah di-deploy. Anda masih bisa lanjut dengan mode Otomatis.';
+  $('keyok').disabled=false; $('keyok').focus();
+  return new Promise(resolve=>{
+    const done=ok=>{ ov.classList.remove('on'); $('keyok').onclick=null; $('keycancel').onclick=null; resolve(ok); };
+    $('keyok').onclick=()=>{
+      const r=list.querySelector('input:checked'); KEY_SLOT=r?r.value:'auto';
+      try{ localStorage.setItem('rpm_keyslot',KEY_SLOT); }catch(e){}
+      done(true);
+    };
+    $('keycancel').onclick=()=>done(false);
+  });
+}
+
 async function ask(prompt){
   let res;
   try{
     res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},
-      body:JSON.stringify({model:$('model').value.trim(),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
+      body:JSON.stringify({model:$('model').value.trim(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
   }catch(e){ throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   let data=null;
   try{ const raw=await res.text(); data=raw?JSON.parse(raw):null; }catch(e){ data=null; }
   if(!res.ok){
     const m=(data&&((data.error&&data.error.message)||data.message||(typeof data.error==='string'?data.error:'')))||'';
     if([546,504,502,408].includes(res.status)) throw new Error('Server AI kehabisan waktu atau sumber daya (kode '+res.status+'). Permintaan terlalu berat untuk satu kali proses. Coba lagi, pakai model "flash", atau kurangi jumlah pertemuan.'+(m?' Detail: '+m:''));
-    if(res.status===429) throw new Error('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi.'+(m?' Detail: '+m:''));
+    if(res.status===429) throw new Error('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi'+(KEY_SLOT!=='auto'?', atau pilih API KEY lain.':'.')+(m?' Detail: '+m:''));
     throw new Error(m||('HTTP '+res.status));
   }
   const t=((data&&data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts)||[]).map(p=>p.text||'').join('');
@@ -1587,6 +1643,7 @@ ${$('doc').innerText}`;
 }
 
 $('lkpdbtn').addEventListener('click',async()=>{
+  if(!(await pickKey())) return;
   const b=$('lkpdbtn'); b.disabled=true; b.textContent='Menyusun LKPD…';
   setStatus('');
   showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
@@ -1666,6 +1723,7 @@ function showAses(html){
 }
 $('asesbtn').addEventListener('click',async()=>{
   if($('doc').hidden||!$('doc').innerText.trim()){ setStatus('RPM belum dibuat.',true); return; }
+  if(!(await pickKey())) return;
   const b=$('asesbtn'); b.disabled=true; setStatus('');
   let out='', n=0;
   try{
