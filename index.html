@@ -157,6 +157,20 @@ body[data-sb="collapsed"] .sb-link{justify-content:center;padding:10px 0}
 #sb_collapse svg{transition:transform .2s}
 body[data-sb="collapsed"] #sb_collapse svg{transform:rotate(180deg)}
 
+
+/* Riwayat pemakaian API key (harian) */
+.sb-usage{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.sb-usage h4{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sb-usage .u-total{display:flex;align-items:baseline;gap:6px;color:var(--ink)}
+.sb-usage .u-total b{font-size:26px;line-height:1;color:var(--accent)}
+.sb-usage .u-total span{font-size:12px;color:var(--muted)}
+.sb-usage ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.sb-usage li{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.sb-usage li b{color:var(--ink)}
+.sb-usage .u-fail{margin-top:8px;font-size:11.5px;color:var(--muted)}
+.sb-usage .u-fail.bad{color:#dc2626}
+body[data-sb="collapsed"] .sb-usage{display:none}
+@media (max-width:900px){.sb-usage{display:none}}
 .content{min-width:0}
 main{
   display:grid;
@@ -710,6 +724,12 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16"/><path d="M9 14h6"/></svg>
     <span class="lbl">RPP Tersimpan</span>
   </button>
+  <div class="sb-usage" id="keyusage" aria-live="polite">
+    <h4>Pemakaian API Key</h4>
+    <div class="u-total"><b id="u_total">0</b><span>klik hari ini (semua guru)</span></div>
+    <ul id="u_list"></ul>
+    <div class="u-fail" id="u_fail"></div>
+  </div>
 </aside>
 <button type="button" id="sb_show" title="Tampilkan menu" aria-label="Tampilkan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
 <div class="content">
@@ -1225,7 +1245,7 @@ $('editbtn').addEventListener('click',()=>{
 let lastText='';
 async function generate(){
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
-  if(!(await pickKey())) return;
+  if(!(await pickKey('RPM'))) return;
   try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
   const btns=[$('gen'),$('regen')]; btns.forEach(b=>b.disabled=true);
   $('gen').textContent='Menyusun…';
@@ -1667,7 +1687,7 @@ async function loadKeyCount(){
   }catch(e){}
   return KEY_COUNT;
 }
-async function pickKey(){
+async function pickKey(aksi){
   const ov=$('keyov'), list=$('keylist');
   list.innerHTML='<small>Memuat daftar API key…</small>'; $('keymsg').textContent='';
   $('keyok').disabled=true; ov.classList.add('on');
@@ -1683,6 +1703,7 @@ async function pickKey(){
     $('keyok').onclick=()=>{
       const r=list.querySelector('input:checked'); KEY_SLOT=r?r.value:'auto';
       try{ localStorage.setItem('rpm_keyslot',KEY_SLOT); }catch(e){}
+      usageLog(aksi);
       done(true);
     };
     $('keycancel').onclick=()=>done(false);
@@ -1734,7 +1755,7 @@ ${$('doc').innerText}`;
 }
 
 $('lkpdbtn').addEventListener('click',async()=>{
-  if(!(await pickKey())) return;
+  if(!(await pickKey('LKPD'))) return;
   const b=$('lkpdbtn'); b.disabled=true; b.textContent='Menyusun LKPD…';
   setStatus('');
   showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
@@ -1816,7 +1837,7 @@ function showAses(html){
 }
 $('asesbtn').addEventListener('click',async()=>{
   if($('doc').hidden||!$('doc').innerText.trim()){ setStatus('RPM belum dibuat.',true); return; }
-  if(!(await pickKey())) return;
+  if(!(await pickKey('Asesmen'))) return;
   const b=$('asesbtn'); b.disabled=true; setStatus('');
   let out='', n=0;
   try{
@@ -1905,7 +1926,7 @@ function showLamp(html){
 }
 $('lampbtn').addEventListener('click',async()=>{
   if($('doc').hidden||!$('doc').innerText.trim()){ setStatus('RPM belum dibuat.',true); return; }
-  if(!(await pickKey())) return;
+  if(!(await pickKey('Lampiran'))) return;
   const b=$('lampbtn'); b.disabled=true; b.textContent='Menyusun lampiran…'; setStatus('');
   showLoader(['Menyusun glosarium…','Memilih istilah penting dari RPM…','Menyusun daftar pustaka…','Hampir selesai, mohon tunggu…']);
   try{
@@ -1945,6 +1966,35 @@ async function sb(cfg,path,opt={}){
   }
   return data;
 }
+/* ---- riwayat pemakaian API key: dihitung dari klik, disimpan di tabel api_key_usage ---- */
+const todayWib=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'});
+async function usageLog(aksi){
+  try{
+    await sb(SB_DST,'/api_key_usage',{method:'POST',headers:{Prefer:'return=minimal'},body:{
+      tanggal:todayWib(), key_slot:String(KEY_SLOT), aksi:aksi||'', model:$('model').value.trim(),
+      nama_guru:($('guru').value||'').trim()
+    }});
+  }catch(e){ usageErr=true; }
+  usageRender();
+}
+let usageErr=false;
+async function usageRender(){
+  const t=$('u_total'); if(!t) return;
+  try{
+    const rows=await sb(SB_DST,`/api_key_usage?select=key_slot&tanggal=eq.${todayWib()}&limit=10000`);
+    const by={}; rows.forEach(r=>{ by[r.key_slot]=(by[r.key_slot]||0)+1; });
+    t.textContent=rows.length;
+    const names=Object.keys(by).sort((a,b)=>a==='auto'?-1:b==='auto'?1:a-b);
+    $('u_list').innerHTML=names.length
+      ? names.map(k=>`<li><span>${k==='auto'?'Otomatis':'API KEY '+k}</span><b>${by[k]}x</b></li>`).join('')
+      : '<li><span>Belum ada pemakaian</span></li>';
+    $('u_fail').textContent=usageErr?'Sebagian klik gagal dicatat.':''; $('u_fail').className='u-fail'+(usageErr?' bad':'');
+  }catch(e){
+    $('u_fail').textContent='Riwayat belum bisa dimuat. Jalankan SQL tabel api_key_usage.'; $('u_fail').className='u-fail bad';
+  }
+}
+usageRender(); setInterval(usageRender,60000);
+
 function getCfg(){
   let c=Object.assign({},SB_DEF);
   try{ Object.assign(c,JSON.parse(localStorage.getItem('rpm_sbcfg')||'{}')); }catch(e){}
