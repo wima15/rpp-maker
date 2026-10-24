@@ -171,6 +171,11 @@ body[data-sb="collapsed"] #sb_collapse svg{transform:rotate(180deg)}
 .sb-usage .u-fail.bad{color:#dc2626}
 body[data-sb="collapsed"] .sb-usage{display:none}
 @media (max-width:900px){.sb-usage{display:none}}
+.resume{margin:12px 0;padding:12px 14px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#78350f}
+.resume[hidden]{display:none}
+.resume p{margin:0 0 10px;font-size:13px;line-height:1.5}
+.resume-act{display:flex;flex-wrap:wrap;gap:8px}
+@media (prefers-color-scheme:dark){.resume{background:#3b2a07;color:#fde68a;border-color:#b45309}}
 .content{min-width:0}
 main{
   display:grid;
@@ -953,6 +958,10 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       </div>
     </div>
   </div>
+  <div class="resume" id="resume" hidden role="alert">
+    <p id="resume_msg"></p>
+    <div class="resume-act"><button type="button" id="resume_go">Lanjutkan dengan API key lain</button><button type="button" class="ghost" id="resume_drop">Buang draft</button></div>
+  </div>
   <div class="status" id="status"></div>
   <div class="keyov" id="keyov" role="dialog" aria-modal="true" aria-labelledby="keyttl">
     <div class="keybox">
@@ -1252,13 +1261,13 @@ async function generate(){
   setStatus('');
   showLoader(['Menyusun RPM Anda…','Merumuskan tujuan pembelajaran…','Menyusun tabel pengalaman belajar…','Menyiapkan asesmen dan rubrik…','Hampir selesai, mohon tunggu…']);
   try{
-    lastText=await ask(buildPrompt());
+    lastText=await ask(buildPrompt(),'RPM');
     const doc=$('doc'); doc.innerHTML=md(lastText)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
     ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
     $('lkpd').hidden=true; $('lkpd').innerHTML=''; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true;
     resetAses(); resetLamp();
     setEdit(false); setDirty(false);
-    curId=null;
+    if(!RESUMED) curId=null;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     notify(true,'RPM berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
@@ -1266,6 +1275,12 @@ async function generate(){
   }catch(e){
     setStatus('Gagal: '+e.message,true);
     notify(false,'RPM gagal disusun: '+e.message);
+    if(e.partial){
+      const doc=$('doc'); doc.innerHTML=md(e.partial); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
+      lastText=e.partial; ['copy','savedb','editbtn'].forEach(id=>$(id).disabled=false);
+      if(readCfgForm().auto) saveDb(true,'Draft RPM (belum selesai) tersimpan.');
+    }
+    showResume('RPM',e);
   }finally{
     hideLoader(); $('gen').disabled=false; $('regen').disabled=!lastText; $('gen').textContent='Susun RPM';
   }
@@ -1703,19 +1718,50 @@ async function pickKey(aksi){
     $('keyok').onclick=()=>{
       const r=list.querySelector('input:checked'); KEY_SLOT=r?r.value:'auto';
       try{ localStorage.setItem('rpm_keyslot',KEY_SLOT); }catch(e){}
-      usageLog(aksi);
+      usageLog(aksi); LAST_AKSI=aksi;
+      if(RESUMING){ RESUMED=true; RESUMING=false; } else { RESUMED=false; DONE={}; draftClear(); }
+      hideResume();
       done(true);
     };
-    $('keycancel').onclick=()=>done(false);
+    $('keycancel').onclick=()=>{ RESUMING=false; done(false); };
   });
 }
 
-async function ask(prompt){
+/* membaca hasil bertahap (SSE) dari gemini-proxy; teks yang sudah masuk tidak hilang bila koneksi putus */
+async function readStream(res){
+  const rd=res.body.getReader(), dec=new TextDecoder(); let buf='', text='', fin='';
+  const eat=blk=>{
+    const m=blk.split(/\r?\n/).filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trim()).join('');
+    if(!m||m==='[DONE]') return;
+    let o; try{ o=JSON.parse(m); }catch(e){ return; }
+    if(o.error) throw new Error(o.error.message||'Kesalahan dari server AI.');
+    const c=o.candidates&&o.candidates[0]; if(!c) return;
+    ((c.content&&c.content.parts)||[]).forEach(p=>{ text+=p.text||''; });
+    if(c.finishReason) fin=c.finishReason;
+  };
+  try{
+    for(;;){
+      const r=await rd.read(); if(r.done) break;
+      buf+=dec.decode(r.value,{stream:true});
+      const parts=buf.split(/\r?\n\r?\n/); buf=parts.pop(); parts.forEach(eat);
+      setStatus('Menerima hasil… '+text.length.toLocaleString('id-ID')+' karakter');
+    }
+    buf+=dec.decode(); if(buf.trim()) eat(buf);
+  }catch(e){
+    const er=new Error('Koneksi ke server AI terputus di tengah proses'+(e&&e.message?' ('+e.message+')':'')+'.'); er.text=text; throw er;
+  }
+  if(!text) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
+  if(!fin){ const er=new Error('Aliran hasil dari server AI berhenti sebelum selesai.'); er.text=text; throw er; }
+  return {text:text,finish:fin};
+}
+async function askRaw(contents){
   let res;
   try{
     res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},
-      body:JSON.stringify({model:$('model').value.trim(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:16384}})});
+      body:JSON.stringify({model:$('model').value.trim(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:{temperature:0.7,maxOutputTokens:16384},stream:true})});
   }catch(e){ throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
+  usageKey(res.headers.get('x-key-used'));
+  if(res.ok && (res.headers.get('content-type')||'').includes('text/event-stream')) return await readStream(res);
   let data=null;
   try{ const raw=await res.text(); data=raw?JSON.parse(raw):null; }catch(e){ data=null; }
   if(!res.ok){
@@ -1726,8 +1772,52 @@ async function ask(prompt){
   }
   const t=((data&&data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts)||[]).map(p=>p.text||'').join('');
   if(!t) throw new Error('AI tidak mengembalikan teks. Coba lagi atau ganti model.');
-  return t.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
+  const fin=(data&&data.candidates&&data.candidates[0]&&data.candidates[0].finishReason)||'';
+  return {text:t,finish:fin};
 }
+
+
+/* ---- hasil panjang / terputus: simpan sebagian, lanjutkan (boleh dengan API key lain) ---- */
+const CONT_PROMPT='Lanjutkan dokumen di atas tepat dari titik terakhir. Jangan mengulang bagian yang sudah ditulis, jangan memberi kalimat pembuka atau penutup, dan pertahankan format yang sama. Teruskan dari karakter terakhir.';
+const MAX_CONT=4;
+const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
+let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='';
+function draftSave(key,prompt,text){
+  DRAFT={key,prompt,text};
+  try{ localStorage.setItem('rpm_draft',JSON.stringify({key,prompt,text,t:Date.now()})); }catch(e){}
+}
+function draftClear(){ DRAFT=null; try{ localStorage.removeItem('rpm_draft'); }catch(e){} }
+async function ask(prompt,key){
+  key=key||LAST_AKSI||'x';
+  if(DONE[key]!=null) return DONE[key];            // bagian yang sudah jadi tidak diminta ulang
+  let base=prompt, acc='';
+  if(DRAFT&&DRAFT.key===key){ base=DRAFT.prompt; acc=DRAFT.text; }
+  for(let round=0;round<=MAX_CONT;round++){
+    const contents=[{role:'user',parts:[{text:base}]}];
+    if(acc) contents.push({role:'model',parts:[{text:acc}]},{role:'user',parts:[{text:CONT_PROMPT}]});
+    let r;
+    try{ r=await askRaw(contents); }
+    catch(e){ if(e.text) acc+=e.text; if(acc){ draftSave(key,base,acc); e.partial=acc; } throw e; }
+    acc+=r.text;
+    if(r.finish!=='MAX_TOKENS') break;             // selesai normal
+    draftSave(key,base,acc);                       // terpotong karena panjang: lanjut otomatis
+    if(round===MAX_CONT){ const e=new Error('Hasil terlalu panjang dan terpotong setelah beberapa kali lanjut.'); e.partial=acc; throw e; }
+  }
+  acc=acc.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
+  DONE[key]=acc; if(DRAFT&&DRAFT.key===key) draftClear();
+  return acc;
+}
+function showResume(aksi,e){
+  const n=(e&&e.partial)?e.partial.length:0, extra=Object.keys(DONE).length;
+  $('resume_msg').textContent='Proses '+aksi+' terhenti: '+((e&&e.message)||'')+' '+(n?`Hasil sebagian (${n.toLocaleString('id-ID')} karakter) sudah ditampilkan dan disimpan. `:(extra?'Bagian yang sudah jadi disimpan. ':''))+'Pilih API key lain, lalu lanjutkan dari titik terakhir.';
+  $('resume').dataset.aksi=aksi; $('resume').hidden=false;
+}
+function hideResume(){ const r=$('resume'); if(r) r.hidden=true; }
+$('resume_go').addEventListener('click',()=>{
+  const aksi=$('resume').dataset.aksi; RESUMING=true;
+  if(aksi==='RPM') generate(); else $(AKSI_BTN[aksi]).click();
+});
+$('resume_drop').addEventListener('click',()=>{ DONE={}; draftClear(); hideResume(); setStatus('Draft dibuang.'); });
 
 function lkpdPrompt(){
   return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
@@ -1760,14 +1850,16 @@ $('lkpdbtn').addEventListener('click',async()=>{
   setStatus('');
   showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
   try{
-    const t=await ask(lkpdPrompt());
+    const t=await ask(lkpdPrompt(),'LKPD');
     const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
     $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
     setStatus('LKPD selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     notify(true,'LKPD berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
-  }catch(e){ setStatus('Gagal: '+e.message,true); notify(false,'LKPD gagal disusun: '+e.message); }
+  }catch(e){ setStatus('Gagal: '+e.message,true); notify(false,'LKPD gagal disusun: '+e.message);
+    if(e.partial){ const el=$('lkpd'); el.innerHTML=md(e.partial); styleDoc(el,'lkpd'); el.hidden=false; }
+    showResume('LKPD',e); }
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
 });
 
@@ -1844,7 +1936,7 @@ $('asesbtn').addEventListener('click',async()=>{
     for(const j of ASES_JENIS){
       b.textContent=`Menyusun asesmen ${n+1}/3…`;
       showLoader([`Menyusun asesmen ${j.k} (${n+1} dari 3)…`,'Membuat kisi-kisi…','Menyusun instrumen dan kunci jawaban…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
-      const t=await ask(asesPrompt(j));
+      const t=await ask(asesPrompt(j),'Asesmen:'+j.k);
       out+=(out?'\n\n':'')+t; n++;
       showAses(md(out));
     }
@@ -1853,6 +1945,8 @@ $('asesbtn').addEventListener('click',async()=>{
     $('asesmen').scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'Asesmen selesai.');
   }catch(e){
+    if(e.partial) showAses(md(out+(out?'\n\n':'')+e.partial));
+    showResume('Asesmen',e);
     setStatus((n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.',true);
     notify(false,(n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.');
   }finally{ hideLoader(); b.disabled=false; b.textContent='Buat Asesmen'; }
@@ -1930,13 +2024,15 @@ $('lampbtn').addEventListener('click',async()=>{
   const b=$('lampbtn'); b.disabled=true; b.textContent='Menyusun lampiran…'; setStatus('');
   showLoader(['Menyusun glosarium…','Memilih istilah penting dari RPM…','Menyusun daftar pustaka…','Hampir selesai, mohon tunggu…']);
   try{
-    const t=await ask(lampPrompt());
+    const t=await ask(lampPrompt(),'Lampiran');
     const el=showLamp(md(t));
     setStatus('Lampiran selesai. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru. Tekan Edit untuk menyunting.');
     notify(true,'Lampiran berhasil disusun. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'Lampiran selesai.');
-  }catch(e){ setStatus('Gagal: '+e.message,true); notify(false,'Lampiran gagal disusun: '+e.message); }
+  }catch(e){ setStatus('Gagal: '+e.message,true); notify(false,'Lampiran gagal disusun: '+e.message);
+    if(e.partial) showLamp(md(e.partial));
+    showResume('Lampiran',e); }
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat Lampiran'; }
 });
 $('lampword').addEventListener('click',()=>{
@@ -1968,25 +2064,41 @@ async function sb(cfg,path,opt={}){
 }
 /* ---- riwayat pemakaian API key: dihitung dari klik, disimpan di tabel api_key_usage ---- */
 const todayWib=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'});
+let USAGE_ID=null; const USAGE_KEYS=new Set();
 async function usageLog(aksi){
+  USAGE_ID=null; USAGE_KEYS.clear();
   try{
-    await sb(SB_DST,'/api_key_usage',{method:'POST',headers:{Prefer:'return=minimal'},body:{
+    const r=await sb(SB_DST,'/api_key_usage',{method:'POST',headers:{Prefer:'return=representation'},body:{
       tanggal:todayWib(), key_slot:String(KEY_SLOT), aksi:aksi||'', model:$('model').value.trim(),
       nama_guru:($('guru').value||'').trim()
     }});
+    USAGE_ID=r&&r[0]&&r[0].id;
   }catch(e){ usageErr=true; }
   usageRender();
+}
+/* nomor key yang benar-benar dipakai server (header x-key-used), dicatat ke baris klik yang sama */
+function usageKey(n){
+  if(!USAGE_ID||!n) return;
+  USAGE_KEYS.add(String(n));
+  sb(SB_DST,`/api_key_usage?id=eq.${USAGE_ID}`,{method:'PATCH',headers:{Prefer:'return=minimal'},
+    body:{key_dipakai:[...USAGE_KEYS].sort((x,y)=>x-y).join(',')}}).then(usageRender).catch(()=>{});
 }
 let usageErr=false;
 async function usageRender(){
   const t=$('u_total'); if(!t) return;
   try{
-    const rows=await sb(SB_DST,`/api_key_usage?select=key_slot&tanggal=eq.${todayWib()}&limit=10000`);
-    const by={}; rows.forEach(r=>{ by[r.key_slot]=(by[r.key_slot]||0)+1; });
+    let rows;
+    try{ rows=await sb(SB_DST,`/api_key_usage?select=key_slot,key_dipakai&tanggal=eq.${todayWib()}&limit=10000`); }
+    catch(e){ rows=await sb(SB_DST,`/api_key_usage?select=key_slot&tanggal=eq.${todayWib()}&limit=10000`); } // kolom key_dipakai belum ada
+    const by={};
+    rows.forEach(r=>{
+      const used=(r.key_dipakai||'').split(',').filter(Boolean);
+      (used.length?used:[r.key_slot]).forEach(k=>{ by[k]=(by[k]||0)+1; });
+    });
     t.textContent=rows.length;
     const names=Object.keys(by).sort((a,b)=>a==='auto'?-1:b==='auto'?1:a-b);
     $('u_list').innerHTML=names.length
-      ? names.map(k=>`<li><span>${k==='auto'?'Otomatis':'API KEY '+k}</span><b>${by[k]}x</b></li>`).join('')
+      ? names.map(k=>`<li><span>${k==='auto'?'Otomatis (belum diketahui)':'API KEY '+k}</span><b>${by[k]}x</b></li>`).join('')
       : '<li><span>Belum ada pemakaian</span></li>';
     $('u_fail').textContent=usageErr?'Sebagian klik gagal dicatat.':''; $('u_fail').className='u-fail'+(usageErr?' bad':'');
   }catch(e){
