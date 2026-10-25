@@ -115,6 +115,7 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
 .sb-link{
   display:flex;
   align-items:center;
+  justify-content:flex-start;
   gap:10px;
   width:100%;
   text-align:left;
@@ -127,7 +128,7 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
   font-weight:600;
   transition:all .15s ease;
 }
-.sb-link.sb-sub{margin-left:20px;width:calc(100% - 20px);font-size:.94em}
+.sb-link.sb-sub{margin-left:0;width:100%;font-size:.94em}
 .sb-link svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sb-link:hover{background:var(--accent-light);color:var(--accent)}
 .sb-link[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow: 0 2px 4px rgba(13,148,136,.2)}
@@ -617,10 +618,10 @@ main[hidden],.view-saved[hidden]{display:none!important}
 #intro .logo-wrap::after{display:none}
 #intro .logo-wrap::before{box-shadow:0 0 40px rgba(242,180,65,.25)}
 #intro img{position:relative;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}
-#intro .presented{margin:30px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:500;font-size:clamp(14px,2.6vw,18px);letter-spacing:.42em;text-transform:uppercase;color:#f2b441;opacity:0;transform:translateY(12px);animation:introUp .9s ease 1.4s forwards}
-#intro .dev{margin:10px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:clamp(22px,5vw,34px);letter-spacing:.04em;opacity:0;transform:translateY(12px);animation:introUp .9s ease 2.3s forwards}
-#intro .dev small{display:block;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:400;font-size:clamp(11px,2vw,13px);letter-spacing:.3em;text-transform:uppercase;color:#93aaa4;margin-bottom:4px}
-#intro .dev b{background:linear-gradient(90deg,#f2b441,#ffe3a0,#f2b441);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.18em}
+#intro .presented{margin:30px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:600;font-size:clamp(17px,4.2vw,30px);letter-spacing:.28em;text-transform:uppercase;color:#f2b441;opacity:0;transform:translateY(12px);animation:introUp .9s ease 1.4s forwards}
+#intro .dev{margin:10px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:clamp(13px,2.4vw,17px);letter-spacing:.04em;opacity:0;transform:translateY(12px);animation:introUp .9s ease 2.3s forwards}
+#intro .dev small{display:block;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:400;font-size:clamp(9px,1.6vw,11px);letter-spacing:.3em;text-transform:uppercase;color:#93aaa4;margin-bottom:4px}
+#intro .dev b{letter-spacing:.08em!important;background:linear-gradient(90deg,#f2b441,#ffe3a0,#f2b441);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.18em}
 #intro .skip{position:absolute;bottom:18px;left:0;right:0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#93aaa4;opacity:0;animation:introUp .6s ease 1s forwards}
 @keyframes introLogo{to{opacity:1;transform:scale(1) rotate(0)}}
 @keyframes introUp{to{opacity:1;transform:translateY(0)}}
@@ -694,7 +695,10 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   #ppdoc table.prosem{min-width:0!important}
   #ppdoc.pp-all .pp-sec:not(:first-child){break-before:page}
   #ppdoc .pp-sec{break-inside:auto}
-  #ppdoc table.prosem tr{break-inside:avoid}
+  #ppdoc table tr{break-inside:avoid}
+  #ppdoc thead{display:table-header-group}
+  #ppdoc thead tr,#ppdoc tr.semrow{break-after:avoid}
+  #ppdoc .idb{break-inside:avoid;break-after:avoid}
 }
 .wk-sem{margin:10px 0 18px}
 .wk-sem h4{margin:0 0 6px;font-size:15px}
@@ -719,8 +723,8 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 <div id="intro" role="dialog" aria-label="Pembuka" aria-live="polite">
   <canvas id="introbg" aria-hidden="true"></canvas>
   <div class="logo-wrap"><i class="stitch s1"></i><img src="assets/logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'"></div>
-  <p class="presented">Presented to you</p>
-  <p class="dev"><small>Developed by</small><b>HHH</b></p>
+  <p class="presented">From teacher to teacher</p>
+  <p class="dev"><small>Developed by</small><b>@arhamhanif</b></p>
   <span class="skip">Ketuk untuk melewati</span>
 </div>
 <script>
@@ -1170,7 +1174,11 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     </div>
     <div class="tgroup">
       <span class="tlabel">Sunting dokumen</span>
-      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpimg" title="Sisipkan gambar (saat mode Edit). Gambar maks 50 KB, disimpan di storage">Sisipkan gambar</button><button type="button" class="ghost" id="atpclear" disabled>Kosongkan</button></div>
+      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpimg" title="Sisipkan gambar (saat mode Edit). Gambar maks 50 KB, disimpan di storage">Sisipkan gambar</button></div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Proyek</span>
+      <div class="tbtns"><button type="button" class="ghost" id="atpclose" disabled>Tutup proyek</button></div>
     </div>
   </div>
   <div class="status" id="atpstatus"></div>
@@ -1916,6 +1924,7 @@ function docForWord(el){
     const td='width:60%;border:none;text-align:left;background:#fff', td2='width:40%;border:none;text-align:left;background:#fff';
     s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td2}">${fix(b.innerHTML)}</td></tr></table>`;
   }
+  c.querySelectorAll('p.idb-r').forEach(p=>{ const l=p.querySelector('.idb-l'); if(!l) return; l.removeAttribute('style'); l.insertAdjacentHTML('afterend','<span style="mso-tab-count:1">&nbsp;</span>'); });
   c.querySelectorAll('td[data-vt]').forEach(td=>{ const d=td.querySelector('.vt'); if(d) td.innerHTML=d.innerHTML; td.setAttribute('style',(td.getAttribute('style')||'')+';mso-layout-flow-alt:bottom-to-top;text-align:center;vertical-align:middle'); });
   imgWordFix(c);
   return c.innerHTML;
@@ -3671,7 +3680,7 @@ loadSource();
 /* ===== MODUL ATP (Alur Tujuan Pembelajaran) – memakai ulang mesin RPM: gemini-proxy, pilih API key, pemuat, kop, tanda tangan, Word/PDF ===== */
 (function(){
 const CP_DEF={'bahasa inggris|E':'Pada akhir Fase E, peserta didik menggunakan teks lisan, tulisan, dan visual (multimodal) dalam bahasa Inggris untuk berkomunikasi sesuai situasi, tujuan, dan pemirsa/pembacanya (setara CEFR B1, sekitar 3.000 kata berfrekuensi tinggi). Menyimak–Berbicara: memahami alur informasi, gagasan utama, dan detail teks lisan fiksi dan nonfiksi tentang topik sehari-hari atau isu terkini; mengungkapkan pendapat dan mempertahankan argumen secara lisan. Membaca–Memirsa: memahami alur informasi, menganalisis, dan menyimpulkan informasi tersurat dan tersirat dari berbagai teks fiksi dan nonfiksi, tulis maupun multimodal. Menulis–Mempresentasikan: mengomunikasikan gagasan dan pengalaman secara tertulis atau multimodal dengan struktur teks dan unsur kebahasaan yang tepat, memakai media cetak atau digital, serta mengungkapkan dan mempertahankan argumen secara tertulis.'};
-let atpText='', atpId=null, atpEdit=false, lastAuto='';
+let atpText='', atpId=null, atpEdit=false, lastAuto='', atpDirty=false, atpFromSaved=false;
 
 /* overlay bersama dipindah ke body supaya tetap tampil walau menu Buat RPP tersembunyi */
 ['keyov','lovl','resov','loader'].forEach(id=>{ const e=$(id); if(e) document.body.appendChild(e); });
@@ -3759,7 +3768,7 @@ Per semester gunakan judul "## SEMESTER n" (tingkat dua, bukan tingkat satu) bil
 }
 
 /* ---- tampilan hasil ---- */
-const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclear'];
+const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclose'];
 function render(t){
   const d=$('atpdoc'); d.innerHTML=md(t)+signHTML(); styleDoc(d,'atp');
   const sub=['Tahun Ajaran '+v('atp_tahun'),/Satu tahun/.test($('atp_cakupan').value)?'':'Semester '+$('atp_cakupan').value].filter(Boolean).join(' · ');
@@ -3770,7 +3779,7 @@ function setEditAtp(on){
   atpEdit=on; window.ATPEDIT=!!on; document.body.classList.toggle('editing',anyEditing()); selectImg(null); $('atpdoc').contentEditable=on?'true':'false'; $('atpedit').textContent=on?'Selesai edit':'Edit';
   $('atpsave').textContent=on?'Simpan perubahan':'Simpan ke database';
 }
-$('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; });
+$('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; atpDirty=true; });
 $('atpedit').addEventListener('click',()=>setEditAtp(!atpEdit));
 
 async function atpGenerate(){
@@ -3784,7 +3793,7 @@ async function atpGenerate(){
   try{
     liveSet($('atpdoc'),'','atp'); $('atpempty').hidden=true;
     atpText=await ask(buildAtp(),'ATP');
-    render(atpText); setEditAtp(false); atpId=null; JOB_OK=true;
+    render(atpText); setEditAtp(false); atpId=null; atpDirty=false; atpFromSaved=false; JOB_OK=true;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
@@ -3798,10 +3807,24 @@ async function atpGenerate(){
 $('atpf').addEventListener('submit',e=>{ e.preventDefault(); atpGenerate(); });
 $('atpregen').addEventListener('click',atpGenerate);
 $('atpcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText($('atpdoc').innerText); setStatus('Teks disalin.'); }catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
-$('atpclear').addEventListener('click',()=>{
-  if(!confirm('Kosongkan ATP di layar? ATP yang sudah tersimpan di database tidak terhapus.')) return;
-  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus('');
-});
+/* ---- tutup proyek ATP yang sedang dibuka / disusun (sama seperti Tutup proyek di Buat RPP) ---- */
+function closeAtpProject(){
+  if(!$('atpdoc').hidden){
+    const msg=atpDirty?'Ada perubahan yang belum disimpan. Tutup proyek tanpa menyimpan?'
+      :(atpId==null?'ATP ini belum tersimpan di database. Tutup proyek?':'');
+    if(msg&&!confirm(msg)) return;
+  }
+  const back=atpFromSaved;
+  setEditAtp(false);
+  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false;
+  atpText=''; atpId=null; atpDirty=false; atpFromSaved=false; lastAuto='';
+  btn.forEach(id=>$(id).disabled=true);
+  $('atp_cp').value=''; autoCP(); $('atp_catatan').value=''; $('atp_cakupan').selectedIndex=0; $('atp_jp').value='3'; $('atp_sum').value='2';
+  setStatus('');
+  if(back) showView('atpsaved'); else window.scrollTo({top:0});
+  setStatus('Proyek ditutup.');
+}
+$('atpclose').addEventListener('click',closeAtpProject);
 
 /* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
 const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
@@ -3831,6 +3854,7 @@ async function atpSave(auto){
     if(atpId){ const r=await sb(SB_DST,`/atp_hasil?id=eq.${atpId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
     if(!row){ const r=await sb(SB_DST,'/atp_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
     if(row&&row.id) atpId=row.id;
+    atpDirty=false;
     purgeImgs(oldImg,c.innerHTML);
     $('atpsave').textContent='Simpan ke database'; setStatus('Tersimpan ke database.');
     if(!auto||$('resov').classList.contains('on')) notify(true,'ATP tersimpan ke database.');
@@ -3872,7 +3896,7 @@ $('atp_histlist').addEventListener('click',async e=>{
     if(d){ if(!confirm('Hapus ATP ini dari database?')) return; await sb(SB_DST,`/atp_hasil?id=eq.${d.dataset.del}`,{method:'DELETE'}); if(atpId==d.dataset.del) atpId=null; histList(); }
     else if(o){
       const r=(await sb(SB_DST,`/atp_hasil?id=eq.${o.dataset.open}&select=*`))[0]; if(!r) return;
-      showView('atp'); atpId=r.id; atpText=r.atp_markdown||'';
+      showView('atp'); atpId=r.id; atpText=r.atp_markdown||''; atpDirty=false; atpFromSaved=true;
       $('atp_guru').value=r.nama_guru||''; $('atp_mapel').value=r.mata_pelajaran||''; if(r.fase) $('atp_fase').value=r.fase;
       if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model;
       const doc=$('atpdoc'); doc.innerHTML=r.atp_html||md(atpText); fillLogos(doc);
@@ -3980,7 +4004,7 @@ function protaTable(items){
   let rows='', all=0, nSem=0;
   SEMS.forEach(s=>{
     const its=items.filter(i=>i.sem===s); if(!its.length) return; nSem++;
-    rows+=`<tr><td colspan="4" style="background:#e8eef8;font-weight:700;text-align:left">SEMESTER ${E(semLabel(s).toUpperCase())}</td></tr>`;
+    rows+=`<tr class="semrow"><td colspan="4" style="background:#e8eef8;font-weight:700;text-align:left">SEMESTER ${E(semLabel(s).toUpperCase())}</td></tr>`;
     let n=0, sn=0, tot=0;
     its.forEach(i=>{
       tot+=i.jp;
@@ -3997,7 +4021,7 @@ function protaTable(items){
     rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700">Jumlah JP Semester ${E(s)}</td><td ${cell}><b>${tot}</b></td></tr>`;
   });
   if(nSem>1) rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Satu Tahun</td><td style="text-align:center;background:#e8eef8"><b>${all}</b></td></tr>`;
-  return `<table><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr>${rows}</table>`;
+  return `<table><thead><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function monthsFor(sem,y){
   const n=sem==='Ganjil'?['Jul','Agu','Sep','Okt','Nov','Des']:['Jan','Feb','Mar','Apr','Mei','Jun'];
@@ -4052,8 +4076,8 @@ function prosemTable(items,sem,W,jpw,y){
     let cells=''; for(let ci=0;ci<N;ci++){
       const c=cols[ci];
       if(c.off){
-        const r=runs.find(x=>x.start===ci);
-        if(r){ if(k===0) cells+=`<td data-vt="1" rowspan="${nr}" colspan="${r.n}" style="text-align:center;vertical-align:middle;padding:1px;background:${OFFBG}"><div class="vt" style="display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:230px;font-size:8pt;line-height:1.15;text-align:center">${E(r.ket)}</div></td>`; ci=r.end; }
+        /* sel abu-abu per baris (bukan rowspan satu blok) agar baris bisa dipecah antarhalaman dan kepala tabel tidak tertinggal sendirian */
+        cells+=`<td style="padding:1px;background:${OFFBG};${k>0?'border-top-color:'+OFFBG+';':''}border-bottom-color:${OFFBG}"></td>`;
         continue;
       }
       const v=al.rows[k][effIdx[ci]]||0;
@@ -4063,25 +4087,21 @@ function prosemTable(items,sem,W,jpw,y){
   });
   // baris total JP per minggu
   const wsum=Array(W).fill(0); al.rows.forEach(r=>r.forEach((v,x)=>{ wsum[x]+=v; }));
-  const tcells=cols.map((c,ci)=>c.off?`<td style="background:${OFFBG}"></td>`:`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:#e8eef8">${wsum[effIdx[ci]]||''}</td>`).join('');
+  const tcells=cols.map((c,ci)=>c.off?`<td style="background:${OFFBG};border-top-color:${OFFBG}"></td>`:`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:#e8eef8">${wsum[effIdx[ci]]||''}</td>`).join('');
   body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td>${tcells}<td style="background:#e8eef8"></td></tr>`;
   let ket='';
   if(runs.length){
     ket=`<div style="font-size:9.5pt;margin-top:8px"><b>Keterangan minggu tidak efektif:</b></div><table style="width:100%;font-size:9.5pt;margin-top:3px"><tr><th style="width:5%">No</th><th style="width:30%">Minggu</th><th style="width:10%">Jumlah</th><th>Keterangan</th></tr>`
       +runs.map((r,ix)=>{ const wk=r.a?`${E(mn[r.bln])} · ${E(r.a)} – ${E(r.z)}`:E(mn[r.bln]); return `<tr><td style="text-align:center">${ix+1}</td><td>${wk}</td><td style="text-align:center">${r.n} minggu</td><td>${E(r.ket)}</td></tr>`; }).join('')+`</table>`;
   }
-  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>${ket}`};
+  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>${ket}`};
 }
 function identRows(r,extra){
-  /* identitas dibagi dua kolom (label | isi | label | isi) agar hemat baris */
+  /* identitas tanpa tabel: satu baris per data, format "Label : isi" dengan titik dua sejajar */
   const rows=[['Satuan Pendidikan',$('sekolah').value],['Mata Pelajaran',r.mata_pelajaran],['Fase / Kelas',r.fase],['Tahun Pelajaran',r.tahun_ajaran]];
   if(extra) rows.push(extra); rows.push(['Penyusun',r.nama_guru]);
-  let h='';
-  for(let i=0;i<rows.length;i+=2){
-    const a=rows[i], b=rows[i+1];
-    h+=`<tr><td>${E(a[0])}</td><td${b?'':' colspan="3"'}>${E(a[1])}</td>${b?`<td>${E(b[0])}</td><td>${E(b[1])}</td>`:''}</tr>`;
-  }
-  return `<table>${h}</table>`;
+  const P='margin:0 0 2pt 42mm;text-indent:-42mm;text-align:left', L='display:inline-block;width:40mm;text-indent:0;text-align:left';
+  return `<div class="idb" style="margin:8px 0 14px">`+rows.map(a=>`<p class="idb-r" style="${P}"><span class="idb-l" style="${L}">${E(a[0])}</span>: ${E(a[1])}</p>`).join('')+`</div>`;
 }
 function makeSec(key,title,r,extra,subExtra,bodyHTML,note){
   const sec=document.createElement('section'); sec.className='pp-sec'; sec.dataset.pp=key;
@@ -4140,7 +4160,7 @@ async function generate(){
       const p=prosemTable(items,s,Wk[s],jpw,y);
       if(p.over) warn.push(`Semester ${s}: total ${p.total} JP membutuhkan lebih dari ${Wk[s]} minggu efektif (${jpw} JP/minggu), sisa JP ditumpuk di minggu terakhir.`);
       d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
-        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif, alasannya tertulis di dalam kolom), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
+        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = minggu tidak efektif, alasannya tertulis pada tabel keterangan di bawah), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
     fillLogos(d);
     ppId=null; setEditPp(false);
