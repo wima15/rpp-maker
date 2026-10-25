@@ -1047,15 +1047,6 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       </div>
     </div>
   </div>
-  <div id="imgbar" hidden role="toolbar" aria-label="Pengaturan gambar">
-    <button type="button" class="ghost" data-al="left" title="Gambar di kiri, teks mengalir di sebelah kanan">Kiri</button>
-    <button type="button" class="ghost" data-al="center" title="Gambar di tengah, teks di atas dan bawah">Tengah</button>
-    <button type="button" class="ghost" data-al="right" title="Gambar di kanan, teks mengalir di sebelah kiri">Kanan</button>
-    <button type="button" class="ghost" data-al="inline" title="Gambar sebaris dengan teks">Sebaris</button>
-    <input type="range" id="imgw" min="8" max="100" step="1" aria-label="Lebar gambar">
-    <button type="button" class="ghost" id="imgdel">Hapus</button>
-  </div>
-  <div id="imgdrop"></div>
   <div class="resume" id="resume" hidden role="alert">
     <p id="resume_msg"></p>
     <div class="resume-act"><button type="button" id="resume_go">Lanjutkan dengan API key lain</button><button type="button" class="ghost" id="resume_drop">Buang draft</button></div>
@@ -1246,6 +1237,16 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 </main>
 </div>
 </div>
+
+<div id="imgbar" hidden role="toolbar" aria-label="Pengaturan gambar">
+    <button type="button" class="ghost" data-al="left" title="Gambar di kiri, teks mengalir di sebelah kanan">Kiri</button>
+    <button type="button" class="ghost" data-al="center" title="Gambar di tengah, teks di atas dan bawah">Tengah</button>
+    <button type="button" class="ghost" data-al="right" title="Gambar di kanan, teks mengalir di sebelah kiri">Kanan</button>
+    <button type="button" class="ghost" data-al="inline" title="Gambar sebaris dengan teks">Sebaris</button>
+    <input type="range" id="imgw" min="8" max="100" step="1" aria-label="Lebar gambar">
+    <button type="button" class="ghost" id="imgdel">Hapus</button>
+  </div>
+  <div id="imgdrop"></div>
 
 <div class="adm" id="pgmodal" hidden role="dialog" aria-modal="true" aria-labelledby="pgmtitle">
  <div class="box" style="width:min(560px,100%)">
