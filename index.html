@@ -115,6 +115,7 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
 .sb-link{
   display:flex;
   align-items:center;
+  justify-content:flex-start;
   gap:10px;
   width:100%;
   text-align:left;
@@ -1072,6 +1073,18 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <div id="keylist"></div>
       <div id="keymsg"></div>
       <div class="keybtns"><button type="button" class="ghost" id="keycancel">Batal</button><button type="button" id="keyok">OK</button></div>
+    </div>
+  </div>
+  <div class="keyov" id="lkov" role="dialog" aria-modal="true" aria-labelledby="lkttl">
+    <div class="keybox">
+      <h3 id="lkttl">Pilih yang akan disusun</h3>
+      <p>Centang pertemuan dan bagian LKPD yang ingin dibuat.</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 4px"><b style="font-size:13px">Pertemuan</b><span><button type="button" class="ghost" data-lkall="pert:1" style="padding:2px 8px;font-size:12px">Semua</button> <button type="button" class="ghost" data-lkall="pert:0" style="padding:2px 8px;font-size:12px">Kosongkan</button></span></div>
+      <div id="lk_pert" style="display:flex;flex-wrap:wrap;gap:6px 14px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 4px"><b style="font-size:13px">Bagian LKPD</b><span><button type="button" class="ghost" data-lkall="bag:1" style="padding:2px 8px;font-size:12px">Semua</button> <button type="button" class="ghost" data-lkall="bag:0" style="padding:2px 8px;font-size:12px">Kosongkan</button></span></div>
+      <div id="lk_bag" style="display:grid;gap:4px"></div>
+      <div id="lk_msg" style="color:#b91c1c;font-size:12.5px;min-height:18px;margin-top:6px"></div>
+      <div class="keybtns"><button type="button" class="ghost" id="lkcancel">Batal</button><button type="button" id="lkok">Lanjut</button></div>
     </div>
   </div>
   <div class="ovl" id="lovl"></div>
@@ -2545,6 +2558,44 @@ $('cloudraft_list').addEventListener('click',async e=>{
   }
 });
 
+const LK_BAGIAN=[
+  ['tujuan','Tujuan Belajar'],['petunjuk','Petunjuk Pengerjaan'],['alat','Alat dan Bahan'],
+  ['k1','Kegiatan 1: Memahami'],['k2','Kegiatan 2: Mengaplikasi'],['k3','Kegiatan 3: Merefleksi'],['nilai','Penilaian (rubrik)']
+];
+let LK_SEL=null;   // {pert:[1,2..], bag:['tujuan',..]} pilihan terakhir; dipakai juga saat melanjutkan draf
+function lkSelAll(){ const n=Math.max(1,Math.min(12,parseInt($('pertemuan').value)||1)); return {pert:Array.from({length:n},(_,i)=>i+1),bag:LK_BAGIAN.map(b=>b[0])}; }
+function lkPilih(){
+  const ov=$('lkov'), all=lkSelAll(), prev=LK_SEL&&LK_SEL.n===all.pert.length?LK_SEL:null;
+  $('lk_pert').innerHTML=all.pert.map(i=>`<label style="display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" data-g="pert" value="${i}"${(prev?prev.pert.includes(i):true)?' checked':''}> ${i}</label>`).join('');
+  $('lk_bag').innerHTML=LK_BAGIAN.map(b=>`<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-g="bag" value="${b[0]}"${(prev?prev.bag.includes(b[0]):true)?' checked':''}> ${b[1]}</label>`).join('');
+  $('lk_msg').textContent=''; ov.classList.add('on'); $('lkok').focus();
+  return new Promise(resolve=>{
+    const done=v=>{ ov.classList.remove('on'); $('lkok').onclick=null; $('lkcancel').onclick=null; ov.onclick=null; resolve(v); };
+    ov.onclick=e=>{
+      const b=e.target.closest('button[data-lkall]'); if(!b) return;
+      const [g,v]=b.dataset.lkall.split(':'); ov.querySelectorAll('input[data-g="'+g+'"]').forEach(x=>x.checked=v==='1');
+    };
+    $('lkok').onclick=()=>{
+      const pert=[...ov.querySelectorAll('input[data-g="pert"]:checked')].map(x=>+x.value);
+      const bag=[...ov.querySelectorAll('input[data-g="bag"]:checked')].map(x=>x.value);
+      if(!pert.length){ $('lk_msg').textContent='Pilih minimal satu pertemuan.'; return; }
+      if(!bag.length){ $('lk_msg').textContent='Pilih minimal satu bagian LKPD.'; return; }
+      LK_SEL={pert,bag,n:all.pert.length}; done(true);
+    };
+    $('lkcancel').onclick=()=>done(false);
+  });
+}
+function lkpdPilihan(){
+  const all=lkSelAll(), sel=LK_SEL&&LK_SEL.n===all.pert.length?LK_SEL:all;
+  const semuaP=sel.pert.length===all.pert.length, semuaB=sel.bag.length===all.bag.length;
+  let t='';
+  if(!semuaP) t+=`\n\nPERTEMUAN YANG DISUSUN: HANYA LKPD untuk Pertemuan ${sel.pert.join(', ')}. Jangan membuat LKPD untuk pertemuan lain. Nomor pertemuan tetap sesuai RPM (jangan dinomori ulang dari 1), dan isi mengikuti kegiatan pada pertemuan tersebut di RPM.`;
+  if(!semuaB){
+    const nm=sel.bag.map(k=>(LK_BAGIAN.find(b=>b[0]===k)||[])[1]).filter(Boolean);
+    t+=`\n\nBAGIAN YANG DISERTAKAN: HANYA bagian berikut pada tiap LKPD (setelah judul dan tabel identitas): ${nm.join('; ')}. Bagian lain dari format di atas JANGAN ditulis sama sekali, tanpa judul kosong. Penomoran Kegiatan tetap memakai nomor aslinya.`;
+  }
+  return t;
+}
 function lkpdUpaya(){
   const v=($('lkpd_detail')||{}).value||'detail';
   if(v==='sederhana') return `TINGKAT KEDALAMAN: SEDERHANA (ringkas, 1–2 halaman per pertemuan).
@@ -2588,13 +2639,14 @@ Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", se
 
 Aturan: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Jika tugas meminta siswa menggambar, membuat sketsa, atau menempel sesuatu, sediakan tabel berisi baris judul kolom lalu SATU baris isi yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa garis titik); aplikasi menyesuaikan ukuran bingkainya. Pilihan ganda atau centang ditulis dengan awalan "- [ ] ". Beri nomor berurutan tanpa mengulang dari 1. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
 
-${lkpdUpaya()}${NOTASI}
+${lkpdUpaya()}${lkpdPilihan()}${NOTASI}
 
 RPM:
 ${$('doc').innerText}`;
 }
 
 $('lkpdbtn').addEventListener('click',async()=>{
+  if(!RESUMING && !(await lkPilih())) return;
   if(!(await pickKey('LKPD'))) return;
   const b=$('lkpdbtn'); b.disabled=true; b.textContent='Menyusun LKPD…';
   setStatus('');
