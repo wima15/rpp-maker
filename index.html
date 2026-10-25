@@ -986,7 +986,9 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <div class="tgroup" id="g-lkpd">
       <span class="tlabel">LKPD</span>
       <div class="tbtns">
+        <select id="lkpd_pick" title="Pilih pertemuan yang disusun" aria-label="Pilih pertemuan LKPD" style="width:auto;min-width:150px"><option value="0">Semua pertemuan</option></select>
         <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
+        <button type="button" class="ghost" id="lkpdredo" disabled title="Susun ulang pertemuan yang dipilih (bukan yang lain)">Susun ulang</button>
         <button type="button" class="ghost" id="lkpdword" disabled>Ke Word</button>
         <button type="button" class="ghost" id="lkpdprint" disabled>Cetak / PDF</button>
       </div>
@@ -2020,7 +2022,7 @@ function liveFlush(){
   const h=liveHeading(own);
   $('ltxt').textContent='Menulis… '+(h?h.slice(0,70):'');
   const chars=own.length.toLocaleString('id-ID'); let info=chars+' karakter', pr='';
-  if(LIVE.kind==='rpm'||LIVE.kind==='lkpd'){
+  if(LIVE.kind==='rpm'){
     const tot=parseInt($('pertemuan').value)||0, mx=livePert(own);
     if(mx&&tot){ pr=Math.min(mx,tot)+'/'+tot; info='Pertemuan '+Math.min(mx,tot)+' dari '+tot+' · '+info; }
   }
@@ -2538,52 +2540,118 @@ $('cloudraft_list').addEventListener('click',async e=>{
   }
 });
 
-function lkpdPrompt(){
-  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
-
-BAHASA LKPD: ${$('bahasa').value==='auto'
-  ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
-  : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`}
+function lkpdJumlah(){ return Math.max(1,Math.min(12,livePert($('doc').innerText)||+$('pertemuan').value||1)); }
+function lkpdPrompt(i,n,prevJudul){
+  const bhs=$('bahasa').value==='auto'
+    ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
+    : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`;
+  const lanjut=prevJudul&&prevJudul.length
+    ? `\nKESINAMBUNGAN: LKPD pertemuan sebelumnya sudah membahas: ${prevJudul.map((t,k)=>`(${k+1}) ${t}`).join('; ')}. Jangan mengulang bacaan, contoh, atau soal yang sama; bangun di atasnya dan naikkan tingkat kesulitannya secara bertahap.\n`
+    : '';
+  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) HANYA untuk PERTEMUAN ${i} dari ${n} pertemuan. Jangan menulis LKPD pertemuan lain. Ambil isinya dari tabel Pengalaman Belajar "Pertemuan ${i}" di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi, dan jangan keluar dari materi serta tujuan pembelajaran yang direncanakan untuk pertemuan ${i}. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.${lanjut}
+BAHASA LKPD: ${bhs}
 Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
 
-Format Markdown untuk tiap pertemuan:
-# LKPD PERTEMUAN n: judul kegiatan
-Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, dan Pertemuan ke-n (sudah terisi), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
-## Tujuan Belajar (kalimat sederhana untuk siswa)
-## Petunjuk Pengerjaan
-## Alat dan Bahan (jika diperlukan)
-## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret)
-## Kegiatan 2: Mengaplikasi (tugas langkah demi langkah sesuai kegiatan inti RPM)
-## Kegiatan 3: Merefleksi (3–4 pertanyaan refleksi)
-## Penilaian (tabel rubrik singkat dengan kolom Kriteria, Skor 1–4, Paraf Guru)
+KEDALAMAN (WAJIB): satu pertemuan berarti satu LKPD yang tebal dan matang, setara 2–4 halaman cetak, bukan ringkasan. Setiap kegiatan harus punya isi nyata yang bisa langsung dikerjakan siswa tanpa guru menambah bahan. Jangan memakai perintah generik seperti "diskusikan materi", "kerjakan tugas berikut", atau "jelaskan pemahamanmu" tanpa objek yang konkret. Tuliskan sendiri bahan yang dibutuhkan: bacaan, data, tabel, kasus, contoh, dan soalnya.
 
-Aturan: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Jika tugas meminta siswa menggambar, membuat sketsa, atau menempel sesuatu, sediakan tabel berisi baris judul kolom lalu SATU baris isi yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa garis titik); aplikasi menyesuaikan ukuran bingkainya. Pilihan ganda atau centang ditulis dengan awalan "- [ ] ". Beri nomor berurutan tanpa mengulang dari 1. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.${NOTASI}
+Format Markdown:
+# LKPD PERTEMUAN ${i}: judul kegiatan yang spesifik pada materi pertemuan ini
+Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, Pertemuan ke-${i}, Alokasi Waktu (dari RPM), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
+## Tujuan Belajar
+2–3 butir kalimat sederhana untuk siswa, selaras dengan tujuan pembelajaran RPM pertemuan ${i}.
+## Petunjuk Pengerjaan
+4–6 langkah jelas, termasuk cara bekerja (individu atau kelompok), batas waktu tiap kegiatan, dan cara mengumpulkan.
+## Alat dan Bahan
+Daftar spesifik (jika diperlukan).
+## Kegiatan 1: Memahami
+Wajib berisi: (a) satu pertanyaan pemantik atau situasi nyata yang dekat dengan kehidupan siswa; (b) bacaan, studi kasus, data, atau contoh dengan kontennya ditulis lengkap (minimal 2 paragraf atau satu tabel data/contoh terisi); (c) 4–6 pertanyaan pemahaman bertingkat dari mengingat ke menganalisis, masing-masing dengan tempat jawaban (tabel sel kosong atau baris isian).
+## Kegiatan 2: Mengaplikasi
+Wajib berisi: (a) satu contoh penyelesaian atau model hasil yang sudah dikerjakan (worked example) agar siswa tahu standar yang diharapkan; (b) 5–8 tugas langkah demi langkah yang bertahap dari terbimbing ke mandiri, tiap tugas dengan instruksi yang konkret dan tempat jawaban atau produk; (c) satu tantangan lanjutan (HOTS) untuk siswa yang cepat selesai. Sesuaikan dengan kegiatan inti pada RPM pertemuan ${i}.
+## Kegiatan 3: Merefleksi
+4–5 pertanyaan refleksi yang spesifik pada materi hari ini (apa yang dipahami, bagian tersulit, kaitan dengan kehidupan nyata, rencana perbaikan), ditambah satu tabel penilaian diri dengan 4–5 pernyataan dan kolom pilihan (Sudah / Hampir / Belum).
+## Penilaian
+Tabel rubrik analitik dengan kolom Kriteria | Skor 4 | Skor 3 | Skor 2 | Skor 1, tiap sel berisi deskriptor yang konkret dan dapat diamati, minimal 4 kriteria, lalu baris Total Skor, Nilai, dan Paraf Guru.
+
+ATURAN: Tugas harus spesifik pada topik "${$('topik').value}", bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi; data contoh boleh dibuat sendiri asalkan jelas sebagai ilustrasi. Keluarkan hanya LKPD pertemuan ${i} tanpa pembuka dan penutup.${NOTASI}
 
 RPM:
 ${$('doc').innerText}`;
 }
 
-$('lkpdbtn').addEventListener('click',async()=>{
+/* ---- LKPD: susun semua pertemuan, atau satu pertemuan saja; susun ulang per pertemuan ---- */
+let LKPD_LAST=null;
+function lkpdFillPick(){
+  const sel=$('lkpd_pick'), N=($('doc').hidden||!$('doc').innerText.trim())?0:lkpdJumlah(), cur=sel.value;
+  if(sel.options.length===N+1) return;
+  sel.innerHTML='<option value="0">Semua pertemuan</option>'+Array.from({length:N},(_,k)=>`<option value="${k+1}">Pertemuan ${k+1} saja</option>`).join('');
+  if(+cur<=N) sel.value=cur;
+}
+['mousedown','focus'].forEach(ev=>$('lkpd_pick').addEventListener(ev,lkpdFillPick));
+function lkpdSnap(){
+  const out=[]; let cur=null;
+  [...$('lkpd').children].forEach(n=>{
+    if(n.classList&&n.classList.contains('pb')) return;
+    if(n.matches&&n.matches('table.kop')){ const h=n.querySelector('h1'), m=h&&(h.textContent||'').match(/(\d{1,2})/); cur={num:m?+m[1]:out.length+1,html:''}; out.push(cur); }
+    if(cur) cur.html+=n.outerHTML;
+  });
+  return out;
+}
+function lkpdTitle(x){ const d=document.createElement('div'); d.innerHTML=x.html; const h=d.querySelector('h1'); return h?h.textContent.replace(/^[^:]*:\s*/,'').trim():''; }
+function lkpdPartHtml(t){ const d=document.createElement('div'); d.innerHTML=md(t); styleDoc(d,'lkpd'); return d.innerHTML; }
+function lkpdPut(snap,i,html){
+  const k=snap.findIndex(x=>x.num===i);
+  if(k>=0) snap[k]={num:i,html}; else{ const at=snap.findIndex(x=>x.num>i); snap.splice(at<0?snap.length:at,0,{num:i,html}); }
+}
+function lkpdRender(snap){
+  const el=$('lkpd'); el.innerHTML=snap.map(x=>x.html).join(''); styleDoc(el,'lkpd'); el.hidden=!snap.length;
+  const on=snap.length>0; ['lkpdword','lkpdprint','printboth','lkpdredo'].forEach(id=>$(id).disabled=!on);
+  return el;
+}
+new MutationObserver(()=>{ const on=!$('lkpd').hidden&&!!$('lkpd').innerText.trim(); $('lkpdredo').disabled=!on; }).observe($('lkpd'),{attributes:true,attributeFilter:['hidden']});
+async function lkpdRun(redo){
+  if($('doc').hidden||!$('doc').innerText.trim()){ setStatus('RPM belum dibuat.',true); return; }
+  lkpdFillPick();
+  const resuming=RESUMING, N=lkpdJumlah();
+  const mode=(resuming&&LKPD_LAST!=null)?LKPD_LAST:(+$('lkpd_pick').value||0);
+  if(mode>N){ setStatus('RPM hanya memiliki '+N+' pertemuan.',true); return; }
+  const had=lkpdSnap();
+  if(!resuming){
+    if(mode&&had.some(x=>x.num===mode)){ if(!confirm('LKPD pertemuan '+mode+' sudah ada. Susun ulang dan ganti isinya? Pertemuan lain tidak berubah.')) return; }
+    else if(!mode&&had.length){ if(!confirm('Susun semua LKPD dari awal? LKPD yang sekarang akan diganti seluruhnya. Untuk satu pertemuan saja, pilih "Pertemuan n saja".')) return; }
+  }
   if(!(await pickKey('LKPD'))) return;
-  const b=$('lkpdbtn'); b.disabled=true; b.textContent='Menyusun LKPD…';
-  setStatus('');
-  showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
+  LKPD_LAST=mode;
+  const b=$('lkpdbtn'), rb=$('lkpdredo'), sel=$('lkpd_pick'); b.disabled=true; rb.disabled=true; sel.disabled=true; setStatus('');
+  let snap=mode?had:(RESUMED?had:[]), out='', last=0, selesai=[];
+  const list=mode?[mode]:Array.from({length:N},(_,k)=>k+1);
   try{
-    liveSet($('lkpd'),'','lkpd');
-    const t=await ask(lkpdPrompt(),'LKPD');
-    const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
-    $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
-    cloudClear(); JOB_OK=true;
-    setStatus('LKPD selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
-    notify(true,'LKPD berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
-    el.scrollIntoView({behavior:'smooth',block:'start'});
+    for(const i of list){
+      last=i;
+      const lab=mode?`Menyusun LKPD pertemuan ${i}…`:`Menyusun LKPD ${selesai.length+1}/${N}…`;
+      b.textContent=lab;
+      showLoader([`Menyusun LKPD pertemuan ${i}${mode?'':' dari '+N}…`,'Membaca langkah pembelajaran di RPM…','Menulis bacaan, contoh, dan tugas siswa…','Menyiapkan tempat jawaban dan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
+      liveSet($('lkpd'),mode?'':(out?out+'\n\n':''),'lkpd','LKPD pertemuan '+i+(mode?'':'/'+N));
+      const prev=snap.filter(x=>x.num<i).map(lkpdTitle).filter(Boolean);
+      const t=await ask(lkpdPrompt(i,N,prev),'LKPD:'+i);
+      out+=(out?'\n\n':'')+t; selesai.push(i);
+      lkpdPut(snap,i,lkpdPartHtml(t)); lkpdRender(snap);
+    }
+    cloudClear(); JOB_OK=true; LKPD_LAST=null;
+    const msg=mode?`LKPD pertemuan ${mode} selesai disusun${redo?' ulang':''}. Pertemuan lain tidak berubah.`:`LKPD selesai (${N} pertemuan).`;
+    setStatus(msg+' Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
+    notify(true,msg+' Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
+    $('lkpd').scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
-  }catch(e){ setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.':'Gagal: '+e.message,!e.aborted); if(!e.aborted) notify(false,'LKPD gagal disusun: '+e.message);
-    if(e.partial){ const el=$('lkpd'); el.innerHTML=md(e.partial); styleDoc(el,'lkpd'); el.hidden=false; }
-    showResume('LKPD',e); }
-  finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
-});
-
+  }catch(e){
+    if(e.partial && !snap.some(x=>x.num===last)) lkpdPut(snap,last,lkpdPartHtml(e.partial));
+    lkpdRender(snap);
+    showResume('LKPD',e);
+    const msg=(selesai.length?`LKPD pertemuan ${selesai.join(', ')} sudah jadi, tetapi `:'')+'gagal menyusun LKPD pertemuan '+last+': '+e.message+' Tekan Buat LKPD untuk melanjutkan.';
+    if(e.aborted) setStatus('Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.'); else{ setStatus(msg,true); notify(false,msg); }
+  }finally{ hideLoader(); b.disabled=false; sel.disabled=false; b.textContent='Buat LKPD'; rb.disabled=$('lkpd').hidden; }
+}
+$('lkpdbtn').addEventListener('click',()=>lkpdRun(false));
+$('lkpdredo').addEventListener('click',()=>lkpdRun(true));
 
 /* ================= ASESMEN (diagnostik, formatif, sumatif) ================= */
 const ASES_JENIS=[
