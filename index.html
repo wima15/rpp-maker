@@ -708,6 +708,8 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 .wk .swt::before{content:"OFF";color:var(--muted)}
 .wk input:checked ~ .swt::before{content:"ON";color:var(--accent)}
 .wk .lbl{flex:1;font-size:14px}
+.wkw .wkket{display:none;width:100%;box-sizing:border-box;margin:0 0 6px}
+.wkw.off .wkket{display:block}
 </style>
 </head>
 <body>
@@ -794,10 +796,6 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h6"/><path d="m16 15 2 2 4-4"/></svg>
     <span class="lbl">Buat ATP</span>
   </button>
-  <button type="button" class="sb-link" id="nav-atpsaved" data-view="atpsaved" title="ATP Tersimpan">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 14h6"/><path d="M9 4v5"/></svg>
-    <span class="lbl">ATP Tersimpan</span>
-  </button>
   <button type="button" class="sb-link" id="nav-prota" data-view="prota" title="Prota &amp; Prosem">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4z"/><path d="M4 10h16"/><path d="M9 3v4"/><path d="M15 3v4"/><path d="M8 14h2"/><path d="M14 14h2"/></svg>
     <span class="lbl">Prota &amp; Prosem</span>
@@ -805,6 +803,10 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   <button type="button" class="sb-link" id="nav-make" data-view="make" title="Buat RPP">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
     <span class="lbl">Buat RPP</span>
+  </button>
+  <button type="button" class="sb-link" id="nav-atpsaved" data-view="atpsaved" title="ATP Tersimpan">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 14h6"/><path d="M9 4v5"/></svg>
+    <span class="lbl">ATP Tersimpan</span>
   </button>
   <button type="button" class="sb-link" id="nav-saved" data-view="saved" title="RPP Tersimpan">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16"/><path d="M9 14h6"/></svg>
@@ -1150,6 +1152,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <span class="tlabel">ATP</span>
       <div class="tbtns">
         <button type="button" class="ghost" id="atpcopy" disabled>Salin</button>
+        <button type="button" class="ghost" id="atppage_btn" title="Ukuran kertas, orientasi, dan margin">Atur kertas &amp; margin</button>
         <button type="button" class="ghost" id="atpword" disabled>Ke Word</button>
         <button type="button" class="ghost" id="atpprint" disabled>Cetak / PDF</button>
         <button type="button" class="ghost" id="atpregen" disabled>Susun ulang</button>
@@ -1165,7 +1168,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     </div>
     <div class="tgroup">
       <span class="tlabel">Sunting dokumen</span>
-      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpclear" disabled>Kosongkan</button></div>
+      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpimg" title="Sisipkan gambar (saat mode Edit). Gambar maks 50 KB, disimpan di storage">Sisipkan gambar</button><button type="button" class="ghost" id="atpclear" disabled>Kosongkan</button></div>
     </div>
   </div>
   <div class="status" id="atpstatus"></div>
@@ -1219,6 +1222,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <div class="tbtns">
         <select id="pp_scope" style="max-width:180px"><option value="all">Semua dokumen</option><option value="cur">Yang sedang tampil</option></select>
         <button type="button" class="ghost" id="ppcopy" disabled>Salin</button>
+        <button type="button" class="ghost" id="pp_page" title="Ukuran kertas, orientasi, dan margin">Atur kertas &amp; margin</button>
         <button type="button" class="ghost" id="ppword" disabled>Ke Word</button>
         <button type="button" class="ghost" id="ppprint" disabled>Cetak / PDF</button>
       </div>
@@ -1229,7 +1233,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     </div>
     <div class="tgroup">
       <span class="tlabel">Sunting dokumen</span>
-      <div class="tbtns"><button type="button" class="ghost" id="ppedit" disabled>Edit</button><button type="button" class="ghost" id="ppclear" disabled>Kosongkan</button></div>
+      <div class="tbtns"><button type="button" class="ghost" id="ppedit" disabled>Edit</button><button type="button" class="ghost" id="ppimg" title="Sisipkan gambar (saat mode Edit). Gambar maks 50 KB, disimpan di storage">Sisipkan gambar</button><button type="button" class="ghost" id="ppclear" disabled>Kosongkan</button></div>
     </div>
   </div>
   <div class="status" id="ppstatus"></div>
@@ -1477,7 +1481,7 @@ function setDirty(v){ dirty=v; $('savedb').classList.toggle('dirty',v); $('saved
 function setEdit(on){
   editing=!!on;
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ $(id).contentEditable=editing?'true':'false'; });
-  document.body.classList.toggle('editing',editing);
+  document.body.classList.toggle('editing',anyEditing());
   $('editbtn').textContent=editing?'Selesai edit':'Edit';
   $('editbtn').classList.toggle('on',editing);
   $('editgroup').classList.toggle('active',editing);
@@ -1493,7 +1497,9 @@ $('editbtn').addEventListener('click',()=>{
 ['doc','lkpd','asesmen','lampiran'].forEach(id=>$(id).addEventListener('input',()=>{ if(editing) setDirty(true); }));
 
 /* ================= GAMBAR di mode edit: sisipkan, geser bebas, ubah ukuran ================= */
-var EDITABLES=['doc','lkpd','asesmen','lampiran'];
+var EDITABLES=['doc','lkpd','asesmen','lampiran','atpdoc','ppdoc'];
+function anyEditing(){ return editing||!!window.ATPEDIT||!!window.PPEDIT; }
+function dirtyFor(ed){ if(!ed) return; if(ed.id==='atpdoc') $('atpsave').textContent='Simpan perubahan'; else if(ed.id==='ppdoc') $('ppsave').textContent='Simpan perubahan'; else setDirty(true); }
 var lastRange=null, lastEd=null, selImg=null, imgDrag=null;
 function edOf(n){ const el=n&&(n.nodeType===1?n:n.parentElement); return (el&&el.closest)?EDITABLES.map($).find(e=>e.contains(el))||null:null; }
 document.addEventListener('selectionchange',()=>{
@@ -1511,51 +1517,99 @@ function imgStyle(img,al,pct){
   img.setAttribute('style','width:'+pct+'%;height:auto;max-width:100%;'+pos);
   if(al==='left'||al==='right') img.setAttribute('align',al);
 }
-function targetRange(pt){
+function targetRange(pt,force){
   let r=null;
   if(pt){ r=rangeAtPoint(pt.x,pt.y); if(r&&!edOf(r.startContainer)) r=null; }
-  if(!r&&lastRange&&lastRange.startContainer.isConnected&&edOf(lastRange.startContainer)) r=lastRange.cloneRange();
+  if(force&&r&&edOf(r.startContainer)!==force) r=null;
+  if(!r&&lastRange&&lastRange.startContainer.isConnected&&edOf(lastRange.startContainer)&&(!force||edOf(lastRange.startContainer)===force)) r=lastRange.cloneRange();
   if(!r){
-    const ed=(lastEd&&!lastEd.hidden&&lastEd)||EDITABLES.map($).find(e=>!e.hidden&&e.innerText.trim());
+    const ed=force||(lastEd&&!lastEd.hidden&&lastEd)||EDITABLES.map($).find(e=>!e.hidden&&e.innerText.trim());
     if(!ed) return null;
     r=document.createRange(); r.selectNodeContents(ed); r.collapse(false);
   }
   return r;
 }
-function fileToSrc(file){ return new Promise((ok,no)=>{
-  if(!/^image\//.test(file.type)) return no(new Error('Bukan file gambar.'));
-  const fr=new FileReader();
-  fr.onerror=()=>no(new Error('Gagal membaca gambar.'));
-  fr.onload=()=>{
-    const src=fr.result;
-    if(file.type==='image/png'&&file.size<400000) return ok(src);        // PNG kecil dipakai apa adanya (transparansi tetap)
-    const im=new Image(); im.onerror=()=>no(new Error('Gambar tidak bisa dibuka.'));
-    im.onload=()=>{                                                        // lainnya diperkecil (maks 1280 px) agar ringan saat disimpan
-      const k=Math.min(1,1280/im.naturalWidth), c=document.createElement('canvas');
-      c.width=Math.max(1,Math.round(im.naturalWidth*k)); c.height=Math.max(1,Math.round(im.naturalHeight*k));
-      const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height);
-      ok(c.toDataURL('image/jpeg',0.85));
-    };
-    im.src=src;
-  };
-  fr.readAsDataURL(file);
+/* ---- gambar dokumen: diperkecil maks 50 KB lalu disimpan ke storage (bucket gambar-dokumen) ---- */
+var IMGBUCKET='gambar-dokumen', IMGMAX=50000, IMGFORCE=null, IMGCACHE=new Map();
+const blobToDataURL=b=>new Promise(r=>{ const f=new FileReader(); f.onload=()=>r(f.result); f.onerror=()=>r(null); f.readAsDataURL(b); });
+function loadImgEl(file){ return new Promise((ok,no)=>{
+  const u=URL.createObjectURL(file), im=new Image();
+  im.onload=()=>{ URL.revokeObjectURL(u); ok(im); };
+  im.onerror=()=>{ URL.revokeObjectURL(u); no(new Error('Gambar tidak bisa dibuka.')); };
+  im.src=u;
 }); }
-async function insertImageFiles(files,pt){
+const canvasBlob=(c,t,q)=>new Promise(r=>c.toBlob(r,t,q));
+async function shrinkImage(file){
+  if(!/^image\//.test(file.type)) throw new Error('Bukan file gambar.');
+  if(file.size<=IMGMAX&&/^image\/(png|jpeg|webp)$/.test(file.type)) return file;      // sudah kecil: dipakai apa adanya (transparansi PNG tetap)
+  const im=await loadImgEl(file); let k=Math.min(1,1280/Math.max(im.naturalWidth,im.naturalHeight));
+  for(let round=0;round<14;round++){
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(im.naturalWidth*k)); c.height=Math.max(1,Math.round(im.naturalHeight*k));
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height);
+    for(const q of [0.82,0.7,0.58,0.46,0.34,0.25]){ const b=await canvasBlob(c,'image/jpeg',q); if(b&&b.size<=IMGMAX) return b; }
+    if(Math.max(c.width,c.height)<80) break; k*=0.8;
+  }
+  throw new Error('Gambar tidak bisa dikecilkan sampai 50 KB.');
+}
+async function uploadImg(blob){
+  const d=new Date(), rnd=(window.crypto&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).replace(/-/g,'').slice(0,16);
+  const ext=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg';
+  const path=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+'/'+Date.now().toString(36)+rnd+'.'+ext;
+  await stReq('POST','/object/'+IMGBUCKET+'/'+path,blob,{'Content-Type':blob.type,'x-upsert':'false'});
+  const url=stBase()+'/object/public/'+IMGBUCKET+'/'+path;
+  blobToDataURL(blob).then(x=>{ if(x) IMGCACHE.set(url,x); });
+  return url;
+}
+function imgUpErr(e){
+  const m=String(e&&e.message||e);
+  if(e instanceof TypeError) return why(e);
+  if(/bucket not found/i.test(m)) return 'bucket "'+IMGBUCKET+'" belum dibuat';
+  if(/row-level|unauthorized|not allowed|policy/i.test(m)||(e&&e.status===403)) return 'izin storage belum diatur';
+  return m;
+}
+var IMGWARN='';
+async function fileToSrc(file){
+  const blob=await shrinkImage(file);
+  try{ return await uploadImg(blob); }
+  catch(e){ IMGWARN=imgUpErr(e); return await blobToDataURL(blob); }     // cadangan: tetap tampil, tapi belum di storage
+}
+/* gambar lama (base64) ikut dipindah ke storage saat dokumen disimpan */
+async function migrateImgs(el){
+  const list=[...el.querySelectorAll('img.usr-img')].filter(i=>/^data:image\//.test(i.getAttribute('src')||''));
+  for(const im of list){
+    try{ const b=await (await fetch(im.getAttribute('src'))).blob(); im.setAttribute('src',await uploadImg(await shrinkImage(b))); }
+    catch(e){ break; }
+  }
+}
+/* simpan salinan base64 gambar storage agar ekspor Word tidak bergantung pada internet */
+function cacheImgs(root){
+  root.querySelectorAll('img.usr-img').forEach(im=>{
+    const u=im.getAttribute('src')||''; if(!/^https?:/.test(u)||IMGCACHE.has(u)) return; IMGCACHE.set(u,null);
+    fetch(u).then(r=>r.ok?r.blob():null).then(b=>b?blobToDataURL(b):null).then(d=>{ if(d) IMGCACHE.set(u,d); else IMGCACHE.delete(u); }).catch(()=>IMGCACHE.delete(u));
+  });
+}
+async function insertImageFiles(files,pt,force){
   const list=[...files].filter(f=>/^image\//.test(f.type)); if(!list.length) return;
-  const r=targetRange(pt);
-  if(!r){ setStatus('Klik dulu di dalam dokumen yang sedang diedit, lalu sisipkan gambar.',true); return; }
-  let last=null;
+  const r=targetRange(pt,force);
+  if(!r){ const m='Klik dulu di dalam dokumen yang sedang diedit, lalu sisipkan gambar.'; if(force) notify(false,m); else setStatus(m,true); return; }
+  const ed=edOf(r.startContainer); let last=null; IMGWARN='';
+  if(!force) setStatus('Memproses gambar…');
   for(const f of list){
     try{
       const img=document.createElement('img'); img.src=await fileToSrc(f); img.alt='Gambar'; img.className='usr-img'; img.draggable=false;
       imgStyle(img,'center',50); r.insertNode(img); r.setStartAfter(img); r.collapse(true); last=img;
-    }catch(e){ setStatus(e.message,true); }
+    }catch(e){ if(force) notify(false,e.message); else setStatus(e.message,true); }
   }
-  if(last){ setDirty(true); selectImg(last); setStatus('Gambar disisipkan. Seret untuk memindah, tarik sudut kanan-bawah untuk mengubah ukuran.'); }
+  if(last){
+    dirtyFor(ed); selectImg(last);
+    const ok='Gambar disisipkan (maks 50 KB, disimpan di storage). Seret untuk memindah, tarik sudut kanan-bawah untuk mengubah ukuran.';
+    if(ed&&(ed.id==='atpdoc'||ed.id==='ppdoc')){ if(!IMGWARN) notify(true,'Gambar disisipkan dan disimpan di storage (maks 50 KB).'); } else setStatus(ok);
+  }
+  if(IMGWARN) notify(false,'Gambar belum bisa disimpan ke storage ('+IMGWARN+'), jadi sementara dimasukkan langsung ke dokumen. Minta pengembang menjalankan tambah-bucket-gambar.sql di Supabase.');
 }
 function posBar(){
   const b=$('imgbar'); if(!b) return;
-  if(!selImg||!editing||!selImg.isConnected){ b.hidden=true; return; }
+  if(!selImg||!anyEditing()||!selImg.isConnected){ b.hidden=true; return; }
   b.hidden=false; const r=selImg.getBoundingClientRect();
   b.style.left=Math.max(8,Math.min(innerWidth-b.offsetWidth-8,r.left))+'px';
   b.style.top=Math.max(8,r.top-b.offsetHeight-8)+'px';
@@ -1571,17 +1625,22 @@ function selectImg(img){
   posBar();
 }
 document.querySelectorAll('#imgbar [data-al]').forEach(b=>b.addEventListener('click',()=>{
-  if(!selImg) return; imgStyle(selImg,b.dataset.al,selImg.dataset.w||50); setDirty(true); selectImg(selImg);
+  if(!selImg) return; imgStyle(selImg,b.dataset.al,selImg.dataset.w||50); dirtyFor(edOf(selImg)); selectImg(selImg);
 }));
-$('imgw').addEventListener('input',()=>{ if(!selImg) return; imgStyle(selImg,selImg.dataset.al||'center',+$('imgw').value); setDirty(true); posBar(); });
-$('imgdel').addEventListener('click',()=>{ if(!selImg) return; const i=selImg; selectImg(null); i.remove(); setDirty(true); });
-$('imgadd').addEventListener('click',()=>$('imgfile').click());
-$('imgfile').addEventListener('change',e=>{ const f=[...e.target.files]; e.target.value=''; insertImageFiles(f); });
+$('imgw').addEventListener('input',()=>{ if(!selImg) return; imgStyle(selImg,selImg.dataset.al||'center',+$('imgw').value); dirtyFor(edOf(selImg)); posBar(); });
+$('imgdel').addEventListener('click',()=>{ if(!selImg) return; const i=selImg, ed=edOf(i); selectImg(null); i.remove(); dirtyFor(ed); });
+$('imgadd').addEventListener('click',()=>{ IMGFORCE=null; $('imgfile').click(); });
+$('imgfile').addEventListener('change',e=>{ const f=[...e.target.files], F=IMGFORCE; e.target.value=''; IMGFORCE=null; insertImageFiles(f,null,F); });
+[['atpimg','atpdoc','ATPEDIT'],['ppimg','ppdoc','PPEDIT']].forEach(([b,d,fl])=>$(b).addEventListener('click',()=>{
+  if($(d).hidden){ notify(false,'Susun atau buka dokumennya dulu.'); return; }
+  if(!window[fl]){ notify(false,'Tekan Edit dulu, lalu sisipkan gambar.'); return; }
+  IMGFORCE=$(d); $('imgfile').click();
+}));
 addEventListener('scroll',posBar,true); addEventListener('resize',posBar);
 
 /* seret untuk memindah ke posisi mana saja di teks; tarik sudut kanan-bawah untuk mengubah ukuran */
 document.addEventListener('pointerdown',e=>{
-  if(!editing) return;
+  if(!anyEditing()) return;
   const img=e.target.closest&&e.target.closest('img.usr-img');
   if(!img||!edOf(img)){ if(!(e.target.closest&&e.target.closest('#imgbar'))) selectImg(null); return; }
   e.preventDefault(); selectImg(img);
@@ -1606,8 +1665,8 @@ document.addEventListener('pointermove',e=>{
 function endImgDrag(e){
   const d=imgDrag; if(!d||e.pointerId!==d.pid) return;
   $('imgdrop').style.display='none'; d.img.style.opacity='';
-  if(d.moved&&!d.size&&d.range){ d.range.insertNode(d.img); setDirty(true); }
-  else if(d.moved&&d.size) setDirty(true);
+  if(d.moved&&!d.size&&d.range){ d.range.insertNode(d.img); dirtyFor(edOf(d.img)); }
+  else if(d.moved&&d.size) dirtyFor(edOf(d.img));
   imgDrag=null; posBar();
 }
 document.addEventListener('pointerup',endImgDrag);
@@ -1616,20 +1675,22 @@ document.addEventListener('pointercancel',endImgDrag);
 /* seret file gambar dari komputer / tempel dari papan klip */
 EDITABLES.forEach(id=>{
   const el=$(id);
-  el.addEventListener('dragover',e=>{ if(editing&&e.dataTransfer&&[...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+  el.addEventListener('dragover',e=>{ if(anyEditing()&&e.dataTransfer&&[...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
   el.addEventListener('drop',e=>{
-    if(!editing||!e.dataTransfer||!e.dataTransfer.files.length) return;
-    e.preventDefault(); insertImageFiles(e.dataTransfer.files,{x:e.clientX,y:e.clientY});
+    if(!anyEditing()||!e.dataTransfer||!e.dataTransfer.files.length) return;
+    e.preventDefault(); insertImageFiles(e.dataTransfer.files,{x:e.clientX,y:e.clientY},(id==='atpdoc'||id==='ppdoc')?el:null);
   });
   el.addEventListener('paste',e=>{
-    if(!editing) return; const f=[...(e.clipboardData&&e.clipboardData.files||[])].filter(x=>/^image\//.test(x.type));
-    if(f.length){ e.preventDefault(); insertImageFiles(f); }
+    if(!anyEditing()) return; const f=[...(e.clipboardData&&e.clipboardData.files||[])].filter(x=>/^image\//.test(x.type));
+    if(f.length){ e.preventDefault(); insertImageFiles(f,null,(id==='atpdoc'||id==='ppdoc')?el:null); }
   });
+  new MutationObserver(()=>cacheImgs(el)).observe(el,{childList:true,subtree:true});
 });
 /* ukuran gambar untuk Word: persen dari lebar halaman -> piksel */
 function imgWordFix(c){
   const {w,m}=pageCfg(), cw=(w-m[1]-m[3])*96/25.4;
   c.querySelectorAll('img.usr-img').forEach(im=>{
+    const cd=IMGCACHE.get(im.getAttribute('src')); if(cd) im.setAttribute('src',cd);
     const px=Math.max(24,Math.round(cw*(+im.dataset.w||50)/100));
     im.classList.remove('img-sel'); im.style.opacity='';
     im.style.width=px+'px'; im.style.height='auto'; im.setAttribute('width',px); im.removeAttribute('height');
@@ -2754,6 +2815,7 @@ async function saveDb(auto,prefix,skipAses,skipLamp){
   const pre=prefix?prefix+' ':'', tbl=encodeURIComponent(readCfgForm().tOut);
   const btn=$('savedb'); btn.disabled=true;
   try{
+    for(const id of ['doc','lkpd','asesmen','lampiran']){ if(!$(id).hidden) await migrateImgs($(id)); }
     const body=dbPayload(); let row=null;
     if(skipAses||$('asesmen').hidden) delete body.asesmen_html;
     if(skipLamp||$('lampiran').hidden) delete body.lampiran_html;
@@ -2852,6 +2914,8 @@ $('pc_go').addEventListener('click',()=>{
 });
 window.addEventListener('afterprint',()=>{ delete document.body.dataset.sel; delete document.body.dataset.first; });
 $('pc_page').addEventListener('click',()=>$('pagebtn').click());
+$('atppage_btn').addEventListener('click',()=>$('pagebtn').click());
+$('pp_page').addEventListener('click',()=>$('pagebtn').click());
 
 /* ---- tutup proyek yang sedang dibuka / akan disusun ulang ---- */
 function closeProject(){
@@ -3309,7 +3373,7 @@ async function loadSekolah(){
 }
 window.MGG={ganjil:18,genap:18,bulan:null};
 window.TAS=null;
-let ADM_OFF=new Set(), ADM_STALE=false;
+let ADM_OFF=new Set(), ADM_KET={}, ADM_STALE=false;
 function mggRefreshAll(){ if(window.atpMggRefresh) window.atpMggRefresh(); if(window.protaMggRefresh) window.protaMggRefresh(); }
 function mggClamp(x,d){ x=parseInt(x); return (x>=1&&x<=40)?x:d; }
 /* ---- tahun ajaran dari E-Rapor (disimpan di pengaturan_rpm, kunci tahun_ajaran) ---- */
@@ -3370,7 +3434,8 @@ function admRenderWeeks(){
     C.cal[s].forEach(w=>{
       if(w.bln!==last){ last=w.bln; const m=w.th.getUTCMonth(); h+='<div class="wk-bln">'+BLN_FULL[m]+' '+w.th.getUTCFullYear()+'</div>'; }
       no++; const on=!ADM_OFF.has(w.iso);
-      h+='<label class="wk'+(on?'':' off')+'"><span class="lbl">Minggu ke-'+no+' · '+esc(wkLabel(w))+'</span><input type="checkbox" class="wkcb" data-iso="'+w.iso+'"'+(on?' checked':'')+'><span class="sw"></span><b class="swt"></b></label>';
+      h+='<div class="wkw'+(on?'':' off')+'"><label class="wk'+(on?'':' off')+'"><span class="lbl">Minggu ke-'+no+' · '+esc(wkLabel(w))+'</span><input type="checkbox" class="wkcb" data-iso="'+w.iso+'"'+(on?' checked':'')+'><span class="sw"></span><b class="swt"></b></label>'
+        +'<input type="text" class="wkket" data-iso="'+w.iso+'" maxlength="120" placeholder="Alasan tidak efektif (mis. Libur Natal, Ujian Sekolah)" value="'+esc(ADM_KET[w.iso]||'')+'"></div>';
     });
     h+='</div>';
   });
@@ -3383,8 +3448,20 @@ function admCount(){
 document.addEventListener('change',e=>{
   const cb=e.target&&e.target.classList&&e.target.classList.contains('wkcb')?e.target:null; if(!cb) return;
   if(cb.checked) ADM_OFF.delete(cb.dataset.iso); else ADM_OFF.add(cb.dataset.iso);
-  cb.closest('.wk').classList.toggle('off',!cb.checked); admCount();
+  cb.closest('.wkw').classList.toggle('off',!cb.checked); cb.closest('.wk').classList.toggle('off',!cb.checked); admCount();
+  if(!cb.checked){ const t=cb.closest('.wkw').querySelector('.wkket'); if(t) t.focus(); }
 });
+document.addEventListener('input',e=>{
+  const t=e.target&&e.target.classList&&e.target.classList.contains('wkket')?e.target:null; if(!t) return;
+  ADM_KET[t.dataset.iso]=t.value;
+});
+/* kalender lengkap (efektif + tidak efektif beserta alasannya) untuk Prosem */
+const fmtDM=d=>d.getUTCDate()+' '+BLN[d.getUTCMonth()];
+function mggCal(off,ket){
+  const C=buildCalendar(); if(!C) return null; const o={};
+  ['Ganjil','Genap'].forEach(s=>{ o[s]=C.cal[s].map(w=>({bln:w.bln,off:off.has(w.iso),ket:String(ket[w.iso]||'').trim(),a:fmtDM(w.mon),z:fmtDM(w.sat)+' '+w.sat.getUTCFullYear()})); });
+  return o;
+}
 async function loadMinggu(){
   if(!window.TAS) await loadTA();
   let n=null;
@@ -3397,8 +3474,9 @@ async function loadMinggu(){
   if(n&&!ADM_STALE){
     const bl=n.bulan||null, okB=bl&&['Ganjil','Genap'].every(s=>Array.isArray(bl[s])&&bl[s].length===6);
     window.MGG={ganjil:mggClamp(n.ganjil,18),genap:mggClamp(n.genap,18),bulan:okB?bl:null};
-    ADM_OFF=new Set(Array.isArray(n.off)?n.off:[]);
-  }else{ window.MGG={ganjil:18,genap:18,bulan:null}; ADM_OFF=new Set(); }
+    ADM_OFF=new Set(Array.isArray(n.off)?n.off:[]); ADM_KET=(n.ket&&typeof n.ket==='object')?Object.assign({},n.ket):{};
+    window.MGG.cal=mggCal(ADM_OFF,ADM_KET);
+  }else{ window.MGG={ganjil:18,genap:18,bulan:null,cal:null}; ADM_OFF=new Set(); ADM_KET={}; }
   admRenderWeeks();
   mggRefreshAll();
 }
@@ -3406,11 +3484,12 @@ async function saveMinggu(){
   const C=buildCalendar(); if(!C){ msg('a_mggmsg','Ambil tahun ajaran dari E-Rapor dulu.',true); return; }
   const r=mggCompute(C.cal,ADM_OFF);
   if(r.Ganjil.n<1||r.Genap.n<1){ msg('a_mggmsg','Tiap semester harus punya minimal 1 minggu efektif (ON).',true); return; }
-  const ganjil=r.Ganjil.n, genap=r.Genap.n, off=[...ADM_OFF].sort();
+  const ganjil=r.Ganjil.n, genap=r.Genap.n, off=[...ADM_OFF].sort(), ket={};
+  off.forEach(k=>{ const t=String(ADM_KET[k]||'').trim(); if(t) ket[k]=t; });
   const b=$('a_mggsave'); b.disabled=true; msg('a_mggmsg','Menyimpan…');
   try{
-    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'minggu_efektif',nilai:{ganjil,genap,ta:window.TAS.nama,off,bulan:{Ganjil:r.Ganjil.bulan,Genap:r.Genap.bulan}},updated_at:new Date().toISOString()}});
-    window.MGG={ganjil,genap,bulan:{Ganjil:r.Ganjil.bulan,Genap:r.Genap.bulan}}; ADM_STALE=false; mggRefreshAll();
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'minggu_efektif',nilai:{ganjil,genap,ta:window.TAS.nama,off,ket,bulan:{Ganjil:r.Ganjil.bulan,Genap:r.Genap.bulan}},updated_at:new Date().toISOString()}});
+    ADM_KET=ket; window.MGG={ganjil,genap,bulan:{Ganjil:r.Ganjil.bulan,Genap:r.Genap.bulan},cal:mggCal(ADM_OFF,ket)}; ADM_STALE=false; mggRefreshAll();
     msg('a_mggmsg','Minggu efektif tersimpan: Ganjil '+ganjil+', Genap '+genap+'. Berlaku untuk semua guru.');
   }catch(e){ msg('a_mggmsg','Gagal menyimpan: '+tblErr(e,'pengaturan_rpm'),true); }
   finally{ b.disabled=false; }
@@ -3620,7 +3699,7 @@ function render(t){
   d.hidden=false; $('atpempty').hidden=true; btn.forEach(id=>$(id).disabled=false);
 }
 function setEditAtp(on){
-  atpEdit=on; $('atpdoc').contentEditable=on?'true':'false'; $('atpedit').textContent=on?'Selesai edit':'Edit';
+  atpEdit=on; window.ATPEDIT=!!on; document.body.classList.toggle('editing',anyEditing()); selectImg(null); $('atpdoc').contentEditable=on?'true':'false'; $('atpedit').textContent=on?'Selesai edit':'Edit';
   $('atpsave').textContent=on?'Simpan perubahan':'Simpan ke database';
 }
 $('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; });
@@ -3659,14 +3738,13 @@ $('atpclear').addEventListener('click',()=>{
 /* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
 const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
 $('atpprint').addEventListener('click',()=>{
-  const st=document.createElement('style'); st.id='atppage'; st.textContent='@page{size:210mm 297mm;size:A4 landscape;margin:15mm}'; document.head.appendChild(st);
-  if(_titleAsli===null) _titleAsli=document.title;
+    if(_titleAsli===null) _titleAsli=document.title;
   document.title=['ATP',v('atp_mapel'),v('atp_guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
   window.print();
 });
 window.addEventListener('afterprint',()=>{ const st=$('atppage'); if(st) st.remove(); });
 $('atpword').addEventListener('click',()=>{
-  const css=DOC_CSS+'@page Section1{size:297mm 210mm;mso-page-orientation:landscape;margin:15mm}div.Section1{page:Section1}';
+  const css=DOC_CSS+wordPage();
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${docForWord($('atpdoc'))}</div></body></html>`;
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
   a.download='ATP_'+(bersih(v('atp_mapel'))||'mapel').slice(0,60)+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -3674,6 +3752,7 @@ $('atpword').addEventListener('click',()=>{
 
 /* ---- simpan ke database (tabel atp_hasil) ---- */
 async function atpSave(auto){
+  try{ await migrateImgs($('atpdoc')); }catch(e){}
   const c=stripLogos($('atpdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
   const body={nama_guru:v('atp_guru'),kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),mata_pelajaran:v('atp_mapel'),
     fase:v('atp_fase'),semester:$('atp_cakupan').value,tahun_ajaran:v('atp_tahun'),model:v('atp_model'),atp_markdown:atpText,atp_html:c.innerHTML};
@@ -3854,19 +3933,22 @@ function monthsFor(sem,y){
   const n=sem==='Ganjil'?['Jul','Agu','Sep','Okt','Nov','Des']:['Jan','Feb','Mar','Apr','Mei','Jun'];
   return n;
 }
-function weeksPerMonth(W,sem){
-  const bl=window.MGG&&window.MGG.bulan&&window.MGG.bulan[sem];
-  if(Array.isArray(bl)&&bl.length===6&&bl.reduce((a,x)=>a+x,0)===W) return bl.slice();
-  const b=Math.floor(W/6), r=W%6; return [0,1,2,3,4,5].map(i=>b+(i<r?1:0));
+function prosemCols(sem,W){
+  const cal=window.MGG&&window.MGG.cal&&window.MGG.cal[sem];
+  if(Array.isArray(cal)&&cal.filter(x=>!x.off).length===W) return cal;
+  const b=Math.floor(W/6), r=W%6, out=[];
+  [0,1,2,3,4,5].forEach(i=>{ for(let k=0;k<b+(i<r?1:0);k++) out.push({bln:i,off:false,ket:'',a:'',z:''}); });
+  return out;
 }
 function prosemTable(items,sem,W,jpw,y){
-  const its=items.filter(i=>i.sem===sem), wpm=weeksPerMonth(W,sem), mn=monthsFor(sem,y);
-  const mon=wpm.map((w,i)=>({w,name:mn[i]})).filter(m=>m.w>0);
-  const wPct=Math.max(1.6,Math.min(3.6,44/W)).toFixed(2);
-  let col=`<col style="width:5%"><col style="width:35%"><col style="width:5%">`+Array.from({length:W},()=>`<col style="width:${wPct}%">`).join('')+`<col>`;
+  const its=items.filter(i=>i.sem===sem), cols=prosemCols(sem,W), N=cols.length, mn=monthsFor(sem,y);
+  const mon=[]; cols.forEach((c,ci)=>{ let m=mon[mon.length-1]; if(!m||m.b!==c.bln){ m={b:c.bln,name:mn[c.bln],cs:[]}; mon.push(m); } m.cs.push(ci); });
+  const effIdx=[]; let ec=0; cols.forEach(c=>{ effIdx.push(c.off?-1:ec++); });
+  const wPct=Math.max(1.6,Math.min(3.6,44/N)).toFixed(2), OFFBG='#c9ccd1';
+  let col=`<col style="width:5%"><col style="width:35%"><col style="width:5%">`+cols.map(()=>`<col style="width:${wPct}%">`).join('')+`<col>`;
   const th='style="text-align:center;vertical-align:middle;font-size:9pt;padding:2px"';
-  let h1=`<tr><th rowspan="2" ${th}>No</th><th rowspan="2" ${th}>Unit / Tujuan Pembelajaran</th><th rowspan="2" ${th}>JP</th>`+mon.map(m=>`<th colspan="${m.w}" ${th}>${E(m.name)}</th>`).join('')+`<th rowspan="2" ${th}>Ket.</th></tr>`;
-  let h2='<tr>'+mon.map(m=>Array.from({length:m.w},(_,k)=>`<th ${th}>${k+1}</th>`).join('')).join('')+'</tr>';
+  let h1=`<tr><th rowspan="2" ${th}>No</th><th rowspan="2" ${th}>Unit / Tujuan Pembelajaran</th><th rowspan="2" ${th}>JP</th>`+mon.map(m=>`<th colspan="${m.cs.length}" ${th}>${E(m.name)}</th>`).join('')+`<th rowspan="2" ${th}>Ket.</th></tr>`;
+  let h2='<tr>'+mon.map(m=>m.cs.map((ci,k)=>`<th style="text-align:center;vertical-align:middle;font-size:9pt;padding:2px;${cols[ci].off?'background:'+OFFBG:''}">${k+1}</th>`).join('')).join('')+'</tr>';
   let a=0, n=0, sn=0, body='', over=false;
   const total=its.reduce((x,i)=>x+i.jp,0); if(Math.ceil(total/jpw)>W) over=true;
   its.forEach(i=>{
@@ -3876,13 +3958,26 @@ function prosemTable(items,sem,W,jpw,y){
     if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`+i.tps.map(t=>`<div style="font-weight:400;font-size:8.5pt">${t.kode?E(t.kode)+' ':''}${E(t.text)}</div>`).join(''); }
     else{ sn++; const d=sumDesc(i.title); lab=`<b>Asesmen Sumatif ${sn}</b>`+(d?`<div style="font-weight:400;font-size:8.5pt">${E(d)}</div>`:''); }
     const fill=isU?'#9dc0ea':'#f2b441', lblBg=isU?'#ffffff':'#fff4d6';
-    let cells=''; for(let k=0;k<W;k++){ const on=k>=w0&&k<=w1;
-      cells+=`<td style="text-align:center;padding:1px;font-size:9pt;background:${on?fill:'#ffffff'}">${on?'✓':''}</td>`; }
+    let cells=''; cols.forEach((c,ci)=>{
+      if(c.off){ cells+=`<td style="text-align:center;padding:1px;font-size:9pt;background:${OFFBG}"></td>`; return; }
+      const e=effIdx[ci], on=e>=w0&&e<=w1;
+      cells+=`<td style="text-align:center;padding:1px;font-size:9pt;background:${on?fill:'#ffffff'}">${on?'✓':''}</td>`; });
     body+=`<tr><td style="text-align:center;background:${lblBg}">${no}</td><td style="text-align:left;background:${lblBg};padding:3px 5px">${lab}</td><td style="text-align:center;background:${lblBg}">${i.jp}</td>${cells}<td style="background:#ffffff"></td></tr>`;
     a=b;
   });
-  body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td><td colspan="${W+1}" style="background:#e8eef8"></td></tr>`;
-  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>`};
+  body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td><td colspan="${N+1}" style="background:#e8eef8"></td></tr>`;
+  // keterangan minggu tidak efektif (alasan dari admin); minggu berurutan dengan alasan sama digabung
+  const runs=[]; cols.forEach((c,ci)=>{
+    if(!c.off) return; const last=runs[runs.length-1], k=c.ket||'Tidak efektif';
+    if(last&&last.end===ci-1&&last.ket===k){ last.end=ci; last.n++; last.z=c.z; }
+    else runs.push({start:ci,end:ci,n:1,ket:k,a:c.a,z:c.z,bln:c.bln});
+  });
+  let ket='';
+  if(runs.length){
+    ket=`<div style="font-size:9.5pt;margin-top:8px"><b>Keterangan minggu tidak efektif:</b></div><table style="width:100%;font-size:9.5pt;margin-top:3px"><tr><th style="width:5%">No</th><th style="width:30%">Minggu</th><th style="width:10%">Jumlah</th><th>Keterangan</th></tr>`
+      +runs.map((r,ix)=>{ const wk=r.a?`${E(mn[r.bln])} · ${E(r.a)} – ${E(r.z)}`:E(mn[r.bln]); return `<tr><td style="text-align:center">${ix+1}</td><td>${wk}</td><td style="text-align:center">${r.n} minggu</td><td>${E(r.ket)}</td></tr>`; }).join('')+`</table>`;
+  }
+  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>${ket}`};
 }
 function identRows(r,extra){
   const rows=[['Satuan Pendidikan',$('sekolah').value],['Mata Pelajaran',r.mata_pelajaran],['Fase / Kelas',r.fase],['Tahun Pelajaran',r.tahun_ajaran]];
@@ -3917,7 +4012,7 @@ function shown(items,meta){
   META=meta;
 }
 function setEditPp(on){
-  ppEdit=on; $('ppdoc').contentEditable=on?'true':'false'; $('ppedit').textContent=on?'Selesai edit':'Edit';
+  ppEdit=on; window.PPEDIT=!!on; document.body.classList.toggle('editing',anyEditing()); selectImg(null); $('ppdoc').contentEditable=on?'true':'false'; $('ppedit').textContent=on?'Selesai edit':'Edit';
   $('ppsave').textContent=on?'Simpan perubahan':'Simpan ke database';
 }
 $('ppdoc').addEventListener('input',()=>{ $('ppsave').textContent='Simpan perubahan'; });
@@ -3946,7 +4041,7 @@ async function generate(){
       const p=prosemTable(items,s,Wk[s],jpw,y);
       if(p.over) warn.push(`Semester ${s}: total ${p.total} JP melebihi kapasitas ${jpw} × ${Wk[s]} = ${jpw*Wk[s]} JP, sisa JP ditumpuk di minggu terakhir.`);
       d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
-        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin), ${jpw} JP per minggu. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
+        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif), ${jpw} JP per minggu. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
     fillLogos(d);
     ppId=null; setEditPp(false);
@@ -4009,15 +4104,14 @@ window.protaEnter=function(){ mggInfo(); loadMinggu(); loadGurus(); };
 /* ---------- salin, Word, cetak ---------- */
 $('ppcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(wanted().map(s=>s.innerText).join('\n\n')); st('Teks disalin.'); }catch(e){ st('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
 $('ppword').addEventListener('click',()=>{
-  const css=DOC_CSS+'@page Section1{size:297mm 210mm;mso-page-orientation:landscape;margin:15mm}div.Section1{page:Section1}table.prosem{table-layout:fixed}';
+  const css=DOC_CSS+wordPage()+'table.prosem{table-layout:fixed}';
   const body=wanted().map(s=>docForWord(s)).join('<br clear="all" style="page-break-before:always">');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${body}</div></body></html>`;
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
   a.download='Prota_Prosem_'+(bersih(META&&META.mata_pelajaran)||'mapel').slice(0,60)+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
 $('ppprint').addEventListener('click',()=>{
-  const s=document.createElement('style'); s.id='pppage'; s.textContent='@page{size:210mm 297mm;size:A4 landscape;margin:12mm}'; document.head.appendChild(s);
-  if($('pp_scope').value==='all') $('ppdoc').classList.add('pp-all');
+    if($('pp_scope').value==='all') $('ppdoc').classList.add('pp-all');
   if(_titleAsli===null) _titleAsli=document.title;
   document.title=['Prota_Prosem',META&&META.mata_pelajaran,META&&META.nama_guru].map(bersih).filter(Boolean).join('_').slice(0,140);
   window.print();
@@ -4032,6 +4126,7 @@ $('ppclear').addEventListener('click',()=>{
 const TBL_MSG=' Tabel prota_prosem_hasil belum ada: jalankan tambah-tabel-prota-prosem.sql di Supabase.';
 async function save(){
   if(!META) return;
+  try{ await migrateImgs($('ppdoc')); }catch(e){}
   const c=stripLogos($('ppdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
   const h={}; c.querySelectorAll('.pp-sec').forEach(s=>{ h[s.dataset.pp]=s.innerHTML; });
   const body=Object.assign({kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),prota_html:h.prota||'',prosem_ganjil_html:h.pGanjil||'',prosem_genap_html:h.pGenap||''},META);
