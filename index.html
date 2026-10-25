@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Penyusun RPM – Rencana Pembelajaran Mendalam</title>
+<title>Penyusun RPM &amp; ATP – Perangkat Pembelajaran Mendalam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;600&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600&family=Noto+Sans+Javanese:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -314,8 +314,8 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .tgroup.tedit.active{border-color:var(--mark);box-shadow:0 0 0 2px var(--mark-light)}
 
 @media screen{
-  body.editing #doc,body.editing #lkpd,body.editing #asesmen,body.editing #lampiran{box-shadow:0 0 0 3px var(--mark)}
-  #doc[contenteditable=false],#lkpd[contenteditable=false],#asesmen[contenteditable=false],#lampiran[contenteditable=false]{cursor:default}
+  body.editing #doc,body.editing #lkpd,body.editing #asesmen,body.editing #lampiran,body.editing #atpdoc,body.editing #ppdoc{box-shadow:0 0 0 3px var(--mark)}
+  #doc[contenteditable=false],#lkpd[contenteditable=false],#asesmen[contenteditable=false],#lampiran[contenteditable=false],#atpdoc[contenteditable=false],#ppdoc[contenteditable=false]{cursor:default}
 }
 .status{font-size:13px;color:var(--muted);min-height:20px;margin-bottom:12px;font-weight:500}
 .status.err{color:var(--danger)}
@@ -337,7 +337,7 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .sign .sp{display:block;height:64px;position:relative}
 .sign .sp img{position:absolute;left:0;top:-20px;height:100px;width:auto;max-width:none;object-fit:contain;mix-blend-mode:multiply;z-index:3;pointer-events:none}
 .sign .nm{font-weight:700;text-decoration:underline}
-#doc .sign{break-inside:avoid;margin-top:48px}
+#doc .sign,#atpdoc .sign,#ppdoc .sign{break-inside:avoid;margin-top:48px}
 
 /* Loader */
 .loader{
@@ -375,10 +375,10 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 .keybox{width:min(420px,100%);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 20px 25px -5px rgba(0,0,0,.25)}
 .keybox h3{margin:0 0 4px;font-size:16px}
 .keybox p{margin:0 0 12px;color:var(--muted);font-size:12.5px}
-#keylist{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto}
-#keylist label{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
-#keylist label:has(input:checked){border-color:var(--accent);background:var(--accent-light);color:var(--accent-hover)}
-#keylist small{color:var(--muted)}
+#keylist,#unitlist{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto}
+#keylist label,#unitlist label{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
+#keylist label:has(input:checked),#unitlist label:has(input:checked){border-color:var(--accent);background:var(--accent-light);color:var(--accent-hover)}
+#keylist small,#unitlist small{color:var(--muted)}
 #keymsg{color:var(--danger);font-size:12px;margin-top:8px;min-height:14px}
 .keybtns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
@@ -386,10 +386,11 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 
 [hidden]{display:none!important}
 
-@media screen{#doc,#lkpd,#asesmen,#lampiran{max-width:var(--pw,210mm);margin-left:auto;margin-right:auto;padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
+@media screen{#doc,#lkpd,#asesmen,#lampiran,#atpdoc,#ppdoc{max-width:var(--pw,210mm);margin-left:auto;margin-right:auto;padding:min(var(--mt,25.4mm),8vw) min(var(--mr,25.4mm),6vw) min(var(--mb,25.4mm),8vw) min(var(--ml,25.4mm),6vw)}}
 
 /* ===== Dokumen Paper Preview ===== */
-#doc,#lkpd,#asesmen,#lampiran{
+#doc,#lkpd,#asesmen,#lampiran,/* ===== Dokumen Paper Preview ===== */
+#atpdoc,#ppdoc{
   background:var(--paper);
   color:var(--paper-ink);
   font-family:'Plus Jakarta Sans',Arial,sans-serif;
@@ -402,16 +403,17 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
   box-shadow:0 4px 6px -1px rgba(0,0,0,.05), 0 10px 15px -3px rgba(0,0,0,.03);
 }
 #lkpd,#asesmen,#lampiran{margin-top:32px}
-#doc p,#doc li,#doc td,#lkpd p,#asesmen p,#lampiran p,#lkpd li,#asesmen li,#lampiran li,#lkpd td,#asesmen td,#lampiran td{text-align:justify}
-#doc p,#lkpd p,#asesmen p,#lampiran p{margin:6px 0}
-#doc ul,#doc ol,#lkpd ul,#asesmen ul,#lampiran ul,#lkpd ol,#asesmen ol,#lampiran ol{margin:6px 0 6px 20px;padding:0}
-#doc li>ul,#doc li>ol,#lkpd li>ul,#lkpd li>ol,#asesmen li>ul,#lampiran li>ul,#asesmen li>ol,#lampiran li>ol{margin:2px 0 2px 18px}
-#doc li>ul,#lkpd li>ul,#asesmen li>ul,#lampiran li>ul{list-style:circle}
-#doc li::marker,#lkpd li::marker,#asesmen li::marker,#lampiran li::marker{color:#1e3a8a;font-weight:600}
-#doc strong,#lkpd strong,#asesmen strong,#lampiran strong{color:#0f172a}
+#doc p,#doc li,#doc td,#lkpd p,#asesmen p,#lampiran p,#lkpd li,#asesmen li,#lampiran li,#lkpd td,#asesmen td,#lampiran td,#atpdoc p,#atpdoc li,#atpdoc td,#ppdoc p,#ppdoc li,#ppdoc td{text-align:justify}
+#doc p,#lkpd p,#asesmen p,#lampiran p,#atpdoc p,#ppdoc p{margin:6px 0}
+#doc ul,#doc ol,#lkpd ul,#asesmen ul,#lampiran ul,#lkpd ol,#asesmen ol,#lampiran ol,#atpdoc ul,#atpdoc ol,#ppdoc ul,#ppdoc ol{margin:6px 0 6px 20px;padding:0}
+#doc li>ul,#doc li>ol,#lkpd li>ul,#lkpd li>ol,#asesmen li>ul,#lampiran li>ul,#asesmen li>ol,#lampiran li>ol,#atpdoc li>ul,#atpdoc li>ol,#ppdoc li>ul,#ppdoc li>ol{margin:2px 0 2px 18px}
+#doc li>ul,#lkpd li>ul,#asesmen li>ul,#lampiran li>ul,#atpdoc li>ul,#ppdoc li>ul{list-style:circle}
+#doc li::marker,#lkpd li::marker,#asesmen li::marker,#lampiran li::marker,#atpdoc li::marker,#ppdoc li::marker{color:#1e3a8a;font-weight:600}
+#doc strong,#lkpd strong,#asesmen strong,#lampiran strong,#atpdoc strong,#ppdoc strong{color:#0f172a}
 
 /* Judul Bagian Dokumen */
-#doc h2,#lkpd h2,#asesmen h2,#lampiran h2{
+#doc h2,#lkpd h2,#asesmen h2,#lampiran h2,/* Judul Bagian Dokumen */
+#atpdoc h2,#ppdoc h2{
   font-size:15px;
   font-weight:700;
   color:#1e3a8a;
@@ -423,7 +425,7 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
   margin:24px 0 12px;
   break-after:avoid;
 }
-#doc h3,#lkpd h3,#asesmen h3,#lampiran h3{
+#doc h3,#lkpd h3,#asesmen h3,#lampiran h3,#atpdoc h3,#ppdoc h3{
   font-size:14px;
   font-weight:700;
   color:#0f172a;
@@ -437,38 +439,45 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 }
 
 /* Tabel Dokumen */
-#doc table,#lkpd table,#asesmen table,#lampiran table{border-collapse:collapse;width:100%;max-width:100%;margin:12px 0;font-size:13px;display:table}
-#doc th,#doc td,#lkpd th,#lkpd td,#asesmen th,#lampiran th,#asesmen td,#lampiran td{overflow-wrap:break-word;word-break:normal;hyphens:manual}
+#doc table,#lkpd table,#asesmen table,#lampiran table,/* Tabel Dokumen */
+#atpdoc table,#ppdoc table{border-collapse:collapse;width:100%;max-width:100%;margin:12px 0;font-size:13px;display:table}
+#doc th,#doc td,#lkpd th,#lkpd td,#asesmen th,#lampiran th,#asesmen td,#lampiran td,#atpdoc th,#atpdoc td,#ppdoc th,#ppdoc td{overflow-wrap:break-word;word-break:normal;hyphens:manual}
 /* tabel lebar (5+ kolom, mis. rubrik): font & padding lebih ringkas, kolom tidak lebih sempit dari kata terpanjang, rata kiri agar tidak renggang */
-#doc table.lebar,#lkpd table.lebar,#asesmen table.lebar,#lampiran table.lebar{font-size:12px}
-#doc table.lebar th,#doc table.lebar td,#lkpd table.lebar th,#lkpd table.lebar td,#asesmen table.lebar th,#lampiran table.lebar th,#asesmen table.lebar td,#lampiran table.lebar td{padding:6px 6px;text-align:left}
-#doc table.lebar td:first-child,#lkpd table.lebar td:first-child,#asesmen table.lebar td:first-child,#lampiran table.lebar td:first-child{min-width:78px}
-#doc table.lebar th:last-child,#lkpd table.lebar th:last-child,#asesmen table.lebar th:last-child,#lampiran table.lebar th:last-child,#doc table.lebar td:last-child,#lkpd table.lebar td:last-child,#asesmen table.lebar td:last-child,#lampiran table.lebar td:last-child{min-width:70px}
-#doc th,#doc td,#lkpd th,#asesmen th,#lampiran th,#lkpd td,#asesmen td,#lampiran td{border:1px solid #cbd5e1;padding:7px 10px;vertical-align:top;text-align:left}
+#doc table.lebar,#lkpd table.lebar,#asesmen table.lebar,#lampiran table.lebar,rata kiri agar tidak renggang */
+#atpdoc table.lebar,rata kiri agar tidak renggang */
+#ppdoc table.lebar{font-size:12px}
+#doc table.lebar th,#doc table.lebar td,#lkpd table.lebar th,#lkpd table.lebar td,#asesmen table.lebar th,#lampiran table.lebar th,#asesmen table.lebar td,#lampiran table.lebar td,#atpdoc table.lebar th,#atpdoc table.lebar td,#ppdoc table.lebar th,#ppdoc table.lebar td{padding:6px 6px;text-align:left}
+#doc table.lebar td:first-child,#lkpd table.lebar td:first-child,#asesmen table.lebar td:first-child,#lampiran table.lebar td:first-child,#atpdoc table.lebar td:first-child,#ppdoc table.lebar td:first-child{min-width:78px}
+#doc table.lebar th:last-child,#lkpd table.lebar th:last-child,#asesmen table.lebar th:last-child,#lampiran table.lebar th:last-child,#doc table.lebar td:last-child,#lkpd table.lebar td:last-child,#asesmen table.lebar td:last-child,#lampiran table.lebar td:last-child,#atpdoc table.lebar th:last-child,#atpdoc table.lebar td:last-child,#ppdoc table.lebar th:last-child,#ppdoc table.lebar td:last-child{min-width:70px}
+#doc th,#doc td,#lkpd th,#asesmen th,#lampiran th,#lkpd td,#asesmen td,#lampiran td,#atpdoc th,#atpdoc td,#ppdoc th,#ppdoc td{border:1px solid #cbd5e1;padding:7px 10px;vertical-align:top;text-align:left}
 #lkpd td,#lkpd li,#lkpd p{text-align:justify}   /* LKPD rata kiri-kanan (kop & identitas tetap) */
-#doc th,#lkpd th,#asesmen th,#lampiran th{background:#1e3a8a;color:#fff;border-color:#1e3a8a;font-weight:600}
-#doc tr:nth-child(even) td,#lkpd tr:nth-child(even) td,#asesmen tr:nth-child(even) td,#lampiran tr:nth-child(even) td{background:#f8fafc}
-#doc td:first-child,#lkpd td:first-child,#asesmen td:first-child,#lampiran td:first-child{font-weight:600}
+#doc th,#lkpd th,#asesmen th,#lampiran th,/* LKPD rata kiri-kanan (kop & identitas tetap) */
+#atpdoc th,#ppdoc th{background:#1e3a8a;color:#fff;border-color:#1e3a8a;font-weight:600}
+#doc tr:nth-child(even) td,#lkpd tr:nth-child(even) td,#asesmen tr:nth-child(even) td,#lampiran tr:nth-child(even) td,#atpdoc tr:nth-child(even) td,#ppdoc tr:nth-child(even) td{background:#f8fafc}
+#doc td:first-child,#lkpd td:first-child,#asesmen td:first-child,#lampiran td:first-child,#atpdoc td:first-child,#ppdoc td:first-child{font-weight:600}
 #lkpd td,#asesmen td,#lampiran td{height:32px}
-#doc table.gambar,#lkpd table.gambar,#asesmen table.gambar,#lampiran table.gambar{table-layout:fixed}
-#doc table.gambar td,#lkpd table.gambar td,#asesmen table.gambar td,#lampiran table.gambar td{background:#fff!important}
-#doc li.cb,#lkpd li.cb,#asesmen li.cb,#lampiran li.cb{list-style:none;margin-left:-4px}
-#doc li.cb::before,#lkpd li.cb::before,#asesmen li.cb::before,#lampiran li.cb::before{content:'\2610';color:#1e3a8a;margin-right:8px;font-size:1.05em}
-#doc li.cb.on::before,#lkpd li.cb.on::before,#asesmen li.cb.on::before,#lampiran li.cb.on::before{content:'\2611'}
-#doc table.draw td,#lkpd table.draw td,#asesmen table.draw td,#lampiran table.draw td{background:#fff!important}
-#doc table.draw,#lkpd table.draw,#asesmen table.draw,#lampiran table.draw{table-layout:fixed}
+#doc table.gambar,#lkpd table.gambar,#asesmen table.gambar,#lampiran table.gambar,#atpdoc table.gambar,#ppdoc table.gambar{table-layout:fixed}
+#doc table.gambar td,#lkpd table.gambar td,#asesmen table.gambar td,#lampiran table.gambar td,#atpdoc table.gambar td,#ppdoc table.gambar td{background:#fff!important}
+#doc li.cb,#lkpd li.cb,#asesmen li.cb,#lampiran li.cb,#atpdoc li.cb,#ppdoc li.cb{list-style:none;margin-left:-4px}
+#doc li.cb::before,#lkpd li.cb::before,#asesmen li.cb::before,#lampiran li.cb::before,#atpdoc li.cb::before,#ppdoc li.cb::before{content:'\2610';color:#1e3a8a;margin-right:8px;font-size:1.05em}
+#doc li.cb.on::before,#lkpd li.cb.on::before,#asesmen li.cb.on::before,#lampiran li.cb.on::before,#atpdoc li.cb.on::before,#ppdoc li.cb.on::before{content:'\2611'}
+#doc table.draw td,#lkpd table.draw td,#asesmen table.draw td,#lampiran table.draw td,#atpdoc table.draw td,#ppdoc table.draw td{background:#fff!important}
+#doc table.draw,#lkpd table.draw,#asesmen table.draw,#lampiran table.draw,#atpdoc table.draw,#ppdoc table.draw{table-layout:fixed}
 
 /* ===== Aksara Jawa, tulisan Arab, rumus ===== */
-#doc,#lkpd,#asesmen,#lampiran{font-family:'Plus Jakarta Sans','Amiri','Noto Naskh Arabic','Noto Sans Javanese','Javanese Text','Traditional Arabic',Arial,sans-serif}
+#doc,#lkpd,#asesmen,#lampiran,rumus ===== */
+#atpdoc,rumus ===== */
+#ppdoc{font-family:'Plus Jakarta Sans','Amiri','Noto Naskh Arabic','Noto Sans Javanese','Javanese Text','Traditional Arabic',Arial,sans-serif}
 .ar{font-family:'Amiri','Noto Naskh Arabic','Traditional Arabic','Scheherazade New',Arial,serif;font-size:1.3em;line-height:1.35;direction:rtl;unicode-bidi:isolate;font-weight:400}
 .jv{font-family:'Noto Sans Javanese','Javanese Text',serif;font-size:1.15em;line-height:1.55;font-weight:400}
 .mt{white-space:nowrap}
 
 /* ===== Tabel Pengalaman Belajar: Tahap | Kegiatan | Waktu (hemat spasi) ===== */
-#doc table.pengalaman,#lkpd table.pengalaman{table-layout:fixed}
-#doc table.pengalaman th,#doc table.pengalaman td{padding:4px 8px;line-height:1.4}
-#doc table.pengalaman td:last-child{text-align:center}
-#doc table.pengalaman .prinsip{margin-top:3px;padding-top:3px;border-top:1px dashed #94a3b8;color:#1e3a8a;line-height:1.4}
+#doc table.pengalaman,#lkpd table.pengalaman,/* ===== Tabel Pengalaman Belajar: Tahap | Kegiatan | Waktu (hemat spasi) ===== */
+#atpdoc table.pengalaman,#ppdoc table.pengalaman{table-layout:fixed}
+#doc table.pengalaman th,#doc table.pengalaman td,#atpdoc table.pengalaman th,#atpdoc table.pengalaman td,#ppdoc table.pengalaman th,#ppdoc table.pengalaman td{padding:4px 8px;line-height:1.4}
+#doc table.pengalaman td:last-child,#atpdoc table.pengalaman td:last-child,#ppdoc table.pengalaman td:last-child{text-align:center}
+#doc table.pengalaman .prinsip,#atpdoc table.pengalaman .prinsip,#ppdoc table.pengalaman .prinsip{margin-top:3px;padding-top:3px;border-top:1px dashed #94a3b8;color:#1e3a8a;line-height:1.4}
 
 .pb{height:0;border:0;margin:0;padding:0;break-before:page;page-break-before:always}
 @media screen{
@@ -477,20 +486,22 @@ button.ghost.on,#editbtn.on{background:var(--mark);border-color:var(--mark);colo
 }
 
 /* Kop Dokumen */
-#doc table.kop,#lkpd table.kop,#asesmen table.kop,#lampiran table.kop{display:table;width:100%;margin:2px 0 0;border:0}
-#doc table.kop td,#lkpd table.kop td,#asesmen table.kop td,#lampiran table.kop td{border:0;background:none;padding:0 6px;height:auto;vertical-align:middle;text-align:center;font-weight:400}
-#doc table.kop td.kl,#lkpd table.kop td.kl,#asesmen table.kop td.kl,#lampiran table.kop td.kl,#doc table.kop td.kr,#lkpd table.kop td.kr,#asesmen table.kop td.kr,#lampiran table.kop td.kr{width:110px}
-#doc table.kop img,#lkpd table.kop img,#asesmen table.kop img,#lampiran table.kop img{display:block;margin:0 auto;max-width:100%;height:auto}
+#doc table.kop,#lkpd table.kop,#asesmen table.kop,#lampiran table.kop,/* Kop Dokumen */
+#atpdoc table.kop,#ppdoc table.kop{display:table;width:100%;margin:2px 0 0;border:0}
+#doc table.kop td,#lkpd table.kop td,#asesmen table.kop td,#lampiran table.kop td,#atpdoc table.kop td,#ppdoc table.kop td{border:0;background:none;padding:0 6px;height:auto;vertical-align:middle;text-align:center;font-weight:400}
+#doc table.kop td.kl,#lkpd table.kop td.kl,#asesmen table.kop td.kl,#lampiran table.kop td.kl,#doc table.kop td.kr,#lkpd table.kop td.kr,#asesmen table.kop td.kr,#lampiran table.kop td.kr,#atpdoc table.kop td.kl,#atpdoc table.kop td.kr,#ppdoc table.kop td.kl,#ppdoc table.kop td.kr{width:110px}
+#doc table.kop img,#lkpd table.kop img,#asesmen table.kop img,#lampiran table.kop img,#atpdoc table.kop img,#ppdoc table.kop img{display:block;margin:0 auto;max-width:100%;height:auto}
 .kop .sch{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1e3a8a;text-align:center}
-#doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1{font-size:18px;line-height:1.3;font-weight:800;letter-spacing:.02em;color:#0f172a;text-align:center;background:none;padding:0;margin:4px 0 2px;border:0}
+#doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1,#atpdoc .kop h1,#ppdoc .kop h1{font-size:18px;line-height:1.3;font-weight:800;letter-spacing:.02em;color:#0f172a;text-align:center;background:none;padding:0;margin:4px 0 2px;border:0}
 .kop .sub{font-size:11.5px;color:#475569;text-align:center}
 hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;border-bottom:1px solid #f59e0b;background:none}
 
 /* Identitas Dokumen */
-#doc table.idt,#lkpd table.idt,#asesmen table.idt,#lampiran table.idt{display:table;width:85%;margin:8px auto 20px}
-#doc table.idt th,#doc table.idt td,#lkpd table.idt th,#asesmen table.idt th,#lampiran table.idt th,#lkpd table.idt td,#asesmen table.idt td,#lampiran table.idt td{text-align:left;vertical-align:middle;padding:6px 12px}
-#doc table.idt td:first-child,#lkpd table.idt td:first-child,#asesmen table.idt td:first-child,#lampiran table.idt td:first-child{width:36%;background:#f1f5f9;color:#0f172a;font-weight:600}
-#doc table.idt td:not(:first-child),#lkpd table.idt td:not(:first-child),#asesmen table.idt td:not(:first-child),#lampiran table.idt td:not(:first-child){background:#fff}
+#doc table.idt,#lkpd table.idt,#asesmen table.idt,#lampiran table.idt,/* Identitas Dokumen */
+#atpdoc table.idt,#ppdoc table.idt{display:table;width:85%;margin:8px auto 20px}
+#doc table.idt th,#doc table.idt td,#lkpd table.idt th,#asesmen table.idt th,#lampiran table.idt th,#lkpd table.idt td,#asesmen table.idt td,#lampiran table.idt td,#atpdoc table.idt th,#atpdoc table.idt td,#ppdoc table.idt th,#ppdoc table.idt td{text-align:left;vertical-align:middle;padding:6px 12px}
+#doc table.idt td:first-child,#lkpd table.idt td:first-child,#asesmen table.idt td:first-child,#lampiran table.idt td:first-child,#atpdoc table.idt td:first-child,#ppdoc table.idt td:first-child{width:36%;background:#f1f5f9;color:#0f172a;font-weight:600}
+#doc table.idt td:not(:first-child),#lkpd table.idt td:not(:first-child),#asesmen table.idt td:not(:first-child),#lampiran table.idt td:not(:first-child),#atpdoc table.idt td:not(:first-child),#ppdoc table.idt td:not(:first-child){background:#fff}
 
 @keyframes sp{to{transform:rotate(360deg)}}
 @keyframes bar{from{margin-left:-35%}to{margin-left:100%}}
@@ -501,35 +512,37 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
   header,form,.toolbar,.status,.sidebar,#sb_show,.resov,.ovl,.loader{display:none!important}
   main,main.view-saved,.view-saved{display:block;padding:0!important;margin:0!important}
   .panel{border:0;padding:0;box-shadow:none}
-  #doc,#lkpd,#asesmen,#lampiran{border:0;padding:0;box-shadow:none;margin-top:0}
+  #doc,#lkpd,#asesmen,#lampiran,#atpdoc,#ppdoc{border:0;padding:0;box-shadow:none;margin-top:0}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   /* rumus panjang (.mt = nowrap) melebihi lebar kertas -> Chrome mengecilkan SELURUH halaman (font jadi ~8pt). Izinkan turun baris saat cetak. */
   .mt{white-space:normal!important;overflow-wrap:anywhere}
-  #doc,#lkpd,#asesmen,#lampiran{overflow-wrap:break-word}
-  #doc img,#lkpd img,#asesmen img,#lampiran img{max-width:100%}
+  #doc,#lkpd,#asesmen,#lampiran,#atpdoc,#ppdoc{overflow-wrap:break-word}
+  #doc img,#lkpd img,#asesmen img,#lampiran img,#atpdoc img,#ppdoc img{max-width:100%}
   /* cegah Chrome menyusutkan halaman: apa pun yang melebar tidak boleh memperbesar lebar cetak */
-  #doc,#lkpd,#asesmen,#lampiran{overflow-x:clip}
-  #doc table,#lkpd table,#asesmen table,#lampiran table{max-width:100%}
+  #doc,#lkpd,#asesmen,#lampiran,/* cegah Chrome menyusutkan halaman: apa pun yang melebar tidak boleh memperbesar lebar cetak */
+  #atpdoc,#ppdoc{overflow-x:clip}
+  #doc table,#lkpd table,#asesmen table,#lampiran table,#atpdoc table,#ppdoc table{max-width:100%}
   /* ukuran font cetak dalam pt (sama dengan ekspor Word) agar terbaca jelas di PDF */
-  #doc,#lkpd,#asesmen,#lampiran{font-size:11pt!important;line-height:1.5}
-  #doc table,#lkpd table,#asesmen table,#lampiran table{font-size:10.5pt!important}
-  #doc table.lebar,#lkpd table.lebar,#asesmen table.lebar,#lampiran table.lebar{font-size:10pt!important}
-  #doc h2,#lkpd h2,#asesmen h2,#lampiran h2{font-size:12.5pt!important}
-  #doc h3,#lkpd h3,#asesmen h3,#lampiran h3{font-size:11.5pt!important}
-  #doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1{font-size:16pt!important}
+  #doc,#lkpd,#asesmen,#lampiran,/* ukuran font cetak dalam pt (sama dengan ekspor Word) agar terbaca jelas di PDF */
+  #atpdoc,#ppdoc{font-size:11pt!important;line-height:1.5}
+  #doc table,#lkpd table,#asesmen table,#lampiran table,#atpdoc table,#ppdoc table{font-size:10.5pt!important}
+  #doc table.lebar,#lkpd table.lebar,#asesmen table.lebar,#lampiran table.lebar,#atpdoc table.lebar,#ppdoc table.lebar{font-size:10pt!important}
+  #doc h2,#lkpd h2,#asesmen h2,#lampiran h2,#atpdoc h2,#ppdoc h2{font-size:12.5pt!important}
+  #doc h3,#lkpd h3,#asesmen h3,#lampiran h3,#atpdoc h3,#ppdoc h3{font-size:11.5pt!important}
+  #doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1,#atpdoc .kop h1,#ppdoc .kop h1{font-size:16pt!important}
   .kop .sch{font-size:10pt!important}
   .kop .sub{font-size:9.5pt!important}
   tr{break-inside:avoid}
   .pb{margin:0;border:0}
   table.kop,hr.kop-rule{break-after:avoid}
-  body[data-p="lkpd"] #doc{display:none!important}
+  body[data-p="lkpd"] #doc,body[data-p="lkpd"] #atpdoc,body[data-p="lkpd"] #ppdoc{display:none!important}
   body[data-p="doc"] #lkpd{display:none!important}
   body[data-p="both"] #lkpd{break-before:page;margin-top:0}
   body[data-p="lkpd"] #asesmen,body[data-p="doc"] #asesmen,body[data-p="both"] #asesmen{display:none!important}
-  body[data-p="ases"] #doc,body[data-p="ases"] #lkpd{display:none!important}
+  body[data-p="ases"] #doc,body[data-p="ases"] #lkpd,body[data-p="ases"] #atpdoc,body[data-p="ases"] #ppdoc{display:none!important}
   body[data-p="all"] #lkpd,body[data-p="all"] #asesmen,body[data-p="all"] #lampiran{break-before:page;margin-top:0}
   body[data-p="lkpd"] #lampiran,body[data-p="doc"] #lampiran,body[data-p="both"] #lampiran,body[data-p="ases"] #lampiran{display:none!important}
-  body[data-p="lamp"] #doc,body[data-p="lamp"] #lkpd,body[data-p="lamp"] #asesmen{display:none!important}
+  body[data-p="lamp"] #doc,body[data-p="lamp"] #lkpd,body[data-p="lamp"] #asesmen,body[data-p="lamp"] #atpdoc,body[data-p="lamp"] #ppdoc{display:none!important}
 }
 
 button.sm{padding:4px 10px;font-size:12px;margin-top:6px}
@@ -584,8 +597,8 @@ main[hidden],.view-saved[hidden]{display:none!important}
 #outpanel.mode-saved #g-rpm,#outpanel.mode-saved #g-lkpd,#outpanel.mode-saved #g-ases,#outpanel.mode-saved #g-lamp,#outpanel.mode-saved #g-both{display:none}
 #outpanel.mode-saved #editgroup{order:1}#outpanel.mode-saved #g-db{order:2}#outpanel.mode-saved #g-savedprint{order:3}#outpanel.mode-saved #g-resusun{order:4}#outpanel.mode-saved #g-close{order:5}
 @media print{
-  body[data-p="sel"] #doc,body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen,body[data-p="sel"] #lampiran{display:none!important}
-  body[data-p="sel"][data-sel~="doc"] #doc,body[data-p="sel"][data-sel~="lkpd"] #lkpd,body[data-p="sel"][data-sel~="ases"] #asesmen,body[data-p="sel"][data-sel~="lamp"] #lampiran{display:block!important}
+  body[data-p="sel"] #doc,body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen,body[data-p="sel"] #lampiran,body[data-p="sel"] #atpdoc,body[data-p="sel"] #ppdoc{display:none!important}
+  body[data-p="sel"][data-sel~="doc"] #doc,body[data-p="sel"][data-sel~="lkpd"] #lkpd,body[data-p="sel"][data-sel~="ases"] #asesmen,body[data-p="sel"][data-sel~="lamp"] #lampiran,body[data-p="sel"][data-sel~="doc"] #atpdoc,body[data-p="sel"][data-sel~="doc"] #ppdoc{display:block!important}
   body[data-p="sel"] #lkpd,body[data-p="sel"] #asesmen,body[data-p="sel"] #lampiran{break-before:page;margin-top:0}
   body[data-p="sel"][data-first="lkpd"] #lkpd,body[data-p="sel"][data-first="ases"] #asesmen,body[data-p="sel"][data-first="lamp"] #lampiran{break-before:auto}
   .sv-top{display:none!important}
@@ -659,6 +672,27 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 .cb-list li.cb-e{color:var(--muted);cursor:default;font-size:13px}
 .tuto{padding-left:20px}.tuto li{margin:10px 0;line-height:1.5}.tuto ul{margin:6px 0;padding-left:18px}.tuto li li{margin:4px 0}
 @media print{.adm,#admopen,#histbox{display:none!important}}
+
+/* ===== Prota & Prosem ===== */
+#pp_tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#ppdoc .pp-sec[hidden]{display:none!important}
+#ppdoc.pp-all .pp-sec[hidden]{display:block!important}
+#ppdoc .pp-sec+.pp-sec{margin-top:28px}
+#ppdoc table.prosem{table-layout:fixed;font-size:11px}
+#ppdoc table.prosem th,#ppdoc table.prosem td{padding:2px;text-align:center;vertical-align:middle;overflow-wrap:break-word}
+#ppdoc table.prosem th{overflow-wrap:normal;word-break:normal}
+@media screen{#ppdoc{max-width:297mm}#ppdoc .pp-sec{overflow-x:auto}#ppdoc table.prosem{min-width:640px}}
+#ppdoc table.prosem td:nth-child(2){text-align:left}
+@media print{
+  #ppdoc table.prosem{font-size:8.5pt!important}
+  .app{display:block!important}
+  .content{width:auto;max-width:none}
+  #ppdoc .pp-sec{overflow:visible!important}
+  #ppdoc table.prosem{min-width:0!important}
+  #ppdoc.pp-all .pp-sec:not(:first-child){break-before:page}
+  #ppdoc .pp-sec{break-inside:auto}
+  #ppdoc table.prosem tr{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -729,7 +763,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     </div>
     <div>
       <h1>Penyusun <span>RPM</span></h1>
-      <p>Penyusun Rencana Pembelajaran Mendalam Kurikulum Merdeka &amp; 8 Dimensi Profil Lulusan.</p>
+      <p>Penyusun RPM, LKPD, Asesmen, dan ATP (Alur Tujuan Pembelajaran) Kurikulum Merdeka &amp; 8 Dimensi Profil Lulusan.</p>
     </div>
   </div>
   <button type="button" class="ghost" id="admopen">Portal Admin</button>
@@ -741,7 +775,19 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <button type="button" class="sb-ctl" id="sb_collapse" title="Ciutkan menu" aria-label="Ciutkan menu" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
     <button type="button" class="sb-ctl" id="sb_hide" title="Sembunyikan menu" aria-label="Sembunyikan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
   </div>
-  <button type="button" class="sb-link" id="nav-make" data-view="make" aria-current="page" title="Buat RPP">
+  <button type="button" class="sb-link" id="nav-atp" data-view="atp" aria-current="page" title="Buat ATP">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h6"/><path d="m16 15 2 2 4-4"/></svg>
+    <span class="lbl">Buat ATP</span>
+  </button>
+  <button type="button" class="sb-link" id="nav-atpsaved" data-view="atpsaved" title="ATP Tersimpan">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 14h6"/><path d="M9 4v5"/></svg>
+    <span class="lbl">ATP Tersimpan</span>
+  </button>
+  <button type="button" class="sb-link" id="nav-prota" data-view="prota" title="Prota &amp; Prosem">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4z"/><path d="M4 10h16"/><path d="M9 3v4"/><path d="M15 3v4"/><path d="M8 14h2"/><path d="M14 14h2"/></svg>
+    <span class="lbl">Prota &amp; Prosem</span>
+  </button>
+  <button type="button" class="sb-link" id="nav-make" data-view="make" title="Buat RPP">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
     <span class="lbl">Buat RPP</span>
   </button>
@@ -759,7 +805,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 <button type="button" id="sb_show" title="Tampilkan menu" aria-label="Tampilkan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
 <div class="content">
 
-<main id="view-make">
+<main id="view-make" hidden>
 <form class="panel" id="f" autocomplete="off">
   <fieldset>
     <legend>Model AI</legend>
@@ -850,6 +896,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 
   <fieldset>
     <legend>Materi</legend>
+    <p class="hint" id="atpfrom" hidden></p>
     <label for="topik">Topik / materi pokok</label><input id="topik" required placeholder="mis. Siklus air dan dampaknya">
     <label for="cp">Capaian Pembelajaran (opsional)</label>
     <textarea id="cp" placeholder="Kosongkan agar AI merujuk CP resmi sesuai mapel dan fase"></textarea>
@@ -1040,6 +1087,141 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <div id="histlist"><p class="hint">Pilih nama guru untuk melihat RPP yang pernah dibuat.</p></div>
   </div>
 </main>
+
+<main id="view-atp">
+<form class="panel" id="atpf" autocomplete="off">
+  <fieldset>
+    <legend>Model AI</legend>
+    <label for="atp_model" style="margin-top:0">Model</label>
+    <input id="atp_model" list="models" autocomplete="off">
+    <p class="hint">Sama dengan menu Buat RPP. API key dipilih saat menekan Susun ATP.</p>
+  </fieldset>
+  <fieldset>
+    <legend>Identitas</legend>
+    <label for="atp_guru">Nama guru</label><input id="atp_guru" required list="gurulist" placeholder="Pilih dari daftar atau ketik nama">
+    <p class="hint" id="atp_school">Data sekolah dan tanda tangan mengikuti pengaturan admin.</p>
+    <div class="row">
+      <div><label for="atp_mapel">Mata pelajaran</label><input id="atp_mapel" required list="mapellist" placeholder="mis. Bahasa Inggris"></div>
+      <div><label for="atp_fase">Fase / kelas</label><select id="atp_fase"></select></div>
+    </div>
+    <div class="row">
+      <div><label for="atp_cakupan">Cakupan</label><select id="atp_cakupan"><option value="Satu tahun (Ganjil dan Genap)">Satu tahun</option><option>Ganjil</option><option>Genap</option></select></div>
+      <div><label for="atp_tahun">Tahun ajaran</label><input id="atp_tahun" value="2026/2027"></div>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Alokasi waktu</legend>
+    <div class="row">
+      <div><label for="atp_jp">JP per minggu</label><input id="atp_jp" type="number" min="1" max="20" value="3"></div>
+      <div><label for="atp_sum">Asesmen sumatif per semester (kali)</label><input id="atp_sum" type="number" min="0" max="10" value="2"></div>
+    </div>
+    <p class="hint" id="atp_mgginfo">Minggu efektif diatur admin.</p>
+    <p class="hint">Tulis berapa kali asesmen sumatif dilaksanakan dalam satu semester. AI menyisipkan sebanyak itu di dalam alur dan menyisihkan JP untuk tiap kali pelaksanaan.</p>
+  </fieldset>
+  <fieldset>
+    <legend>Capaian Pembelajaran</legend>
+    <label for="atp_cp" style="margin-top:0">Teks CP</label>
+    <textarea id="atp_cp" rows="8" placeholder="Tempel CP fase ini dari SK BSKAP 046/H/KR/2025. Bila dikosongkan, AI memakai CP resmi sesuai mapel dan fase."></textarea>
+    <p class="hint" id="atp_cphint">Terisi otomatis untuk Bahasa Inggris Fase E. Untuk mapel lain, tempel CP resmi supaya ATP akurat.</p>
+    <label for="atp_catatan">Catatan tambahan (opsional)</label>
+    <textarea id="atp_catatan" rows="3" placeholder="mis. ikuti buku teks tertentu, tambah unit proyek, urutan tema"></textarea>
+  </fieldset>
+  <button type="submit" class="gen" id="atpgen">Susun ATP</button>
+</form>
+
+<section class="panel" id="atpout" aria-live="polite">
+  <div class="toolbar">
+    <div class="tgroup">
+      <span class="tlabel">ATP</span>
+      <div class="tbtns">
+        <button type="button" class="ghost" id="atpcopy" disabled>Salin</button>
+        <button type="button" class="ghost" id="atpword" disabled>Ke Word</button>
+        <button type="button" class="ghost" id="atpprint" disabled>Cetak / PDF</button>
+        <button type="button" class="ghost" id="atpregen" disabled>Susun ulang</button>
+      </div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Lanjutkan</span>
+      <div class="tbtns"><button type="button" id="atprpm" disabled title="Isi formulir Buat RPP dari satu unit ATP">Susun RPM dari ATP</button></div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Simpan</span>
+      <div class="tbtns"><button type="button" id="atpsave" disabled>Simpan ke database</button></div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Sunting dokumen</span>
+      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpclear" disabled>Kosongkan</button></div>
+    </div>
+  </div>
+  <div class="status" id="atpstatus"></div>
+  <div id="atpempty" class="empty"><strong>ATP Anda akan muncul di sini</strong>Lengkapi identitas dan CP di sebelah kiri, lalu pilih Susun ATP.</div>
+  <article id="atpdoc" contenteditable="false" hidden></article>
+</section>
+</main>
+
+<main class="view-saved" id="view-atpsaved" hidden>
+  <div class="hist">
+    <h3>ATP tersimpan</h3>
+    <label for="atp_histguru" style="margin:0 0 6px">Pilih nama guru</label>
+    <select id="atp_histguru" style="width:100%;margin-bottom:8px"><option value="">Memuat daftar guru…</option></select>
+    <div id="atp_histlist"><p class="hint">Pilih nama guru untuk melihat ATP yang pernah dibuat.</p></div>
+  </div>
+</main>
+
+<main id="view-prota" hidden>
+<form class="panel" id="ppf" autocomplete="off">
+  <fieldset>
+    <legend>Sumber ATP</legend>
+    <label for="pp_guru" style="margin-top:0">Nama guru</label>
+    <select id="pp_guru"><option value="">Memuat daftar guru…</option></select>
+    <label for="pp_atp">ATP yang dipakai</label>
+    <select id="pp_atp"><option value="">— Pilih guru dulu —</option></select>
+    <p class="hint" id="pp_info">Prota dan Prosem disusun dari ATP yang sudah disimpan ke database (menu Buat ATP). Tidak memakai AI, jadi tidak memakai kuota API key.</p>
+  </fieldset>
+  <fieldset>
+    <legend>Alokasi waktu</legend>
+    <div class="row">
+      <div><label for="pp_jp">JP per minggu</label><input id="pp_jp" type="number" min="1" max="20" value="3"></div>
+      <div><label>Minggu efektif</label><p class="hint" id="pp_mgg" style="margin-top:10px"></p></div>
+    </div>
+    <p class="hint">Minggu efektif diatur admin (Portal Admin &gt; Sekolah &amp; KS). Prosem membagi minggu efektif ke 6 bulan secara merata: Juli–Desember untuk Ganjil, Januari–Juni untuk Genap.</p>
+  </fieldset>
+  <button type="submit" class="gen" id="ppgen" disabled>Susun Prota &amp; Prosem</button>
+  <fieldset style="margin-top:14px">
+    <legend>Prota &amp; Prosem tersimpan</legend>
+    <div class="hist" style="margin:0;border:0;padding:0;background:none"><div id="pp_saved"><p class="hint">Pilih nama guru untuk melihat yang pernah disimpan.</p></div></div>
+  </fieldset>
+</form>
+
+<section class="panel" id="ppout" aria-live="polite">
+  <div class="toolbar">
+    <div class="tgroup">
+      <span class="tlabel">Dokumen</span>
+      <div class="tbtns" id="pp_tabs"></div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Ekspor</span>
+      <div class="tbtns">
+        <select id="pp_scope" style="max-width:180px"><option value="all">Semua dokumen</option><option value="cur">Yang sedang tampil</option></select>
+        <button type="button" class="ghost" id="ppcopy" disabled>Salin</button>
+        <button type="button" class="ghost" id="ppword" disabled>Ke Word</button>
+        <button type="button" class="ghost" id="ppprint" disabled>Cetak / PDF</button>
+      </div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Simpan</span>
+      <div class="tbtns"><button type="button" id="ppsave" disabled>Simpan ke database</button></div>
+    </div>
+    <div class="tgroup">
+      <span class="tlabel">Sunting dokumen</span>
+      <div class="tbtns"><button type="button" class="ghost" id="ppedit" disabled>Edit</button><button type="button" class="ghost" id="ppclear" disabled>Kosongkan</button></div>
+    </div>
+  </div>
+  <div class="status" id="ppstatus"></div>
+  <div id="ppempty" class="empty"><strong>Prota dan Prosem Anda akan muncul di sini</strong>Pilih guru dan ATP di sebelah kiri, lalu pilih Susun Prota &amp; Prosem.</div>
+  <article id="ppdoc" contenteditable="false" hidden></article>
+</section>
+</main>
 </div>
 </div>
 
@@ -1094,6 +1276,14 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <p class="hint">Tempat dan tanggal ini dicetak di atas kolom tanda tangan guru pada dokumen RPP semua guru. Kosongkan bila ingin tetap diisi manual.</p>
       <div class="btns"><button type="button" id="a_schsave">Simpan data sekolah</button></div>
       <p class="hint" id="a_schmsg"></p>
+      <h3>Minggu efektif per semester</h3>
+      <p class="hint">Jumlah minggu efektif diatur admin, terpisah untuk semester Ganjil dan Genap. Nilai ini dipakai otomatis oleh semua guru saat menyusun ATP; guru tidak bisa mengubahnya.</p>
+      <div class="row">
+        <div><label for="a_mggganjil">Minggu efektif semester Ganjil</label><input id="a_mggganjil" type="number" min="1" max="40" value="18"></div>
+        <div><label for="a_mgggenap">Minggu efektif semester Genap</label><input id="a_mgggenap" type="number" min="1" max="40" value="18"></div>
+      </div>
+      <div class="btns"><button type="button" id="a_mggsave">Simpan minggu efektif</button></div>
+      <p class="hint" id="a_mggmsg"></p>
       <h3>Tanda tangan kepala sekolah</h3>
       <p class="hint">Tanda tangan kepala sekolah diunggah di sini dan otomatis dipakai di dokumen semua guru. Gunakan PNG berlatar transparan atau foto tanda tangan di kertas putih.</p>
       <label for="sigk">Gambar tanda tangan kepala sekolah</label>
@@ -2613,11 +2803,12 @@ function showList(){
   $('savedviewer').hidden=true; $('histbox').hidden=false; loadHistGuru();
 }
 function showView(v){
-  const saved=v==='saved';
-  $('view-make').hidden=saved; $('view-saved').hidden=!saved;
-  $('nav-make').setAttribute('aria-current',saved?'false':'page');
-  $('nav-saved').setAttribute('aria-current',saved?'page':'false');
-  if(saved) showList(); else{ mountPanel(false); $('savedviewer').hidden=true; }
+  ['make','saved','atp','atpsaved','prota'].forEach(n=>{ const m=$('view-'+n), b=$('nav-'+n); if(m) m.hidden=n!==v; if(b) b.setAttribute('aria-current',n===v?'page':'false'); });
+  if(v==='saved') showList();
+  else if(v==='make'){ mountPanel(false); $('savedviewer').hidden=true; }
+  else if(v==='atp'&&window.atpEnter) window.atpEnter();
+  else if(v==='atpsaved'&&window.atpList) window.atpList();
+  else if(v==='prota'&&window.protaEnter) window.protaEnter();
   window.scrollTo({top:0});
 }
 function syncPrintChecks(){
@@ -2779,7 +2970,7 @@ function admTab(n){
   document.querySelectorAll('#adm [data-pane]').forEach(p=>p.hidden=p.dataset.pane!==n);
   if(n==='sync') showSyncStamp();
   if(n==='guru') agLoad();
-  if(n==='ks'){ loadSekolah(); loadSigKepsek(); }
+  if(n==='ks'){ loadSekolah(); loadMinggu(); loadSigKepsek(); }
 }
 document.querySelectorAll('#adm [data-tab]').forEach(b=>b.addEventListener('click',()=>admTab(b.dataset.tab)));
 
@@ -3102,6 +3293,30 @@ async function loadSekolah(){
   }catch(e){}
   showSchool();
 }
+window.MGG={ganjil:18,genap:18};
+function mggRefreshAll(){ if(window.atpMggRefresh) window.atpMggRefresh(); if(window.protaMggRefresh) window.protaMggRefresh(); }
+function mggClamp(x,d){ x=parseInt(x); return (x>=1&&x<=40)?x:d; }
+async function loadMinggu(){
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.minggu_efektif&select=nilai&limit=1');
+    const n=r&&r[0]&&r[0].nilai;
+    if(n){ window.MGG={ganjil:mggClamp(n.ganjil,18),genap:mggClamp(n.genap,18)}; }
+  }catch(e){}
+  if(document.activeElement!==$('a_mggganjil')&&document.activeElement!==$('a_mgggenap')){ $('a_mggganjil').value=window.MGG.ganjil; $('a_mgggenap').value=window.MGG.genap; }
+  mggRefreshAll();
+}
+async function saveMinggu(){
+  const ganjil=parseInt($('a_mggganjil').value), genap=parseInt($('a_mgggenap').value);
+  if(!(ganjil>=1&&ganjil<=40)||!(genap>=1&&genap<=40)){ msg('a_mggmsg','Isi minggu efektif Ganjil dan Genap dengan angka 1–40.',true); return; }
+  const b=$('a_mggsave'); b.disabled=true; msg('a_mggmsg','Menyimpan…');
+  try{
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'minggu_efektif',nilai:{ganjil,genap},updated_at:new Date().toISOString()}});
+    window.MGG={ganjil,genap}; mggRefreshAll();
+    msg('a_mggmsg','Minggu efektif tersimpan: Ganjil '+ganjil+', Genap '+genap+'. Berlaku untuk semua guru.');
+  }catch(e){ msg('a_mggmsg','Gagal menyimpan: '+tblErr(e,'pengaturan_rpm'),true); }
+  finally{ b.disabled=false; }
+}
+$('a_mggsave').addEventListener('click',saveMinggu);
 async function saveSekolah(){
   const kepsek=$('a_kepsek').value.trim(), sekolah=$('a_sekolah').value.trim(), tempat=$('a_tempat').value.trim(), tanggal=$('a_tglrpp').value.trim();
   if(!kepsek||!sekolah){ msg('a_schmsg','Nama kepala sekolah dan satuan pendidikan wajib diisi.',true); return; }
@@ -3192,8 +3407,638 @@ $('saveKertas').addEventListener('click',saveKertas);
   ul.addEventListener('click',e=>{ const li=e.target.closest('li[data-i]'); if(li) choose(+li.dataset.i); });
 })();
 
-loadKertas(); loadSigKepsek(); loadSekolah();
+loadKertas(); loadSigKepsek(); loadSekolah(); loadMinggu();
 loadSource();
+</script>
+<script>
+/* ===== MODUL ATP (Alur Tujuan Pembelajaran) – memakai ulang mesin RPM: gemini-proxy, pilih API key, pemuat, kop, tanda tangan, Word/PDF ===== */
+(function(){
+const CP_DEF={'bahasa inggris|E':'Pada akhir Fase E, peserta didik menggunakan teks lisan, tulisan, dan visual (multimodal) dalam bahasa Inggris untuk berkomunikasi sesuai situasi, tujuan, dan pemirsa/pembacanya (setara CEFR B1, sekitar 3.000 kata berfrekuensi tinggi). Menyimak–Berbicara: memahami alur informasi, gagasan utama, dan detail teks lisan fiksi dan nonfiksi tentang topik sehari-hari atau isu terkini; mengungkapkan pendapat dan mempertahankan argumen secara lisan. Membaca–Memirsa: memahami alur informasi, menganalisis, dan menyimpulkan informasi tersurat dan tersirat dari berbagai teks fiksi dan nonfiksi, tulis maupun multimodal. Menulis–Mempresentasikan: mengomunikasikan gagasan dan pengalaman secara tertulis atau multimodal dengan struktur teks dan unsur kebahasaan yang tepat, memakai media cetak atau digital, serta mengungkapkan dan mempertahankan argumen secara tertulis.'};
+let atpText='', atpId=null, atpEdit=false, lastAuto='';
+
+/* overlay bersama dipindah ke body supaya tetap tampil walau menu Buat RPP tersembunyi */
+['keyov','lovl','resov','loader'].forEach(id=>{ const e=$(id); if(e) document.body.appendChild(e); });
+JOBNAME.atp='ATP';
+const _ss=setStatus; setStatus=function(t,e){ _ss(t,e); const a=$('atpstatus'); if(a){ a.textContent=t||''; a.className='status'+(e?' err':''); } };
+
+$('atp_fase').innerHTML=$('fase').innerHTML; $('atp_fase').value='Fase E / Kelas 10';
+const v=id=>$(id).value.trim();
+const faseKode=()=>(v('atp_fase').match(/Fase\s+([A-F])/)||[])[1]||'';
+
+function autoCP(){
+  const k=v('atp_mapel').toLowerCase()+'|'+faseKode(), cp=CP_DEF[k], box=$('atp_cp');
+  if(cp&&(!box.value.trim()||box.value===lastAuto)){ box.value=cp; lastAuto=cp; }
+  else if(!cp&&box.value===lastAuto&&lastAuto){ box.value=''; lastAuto=''; }
+}
+['atp_mapel','atp_fase'].forEach(id=>{ $(id).addEventListener('input',autoCP); $(id).addEventListener('change',autoCP); });
+
+/* ---- sinkron identitas dengan formulir RPM (satu sumber data guru/sekolah/tanda tangan) ---- */
+function pull(){
+  $('atp_guru').value=$('guru').value; if($('mapel').value) $('atp_mapel').value=$('mapel').value;
+  $('atp_fase').value=$('fase').value; $('atp_tahun').value=$('tahun').value; $('atp_model').value=$('model').value;
+  const sk=$('sekolah').value.trim(); $('atp_school').textContent=sk?('Satuan pendidikan: '+sk+' · Kepala sekolah: '+($('kepsek').value||'-')):'Data sekolah belum dimuat. Minta admin mengisinya di Portal Admin.';
+  autoCP();
+}
+function push(){
+  $('mapel').value=$('atp_mapel').value.trim(); $('fase').value=$('atp_fase').value;
+  $('tahun').value=$('atp_tahun').value.trim(); $('model').value=$('atp_model').value.trim();
+}
+function onAtpGuru(){
+  if($('guru').value===$('atp_guru').value) return;
+  $('guru').value=$('atp_guru').value;
+  $('guru').dispatchEvent(new Event('input',{bubbles:true})); $('guru').dispatchEvent(new Event('change',{bubbles:true}));
+  setTimeout(()=>{ if($('mapel').value) $('atp_mapel').value=$('mapel').value; $('atp_fase').value=$('fase').value; $('atp_tahun').value=$('tahun').value; pull(); },1000);
+}
+$('atp_guru').addEventListener('change',onAtpGuru);
+$('atp_guru').addEventListener('input',()=>{ const n=v('atp_guru').toLowerCase(); if(GURUS.some(g=>g.nama.toLowerCase()===n)) onAtpGuru(); });
+window.atpEnter=function(){ pull(); mggInfo(); loadMinggu(); };
+function mggPlan(){
+  const c=$('atp_cakupan').value, setahun=/Satu tahun/.test(c), g=(window.MGG||{}).ganjil||18, n=(window.MGG||{}).genap||18;
+  const sems=setahun?[['Ganjil',g],['Genap',n]]:[[c,/Genap/.test(c)?n:g]];
+  return {setahun,sems,total:sems.reduce((a,x)=>a+x[1],0)};
+}
+function mggInfo(){
+  const p=mggPlan(); $('atp_mgginfo').textContent='Minggu efektif (diatur admin): '+p.sems.map(x=>'Semester '+x[0]+' = '+x[1]+' minggu').join(', ')+'.';
+}
+window.atpMggRefresh=mggInfo;
+$('atp_cakupan').addEventListener('change',mggInfo);
+mggInfo();
+
+/* ---- prompt ---- */
+function buildAtp(){
+  const jp=parseInt(v('atp_jp'))||3, plan=mggPlan(), setahun=plan.setahun, sem=plan.sems.length, tot=jp*plan.total;
+  const sumN=Math.max(0,Math.min(10,isNaN(parseInt(v('atp_sum')))?2:parseInt(v('atp_sum'))));
+  const mggTxt=plan.sems.map(x=>'semester '+x[0]+' '+x[1]+' minggu efektif ('+(jp*x[1])+' JP)').join(', ');
+  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor "Asesmen Sumatif 1" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). Beri tiap pelaksanaan alokasi JP yang wajar (umumnya 1–2 JP).'):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
+  const cp=v('atp_cp')||'(kosong: gunakan CP resmi terbaru untuk mapel dan fase ini sesuai Keputusan Kepala BSKAP Nomor 046/H/KR/2025; bila ragu atas bunyi CP, tulis ringkasan yang setia dan beri catatan agar guru mencocokkan dengan dokumen resmi)';
+  return `Anda adalah pakar kurikulum Indonesia. Susun ALUR TUJUAN PEMBELAJARAN (ATP) yang lengkap, runtut, dan siap dipakai guru berdasarkan data berikut.
+
+Satuan pendidikan: ${v('sekolah')}
+Mata pelajaran: ${v('mapel')} | ${v('fase')} | Tahun ajaran ${v('tahun')}
+Cakupan: ${$('atp_cakupan').value}
+Alokasi: ${jp} JP per minggu; ${mggTxt}. Total ${tot} JP untuk cakupan ini. ${sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${tot}, dan per semester harus sesuai JP semester tersebut.
+CAPAIAN PEMBELAJARAN (CP):
+${cp}
+${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}
+
+ATURAN:
+1. Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.
+2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).
+3. Setiap TP berformat "Peserta didik mampu …", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.
+4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.
+5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.
+
+FORMAT KELUARAN (Markdown, tanpa kalimat pembuka atau penutup):
+# ALUR TUJUAN PEMBELAJARAN (ATP)
+Tabel identitas dua kolom: Satuan Pendidikan, Mata Pelajaran, Fase/Kelas, Tahun Pelajaran, Penyusun (${v('guru')}).
+## A. Capaian Pembelajaran
+Ringkasan CP dalam satu paragraf, lalu tabel elemen dan capaian bila CP terbagi dalam elemen.
+## B. Gambaran Umum Alur
+Tabel: Semester | Unit | Tema / Materi | JP, ditutup baris total JP.
+## C. Alur Tujuan Pembelajaran
+Per semester gunakan judul "## SEMESTER n" (tingkat dua, bukan tingkat satu) bila setahun. Untuk tiap unit: judul "### Unit n – …", satu baris tebal berisi materi, unsur kebahasaan, dan dimensi profil, lalu tabel: Kode | Elemen | Tujuan Pembelajaran | Asesmen | JP. ${sumN>0?'Baris asesmen sumatif ('+sumN+' kali per semester) ditulis sebagai baris tabel dengan JP masing-masing, sesuai penempatan di atas.':'Tanpa baris asesmen sumatif tersendiri.'}
+## D. Catatan Pelaksanaan
+3–4 butir singkat (diferensiasi, asesmen, fleksibilitas urutan).${NOTASI}`;
+}
+
+/* ---- tampilan hasil ---- */
+const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclear'];
+function render(t){
+  const d=$('atpdoc'); d.innerHTML=md(t)+signHTML(); styleDoc(d,'atp');
+  const sub=['Tahun Ajaran '+v('atp_tahun'),/Satu tahun/.test($('atp_cakupan').value)?'':'Semester '+$('atp_cakupan').value].filter(Boolean).join(' · ');
+  d.querySelectorAll('table.kop .sub').forEach(x=>{ x.textContent=sub; });
+  d.hidden=false; $('atpempty').hidden=true; btn.forEach(id=>$(id).disabled=false);
+}
+function setEditAtp(on){
+  atpEdit=on; $('atpdoc').contentEditable=on?'true':'false'; $('atpedit').textContent=on?'Selesai edit':'Edit';
+  $('atpsave').textContent=on?'Simpan perubahan':'Simpan ke database';
+}
+$('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; });
+$('atpedit').addEventListener('click',()=>setEditAtp(!atpEdit));
+
+async function atpGenerate(){
+  if(!v('atp_guru')||!v('atp_mapel')){ setStatus('Nama guru dan mata pelajaran wajib diisi.',true); return; }
+  push();
+  if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
+  if(!(await pickKey('ATP'))) return;
+  try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
+  ['atpgen','atpregen'].forEach(id=>$(id).disabled=true); $('atpgen').textContent='Menyusun…'; setStatus('');
+  showLoader(['Menyusun ATP Anda…','Memecah CP menjadi unit…','Merumuskan tujuan pembelajaran…','Menghitung alokasi JP…','Hampir selesai, mohon tunggu…']);
+  try{
+    liveSet($('atpdoc'),'','atp'); $('atpempty').hidden=true;
+    atpText=await ask(buildAtp(),'ATP');
+    render(atpText); setEditAtp(false); atpId=null; JOB_OK=true;
+    setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
+    notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
+    $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
+    if(readCfgForm().auto) atpSave(true);
+  }catch(e){
+    setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk tetap ditampilkan.':'Gagal: '+e.message,!e.aborted);
+    if(!e.aborted) notify(false,'ATP gagal disusun: '+e.message);
+    const part=e.partial||e.text; if(part){ atpText=part; render(part); }
+  }finally{ hideLoader(); $('atpgen').disabled=false; $('atpregen').disabled=!atpText; $('atpgen').textContent='Susun ATP'; }
+}
+$('atpf').addEventListener('submit',e=>{ e.preventDefault(); atpGenerate(); });
+$('atpregen').addEventListener('click',atpGenerate);
+$('atpcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText($('atpdoc').innerText); setStatus('Teks disalin.'); }catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
+$('atpclear').addEventListener('click',()=>{
+  if(!confirm('Kosongkan ATP di layar? ATP yang sudah tersimpan di database tidak terhapus.')) return;
+  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus('');
+});
+
+/* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
+const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
+$('atpprint').addEventListener('click',()=>{
+  const st=document.createElement('style'); st.id='atppage'; st.textContent='@page{size:210mm 297mm;size:A4 landscape;margin:15mm}'; document.head.appendChild(st);
+  if(_titleAsli===null) _titleAsli=document.title;
+  document.title=['ATP',v('atp_mapel'),v('atp_guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
+  window.print();
+});
+window.addEventListener('afterprint',()=>{ const st=$('atppage'); if(st) st.remove(); });
+$('atpword').addEventListener('click',()=>{
+  const css=DOC_CSS+'@page Section1{size:297mm 210mm;mso-page-orientation:landscape;margin:15mm}div.Section1{page:Section1}';
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${docForWord($('atpdoc'))}</div></body></html>`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
+  a.download='ATP_'+(bersih(v('atp_mapel'))||'mapel').slice(0,60)+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+
+/* ---- simpan ke database (tabel atp_hasil) ---- */
+async function atpSave(auto){
+  const c=stripLogos($('atpdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
+  const body={nama_guru:v('atp_guru'),kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),mata_pelajaran:v('atp_mapel'),
+    fase:v('atp_fase'),semester:$('atp_cakupan').value,tahun_ajaran:v('atp_tahun'),model:v('atp_model'),atp_markdown:atpText,atp_html:c.innerHTML};
+  const b=$('atpsave'); b.disabled=true;
+  try{
+    let row=null;
+    if(atpId){ const r=await sb(SB_DST,`/atp_hasil?id=eq.${atpId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
+    if(!row){ const r=await sb(SB_DST,'/atp_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
+    if(row&&row.id) atpId=row.id;
+    $('atpsave').textContent='Simpan ke database'; setStatus('Tersimpan ke database.');
+    if(!auto||$('resov').classList.contains('on')) notify(true,'ATP tersimpan ke database.');
+  }catch(e){
+    const h=/relation|does not exist|schema cache|404|row-level|policy|permission/i.test(e.message)?' Tabel atp_hasil belum ada: jalankan tambah-tabel-atp.sql di Supabase.':'';
+    setStatus('Gagal menyimpan ke database: '+e.message+h,true); notify(false,'Gagal menyimpan ke database: '+e.message+h);
+  }finally{ b.disabled=false; }
+}
+$('atpsave').addEventListener('click',()=>atpSave(false));
+
+/* ---- ATP tersimpan ---- */
+async function histGuru(){
+  const sel=$('atp_histguru'), keep=sel.value;
+  sel.innerHTML='<option value="">Memuat daftar guru…</option>';
+  try{
+    const rows=await sb(SB_DST,'/atp_hasil?select=nama_guru&nama_guru=not.is.null&order=nama_guru.asc&limit=1000');
+    const names=[...new Set(rows.map(r=>(r.nama_guru||'').trim()).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'id'));
+    if(!names.length){ sel.innerHTML='<option value="">Belum ada ATP tersimpan</option>'; $('atp_histlist').innerHTML=''; return; }
+    sel.innerHTML='<option value="">— Pilih nama guru —</option>'+names.map(n=>`<option value="${esc(n).replace(/"/g,'&quot;')}">${esc(n)}</option>`).join('');
+    const pick=names.includes(keep)?keep:(names.includes(v('atp_guru'))?v('atp_guru'):'');
+    if(pick){ sel.value=pick; histList(); } else $('atp_histlist').innerHTML='<p class="hint">Pilih nama guru untuk melihat ATP yang pernah dibuat.</p>';
+  }catch(e){ sel.innerHTML='<option value="">Gagal memuat daftar guru</option>'; $('atp_histlist').innerHTML=`<p class="hint err">Gagal memuat: ${esc(e.message)}${/atp_hasil|relation|404/.test(e.message)?' (jalankan tambah-tabel-atp.sql di Supabase)':''}</p>`; }
+}
+async function histList(){
+  const box=$('atp_histlist'), g=$('atp_histguru').value;
+  if(!g){ box.innerHTML='<p class="hint">Pilih nama guru untuk melihat ATP yang pernah dibuat.</p>'; return; }
+  box.innerHTML='<p class="hint">Memuat…</p>';
+  try{
+    const rows=await sb(SB_DST,`/atp_hasil?select=id,created_at,mata_pelajaran,fase,semester,tahun_ajaran&nama_guru=eq.${encodeURIComponent(g)}&order=created_at.desc&limit=100`);
+    if(!rows.length){ box.innerHTML='<p class="hint">Guru ini belum punya ATP tersimpan.</p>'; return; }
+    box.innerHTML=rows.map(r=>`<div class="item"><div><b>${esc(r.mata_pelajaran||'-')} · ${esc(r.fase||'')}</b><small>${esc(r.semester||'')} · ${esc(r.tahun_ajaran||'')} · ${new Date(r.created_at).toLocaleString('id-ID')}</small></div><div class="acts"><button type="button" class="ghost" data-open="${r.id}">Buka</button><button type="button" class="ghost" data-open="${r.id}" data-rpm="1">Susun RPM</button><button type="button" class="ghost del" data-del="${r.id}">Hapus</button></div></div>`).join('');
+  }catch(e){ box.innerHTML=`<p class="hint err">Gagal memuat ATP tersimpan: ${esc(e.message)}</p>`; }
+}
+window.atpList=histGuru;
+$('atp_histguru').addEventListener('change',histList);
+$('atp_histlist').addEventListener('click',async e=>{
+  const o=e.target.closest('[data-open]'), d=e.target.closest('[data-del]');
+  try{
+    if(d){ if(!confirm('Hapus ATP ini dari database?')) return; await sb(SB_DST,`/atp_hasil?id=eq.${d.dataset.del}`,{method:'DELETE'}); if(atpId==d.dataset.del) atpId=null; histList(); }
+    else if(o){
+      const r=(await sb(SB_DST,`/atp_hasil?id=eq.${o.dataset.open}&select=*`))[0]; if(!r) return;
+      showView('atp'); atpId=r.id; atpText=r.atp_markdown||'';
+      $('atp_guru').value=r.nama_guru||''; $('atp_mapel').value=r.mata_pelajaran||''; if(r.fase) $('atp_fase').value=r.fase;
+      if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model;
+      const doc=$('atpdoc'); doc.innerHTML=r.atp_html||md(atpText); fillLogos(doc);
+      doc.querySelectorAll('.sign .sp').forEach((el,i)=>{ el.innerHTML=sigTag(i); });
+      doc.hidden=false; $('atpempty').hidden=true; btn.forEach(id=>$(id).disabled=false); setEditAtp(false); setStatus('ATP tersimpan dibuka. Tekan Edit untuk menyunting.');
+    }
+  }catch(x){ setStatus('Gagal: '+x.message,true); }
+});
+})();
+
+</script>
+<script>
+/* ===== MODUL PROTA & PROSEM – disusun dari ATP tersimpan. Tanpa AI: unit, TP, dan JP dibaca dari tabel ATP, lalu dihitung. ===== */
+(function(){
+const SEMS=['Ganjil','Genap'];
+const tx=e=>(e.textContent||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+const num=s=>{ const m=/\d+/.exec(s||''); return m?parseInt(m[0],10):0; };
+const bersih=t=>String(t||'').replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
+const E=s=>esc(String(s==null?'':s));
+let CUR=null, META=null, ppId=null, ppEdit=false, ppTab='prota', HAVE={};
+
+function st(t,err){ const e=$('ppstatus'); e.textContent=t||''; e.className='status'+(err?' err':''); }
+
+/* ---------- membaca ATP ---------- */
+function semOf(t){
+  t=(t||'').toLowerCase();
+  if(/ganjil/.test(t)) return 'Ganjil'; if(/genap/.test(t)) return 'Genap';
+  const m=/semester\s*(1|2|ii|i)\b/.exec(t); if(m) return (m[1]==='1'||m[1]==='i')?'Ganjil':'Genap';
+  return null;
+}
+function parseAtp(root,defSem,force){
+  const items=[], bRows=[]; let inC=!!force, inB=false, sem=defSem, cur=null, skipP=null;
+  root.querySelectorAll('h2,h3,table,p').forEach(el=>{
+    const tag=el.tagName;
+    if(el.closest('table.kop')||(tag==='P'&&el.closest('table'))) return;
+    if(tag==='H2'){
+      const t=tx(el), m=/^\s*([A-F])[\.\)]\s/.exec(t);
+      if(m){ inB=m[1]==='B'; if(!force) inC=m[1]==='C'; cur=null; if(m[1]==='C') sem=defSem; return; }
+      if(/^\s*semester\b|\b(ganjil|genap)\b/i.test(t)){ const s=semOf(t); if(s){ sem=s; cur=null; } return; }
+      if(/gambaran/i.test(t)){ inB=true; if(!force) inC=false; return; }
+      if(/alur tujuan/i.test(t)){ inB=false; if(!force) inC=true; return; }
+      if(/catatan|capaian/i.test(t)){ inB=false; if(!force) inC=false; }
+      return;
+    }
+    if(tag==='H3'){
+      if(!inC) return;
+      cur={kind:'unit',sem:sem,title:tx(el),materi:'',tps:[],jp:0}; items.push(cur);
+      const n=el.nextElementSibling; if(n&&n.tagName==='P'){ cur.materi=tx(n); skipP=n; }
+      return;
+    }
+    if(tag==='P'){
+      if(el===skipP||!inC) return;
+      const t=tx(el), j=/(\d+)\s*JP/i.exec(t);
+      if(/sumatif/i.test(t)&&j) items.push({kind:'sum',sem:sem,title:t,jp:+j[1]});
+      return;
+    }
+    if(tag==='TABLE'){
+      const rows=[...el.rows]; if(rows.length<2) return;
+      const hdr=[...rows[0].cells].map(c=>tx(c).toLowerCase());
+      const iJ=hdr.findIndex(h=>/^jp\b|alokasi|jp$/.test(h));
+      if(inB){
+        const iU=hdr.findIndex(h=>/unit/.test(h)), iS=hdr.findIndex(h=>/semester/.test(h)), iT=hdr.findIndex(h=>/tema|materi/.test(h));
+        if(iJ>=0) rows.slice(1).forEach(r=>{ const c=[...r.cells].map(tx); if(/total|jumlah/i.test(c.join(' '))) return;
+          bRows.push({sem:semOf(iS>=0?c[iS]:'')||null,unit:iU>=0?c[iU]:'',tema:iT>=0?c[iT]:'',jp:num(c[iJ])}); });
+        return;
+      }
+      if(!inC) return;
+      const iK=hdr.findIndex(h=>/kode/.test(h)), iT=hdr.findIndex(h=>/tujuan/.test(h));
+      if(iT<0&&iJ<0) return;
+      rows.slice(1).forEach(r=>{
+        const c=[...r.cells].map(tx), all=c.join(' '); if(!all.trim()) return;
+        let jp=iJ>=0&&iJ<c.length?num(c[iJ]):0; if(!jp){ const m=/(\d+)\s*JP/i.exec(all); if(m) jp=+m[1]; }
+        if(/sumatif/i.test(all)){ items.push({kind:'sum',sem:sem,title:(iT>=0&&c[iT])||all,jp:jp}); return; }
+        if(/^(total|jumlah)/i.test(c[0])) return;
+        if(!cur){ cur={kind:'unit',sem:sem,title:'Unit',materi:'',tps:[],jp:0}; items.push(cur); }
+        cur.tps.push({kode:iK>=0?c[iK]:'',text:iT>=0?c[iT]:all}); cur.jp+=jp;
+      });
+    }
+  });
+  items.forEach(i=>{ i.sem=i.sem||defSem||'Ganjil'; });
+  SEMS.forEach(s=>{
+    const us=items.filter(i=>i.kind==='unit'&&i.sem===s), bs=bRows.filter(b=>(b.sem||s)===s);
+    us.forEach((u,i)=>{ if(bs[i]){ if(!u.jp) u.jp=bs[i].jp; if(!u.materi) u.materi=bs[i].tema; } });
+  });
+  return items;
+}
+const valid=it=>it.some(i=>i.kind==='unit'&&(i.jp>0||i.tps.length));
+function readAtp(row){
+  const d=document.createElement('div'); d.innerHTML=row.atp_html||'';
+  if(!d.querySelector('h3,table')){ d.innerHTML=md(row.atp_markdown||''); fixPipeTables(d); }
+  const defSem=/satu tahun/i.test(row.semester||'')?null:semOf(row.semester||'');
+  let it=parseAtp(d,defSem,false); if(!valid(it)) it=parseAtp(d,defSem,true);
+  return valid(it)?it.filter(i=>i.kind==='sum'||i.jp>0||i.tps.length):null;
+}
+const semJP=(items,s)=>items.filter(i=>i.sem===s).reduce((a,i)=>a+i.jp,0);
+
+/* ---------- penyusunan dokumen ---------- */
+const semLabel=s=>s==='Ganjil'?'1 (Ganjil)':'2 (Genap)';
+const cell='style="text-align:center"';
+function sumDesc(t,n){
+  const r=String(t||'').replace(/^(asesmen\s+)?sumatif(\s*(akhir\s*)?\d*)?\s*[:\-–—.]?\s*/i,'').trim();
+  return r.length>3?r:'';
+}
+function protaTable(items){
+  let rows='', all=0, nSem=0;
+  SEMS.forEach(s=>{
+    const its=items.filter(i=>i.sem===s); if(!its.length) return; nSem++;
+    rows+=`<tr><td colspan="4" style="background:#e8eef8;font-weight:700;text-align:left">SEMESTER ${E(semLabel(s).toUpperCase())}</td></tr>`;
+    let n=0, sn=0, tot=0;
+    its.forEach(i=>{
+      tot+=i.jp;
+      if(i.kind==='unit'){
+        n++;
+        const tps=i.tps.map(t=>`${t.kode?'<b>'+E(t.kode)+'</b> ':''}${E(t.text)}`).join('<br>')||'–';
+        rows+=`<tr><td ${cell}>${n}</td><td><b>${E(i.title)}</b>${i.materi?'<br>'+E(i.materi):''}</td><td>${tps}</td><td ${cell}>${i.jp}</td></tr>`;
+      }else{
+        sn++; const d=sumDesc(i.title);
+        rows+=`<tr><td ${cell}></td><td style="background:#fff4d6"><b>Asesmen Sumatif ${sn}</b></td><td style="background:#fff4d6">${d?E(d):'–'}</td><td ${cell}>${i.jp}</td></tr>`;
+      }
+    });
+    all+=tot;
+    rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700">Jumlah JP Semester ${E(s)}</td><td ${cell}><b>${tot}</b></td></tr>`;
+  });
+  if(nSem>1) rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Satu Tahun</td><td style="text-align:center;background:#e8eef8"><b>${all}</b></td></tr>`;
+  return `<table><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr>${rows}</table>`;
+}
+function monthsFor(sem,y){
+  const n=sem==='Ganjil'?['Jul','Agu','Sep','Okt','Nov','Des']:['Jan','Feb','Mar','Apr','Mei','Jun'];
+  return n;
+}
+function weeksPerMonth(W){ const b=Math.floor(W/6), r=W%6; return [0,1,2,3,4,5].map(i=>b+(i<r?1:0)); }
+function prosemTable(items,sem,W,jpw,y){
+  const its=items.filter(i=>i.sem===sem), wpm=weeksPerMonth(W), mn=monthsFor(sem,y);
+  const mon=wpm.map((w,i)=>({w,name:mn[i]})).filter(m=>m.w>0);
+  const wPct=Math.max(1.6,Math.min(3.6,44/W)).toFixed(2);
+  let col=`<col style="width:5%"><col style="width:35%"><col style="width:5%">`+Array.from({length:W},()=>`<col style="width:${wPct}%">`).join('')+`<col>`;
+  const th='style="text-align:center;vertical-align:middle;font-size:9pt;padding:2px"';
+  let h1=`<tr><th rowspan="2" ${th}>No</th><th rowspan="2" ${th}>Unit / Tujuan Pembelajaran</th><th rowspan="2" ${th}>JP</th>`+mon.map(m=>`<th colspan="${m.w}" ${th}>${E(m.name)}</th>`).join('')+`<th rowspan="2" ${th}>Ket.</th></tr>`;
+  let h2='<tr>'+mon.map(m=>Array.from({length:m.w},(_,k)=>`<th ${th}>${k+1}</th>`).join('')).join('')+'</tr>';
+  let a=0, n=0, sn=0, body='', over=false;
+  const total=its.reduce((x,i)=>x+i.jp,0); if(Math.ceil(total/jpw)>W) over=true;
+  its.forEach(i=>{
+    const b=a+i.jp; let w0=Math.min(W-1,Math.floor(a/jpw)), w1=Math.min(W-1,Math.max(w0,Math.ceil(b/jpw)-1));
+    if(i.jp<=0){ w0=1; w1=0; }
+    const isU=i.kind==='unit'; let lab, no='';
+    if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`+i.tps.map(t=>`<div style="font-weight:400;font-size:8.5pt">${t.kode?E(t.kode)+' ':''}${E(t.text)}</div>`).join(''); }
+    else{ sn++; const d=sumDesc(i.title); lab=`<b>Asesmen Sumatif ${sn}</b>`+(d?`<div style="font-weight:400;font-size:8.5pt">${E(d)}</div>`:''); }
+    const fill=isU?'#9dc0ea':'#f2b441', lblBg=isU?'#ffffff':'#fff4d6';
+    let cells=''; for(let k=0;k<W;k++){ const on=k>=w0&&k<=w1;
+      cells+=`<td style="text-align:center;padding:1px;font-size:9pt;background:${on?fill:'#ffffff'}">${on?'✓':''}</td>`; }
+    body+=`<tr><td style="text-align:center;background:${lblBg}">${no}</td><td style="text-align:left;background:${lblBg};padding:3px 5px">${lab}</td><td style="text-align:center;background:${lblBg}">${i.jp}</td>${cells}<td style="background:#ffffff"></td></tr>`;
+    a=b;
+  });
+  body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td><td colspan="${W+1}" style="background:#e8eef8"></td></tr>`;
+  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>`};
+}
+function identRows(r,extra){
+  const rows=[['Satuan Pendidikan',$('sekolah').value],['Mata Pelajaran',r.mata_pelajaran],['Fase / Kelas',r.fase],['Tahun Pelajaran',r.tahun_ajaran]];
+  if(extra) rows.push(extra); rows.push(['Penyusun',r.nama_guru]);
+  return `<table>${rows.map(x=>`<tr><td>${E(x[0])}</td><td>${E(x[1])}</td></tr>`).join('')}</table>`;
+}
+function makeSec(key,title,r,extra,subExtra,bodyHTML,note){
+  const sec=document.createElement('section'); sec.className='pp-sec'; sec.dataset.pp=key;
+  sec.innerHTML=`<h1>${E(title)}</h1>${identRows(r,extra)}`;
+  styleDoc(sec,'atp');
+  const sub=['Tahun Ajaran '+(r.tahun_ajaran||''),subExtra].filter(Boolean).join(' · ');
+  sec.querySelectorAll('table.kop .sub').forEach(x=>{ x.textContent=sub; });
+  sec.insertAdjacentHTML('beforeend',bodyHTML+(note?`<p style="font-size:9.5pt;margin-top:6px">${note}</p>`:'')+signHTML());
+  return sec;
+}
+
+/* ---------- tampilan ---------- */
+function tabs(){
+  const box=$('pp_tabs'); box.innerHTML='';
+  const list=[['prota','Prota']].concat(SEMS.filter(s=>HAVE[s]).map(s=>['p'+s,'Prosem '+(s==='Ganjil'?'1':'2')+' ('+s+')']));
+  list.forEach(([k,l])=>{ const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.dataset.pp=k; b.textContent=l; b.setAttribute('aria-pressed',String(k===ppTab)); box.appendChild(b); });
+}
+function showTab(k){
+  ppTab=k; $('ppdoc').querySelectorAll('.pp-sec').forEach(s=>{ s.hidden=s.dataset.pp!==k; });
+  $('pp_tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pp===k)));
+}
+$('pp_tabs').addEventListener('click',e=>{ const b=e.target.closest('button[data-pp]'); if(b) showTab(b.dataset.pp); });
+const ACT=['ppcopy','ppword','ppprint','ppsave','ppedit','ppclear'];
+function shown(items,meta){
+  HAVE={}; SEMS.forEach(s=>{ if(items.some(i=>i.sem===s)) HAVE[s]=true; });
+  tabs(); showTab('prota'); $('ppempty').hidden=true; $('ppdoc').hidden=false; ACT.forEach(id=>$(id).disabled=false);
+  META=meta;
+}
+function setEditPp(on){
+  ppEdit=on; $('ppdoc').contentEditable=on?'true':'false'; $('ppedit').textContent=on?'Selesai edit':'Edit';
+  $('ppsave').textContent=on?'Simpan perubahan':'Simpan ke database';
+}
+$('ppdoc').addEventListener('input',()=>{ $('ppsave').textContent='Simpan perubahan'; });
+$('ppedit').addEventListener('click',()=>setEditPp(!ppEdit));
+function wanted(){ const all=[...$('ppdoc').querySelectorAll('.pp-sec')]; return $('pp_scope').value==='all'?all:all.filter(s=>!s.hidden); }
+
+async function useIdentity(r){
+  const same=$('guru').value===(r.nama_guru||'');
+  $('guru').value=r.nama_guru||'';
+  if(!same){ $('guru').dispatchEvent(new Event('input',{bubbles:true})); $('guru').dispatchEvent(new Event('change',{bubbles:true})); await new Promise(res=>setTimeout(res,1000)); }
+  $('mapel').value=r.mata_pelajaran||''; if(r.fase) $('fase').value=r.fase; $('tahun').value=r.tahun_ajaran||'';
+}
+async function generate(){
+  if(!CUR){ st('Pilih ATP lebih dulu.',true); return; }
+  if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ st('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
+  const jpw=parseInt($('pp_jp').value); if(!(jpw>=1&&jpw<=20)){ st('Isi JP per minggu dengan angka 1–20.',true); return; }
+  const b=$('ppgen'); b.disabled=true; b.textContent='Menyusun…'; st('');
+  try{
+    const r=CUR.row, items=CUR.items, M=window.MGG||{ganjil:18,genap:18}, Wk={Ganjil:M.ganjil,Genap:M.genap};
+    await useIdentity(r);
+    const y=parseInt((/\d{4}/.exec(r.tahun_ajaran||'')||[])[0])||0, d=$('ppdoc'), warn=[];
+    d.innerHTML='';
+    d.appendChild(makeSec('prota','PROGRAM TAHUNAN (PROTA)',r,null,'',protaTable(items),'Alokasi waktu mengikuti Alur Tujuan Pembelajaran (ATP) yang tersimpan.'));
+    SEMS.forEach(s=>{
+      if(!items.some(i=>i.sem===s)) return;
+      const p=prosemTable(items,s,Wk[s],jpw,y);
+      if(p.over) warn.push(`Semester ${s}: total ${p.total} JP melebihi kapasitas ${jpw} × ${Wk[s]} = ${jpw*Wk[s]} JP, sisa JP ditumpuk di minggu terakhir.`);
+      d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
+        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin), ${jpw} JP per minggu. Sebaran minggu per bulan dapat disesuaikan dengan kalender pendidikan lewat tombol Edit.`));
+    });
+    fillLogos(d);
+    ppId=null; setEditPp(false);
+    shown(items,{nama_guru:r.nama_guru,mata_pelajaran:r.mata_pelajaran,fase:r.fase,tahun_ajaran:r.tahun_ajaran,atp_id:r.id,jp_per_minggu:jpw,minggu_ganjil:Wk.Ganjil,minggu_genap:Wk.Genap});
+    st(warn.length?warn.join(' '):'Selesai. Pilih tab Prota atau Prosem untuk melihat tiap dokumen. Tekan Edit bila ingin menyunting.',warn.length>0);
+    d.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){ st('Gagal menyusun: '+(e&&e.message||e),true); }
+  finally{ b.disabled=!CUR; b.textContent='Susun Prota & Prosem'; }
+}
+$('ppf').addEventListener('submit',e=>{ e.preventDefault(); generate(); });
+
+/* ---------- pilih guru & ATP ---------- */
+async function loadGurus(){
+  const sel=$('pp_guru'), keep=sel.value;
+  sel.innerHTML='<option value="">Memuat daftar guru…</option>';
+  try{
+    const rows=await sb(SB_DST,'/atp_hasil?select=nama_guru&nama_guru=not.is.null&order=nama_guru.asc&limit=1000');
+    const names=[...new Set(rows.map(r=>(r.nama_guru||'').trim()).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'id'));
+    if(!names.length){ sel.innerHTML='<option value="">Belum ada ATP tersimpan</option>'; $('pp_info').textContent='Simpan dulu ATP di menu Buat ATP (tombol Simpan ke database), lalu kembali ke sini.'; return; }
+    sel.innerHTML='<option value="">— Pilih nama guru —</option>'+names.map(n=>`<option value="${E(n).replace(/"/g,'&quot;')}">${E(n)}</option>`).join('');
+    const pick=names.includes(keep)?keep:(names.includes($('guru').value.trim())?$('guru').value.trim():'');
+    if(pick){ sel.value=pick; onGuru(); }
+  }catch(e){ sel.innerHTML='<option value="">Gagal memuat daftar guru</option>'; $('pp_info').textContent='Gagal memuat: '+e.message+(/atp_hasil|relation|404/.test(e.message)?' (jalankan tambah-tabel-atp.sql di Supabase)':''); }
+}
+async function onGuru(){
+  const g=$('pp_guru').value, sa=$('pp_atp'); CUR=null; $('ppgen').disabled=true;
+  if(!g){ sa.innerHTML='<option value="">— Pilih guru dulu —</option>'; $('pp_saved').innerHTML=''; return; }
+  sa.innerHTML='<option value="">Memuat…</option>';
+  try{
+    const rows=await sb(SB_DST,`/atp_hasil?select=id,created_at,mata_pelajaran,fase,semester,tahun_ajaran&nama_guru=eq.${encodeURIComponent(g)}&order=created_at.desc&limit=100`);
+    sa.innerHTML='<option value="">— Pilih ATP —</option>'+rows.map(r=>`<option value="${r.id}">${E([r.mata_pelajaran,r.fase,r.semester,r.tahun_ajaran].filter(Boolean).join(' · '))} (${E(new Date(r.created_at).toLocaleDateString('id-ID'))})</option>`).join('');
+    if(rows.length===1){ sa.value=String(rows[0].id); onAtp(); }
+  }catch(e){ sa.innerHTML='<option value="">Gagal memuat ATP</option>'; }
+  savedList();
+}
+async function onAtp(){
+  const id=$('pp_atp').value; CUR=null; $('ppgen').disabled=true;
+  if(!id){ $('pp_info').textContent='Pilih ATP yang sudah disimpan.'; return; }
+  $('pp_info').textContent='Membaca ATP…';
+  try{
+    const r=(await sb(SB_DST,`/atp_hasil?id=eq.${id}&select=id,nama_guru,mata_pelajaran,fase,semester,tahun_ajaran,atp_markdown,atp_html`))[0];
+    if(!r) throw new Error('ATP tidak ditemukan.');
+    const items=readAtp(r);
+    if(!items){ $('pp_info').textContent='ATP ini tidak bisa dibaca. Pastikan bagian "C. Alur Tujuan Pembelajaran" memuat tabel dengan kolom Kode, Tujuan Pembelajaran, dan JP. Susun ulang ATP bila perlu.'; $('pp_info').className='hint err'; return; }
+    CUR={row:r,items:items}; $('pp_info').className='hint';
+    const M=window.MGG||{ganjil:18,genap:18}, parts=[];
+    SEMS.forEach(s=>{ const its=items.filter(i=>i.sem===s); if(its.length) parts.push(`Semester ${s}: ${its.filter(i=>i.kind==='unit').length} unit, ${its.filter(i=>i.kind==='sum').length} asesmen sumatif, ${semJP(items,s)} JP`); });
+    const first=SEMS.find(s=>items.some(i=>i.sem===s)), wk=first==='Ganjil'?M.ganjil:M.genap, est=Math.round(semJP(items,first)/wk);
+    if(est>=1&&est<=20) $('pp_jp').value=est;
+    $('pp_info').textContent='Terbaca → '+parts.join('; ')+'. JP per minggu diperkirakan '+est+' (total JP ÷ minggu efektif); ubah bila berbeda.';
+    $('ppgen').disabled=false;
+  }catch(e){ $('pp_info').textContent='Gagal membaca ATP: '+e.message; $('pp_info').className='hint err'; }
+}
+$('pp_guru').addEventListener('change',onGuru);
+$('pp_atp').addEventListener('change',onAtp);
+function mggInfo(){ const M=window.MGG||{ganjil:18,genap:18}; $('pp_mgg').textContent='Ganjil '+M.ganjil+' minggu · Genap '+M.genap+' minggu (diatur admin)'; }
+window.protaMggRefresh=mggInfo; mggInfo();
+window.protaEnter=function(){ mggInfo(); loadMinggu(); loadGurus(); };
+
+/* ---------- salin, Word, cetak ---------- */
+$('ppcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(wanted().map(s=>s.innerText).join('\n\n')); st('Teks disalin.'); }catch(e){ st('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
+$('ppword').addEventListener('click',()=>{
+  const css=DOC_CSS+'@page Section1{size:297mm 210mm;mso-page-orientation:landscape;margin:15mm}div.Section1{page:Section1}table.prosem{table-layout:fixed}';
+  const body=wanted().map(s=>docForWord(s)).join('<br clear="all" style="page-break-before:always">');
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${body}</div></body></html>`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
+  a.download='Prota_Prosem_'+(bersih(META&&META.mata_pelajaran)||'mapel').slice(0,60)+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+$('ppprint').addEventListener('click',()=>{
+  const s=document.createElement('style'); s.id='pppage'; s.textContent='@page{size:210mm 297mm;size:A4 landscape;margin:12mm}'; document.head.appendChild(s);
+  if($('pp_scope').value==='all') $('ppdoc').classList.add('pp-all');
+  if(_titleAsli===null) _titleAsli=document.title;
+  document.title=['Prota_Prosem',META&&META.mata_pelajaran,META&&META.nama_guru].map(bersih).filter(Boolean).join('_').slice(0,140);
+  window.print();
+});
+window.addEventListener('afterprint',()=>{ const s=$('pppage'); if(s) s.remove(); $('ppdoc').classList.remove('pp-all'); });
+$('ppclear').addEventListener('click',()=>{
+  if(!confirm('Kosongkan dokumen di layar? Yang sudah tersimpan di database tidak terhapus.')) return;
+  $('ppdoc').innerHTML=''; $('ppdoc').hidden=true; $('ppempty').hidden=false; ppId=null; META=null; setEditPp(false); ACT.forEach(id=>$(id).disabled=true); $('pp_tabs').innerHTML=''; st('');
+});
+
+/* ---------- simpan & dokumen tersimpan (tabel prota_prosem_hasil) ---------- */
+const TBL_MSG=' Tabel prota_prosem_hasil belum ada: jalankan tambah-tabel-prota-prosem.sql di Supabase.';
+async function save(){
+  if(!META) return;
+  const c=stripLogos($('ppdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
+  const h={}; c.querySelectorAll('.pp-sec').forEach(s=>{ h[s.dataset.pp]=s.innerHTML; });
+  const body=Object.assign({kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),prota_html:h.prota||'',prosem_ganjil_html:h.pGanjil||'',prosem_genap_html:h.pGenap||''},META);
+  const b=$('ppsave'); b.disabled=true;
+  try{
+    let row=null;
+    if(ppId){ const r=await sb(SB_DST,`/prota_prosem_hasil?id=eq.${ppId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
+    if(!row){ const r=await sb(SB_DST,'/prota_prosem_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
+    if(row&&row.id) ppId=row.id;
+    $('ppsave').textContent='Simpan ke database'; st('Tersimpan ke database.'); notify(true,'Prota dan Prosem tersimpan ke database.'); savedList();
+  }catch(e){
+    const h2=/relation|does not exist|schema cache|404|row-level|policy|permission/i.test(e.message)?TBL_MSG:'';
+    st('Gagal menyimpan ke database: '+e.message+h2,true); notify(false,'Gagal menyimpan: '+e.message+h2);
+  }finally{ b.disabled=false; }
+}
+$('ppsave').addEventListener('click',save);
+async function savedList(){
+  const box=$('pp_saved'), g=$('pp_guru').value; if(!g){ box.innerHTML=''; return; }
+  try{
+    const rows=await sb(SB_DST,`/prota_prosem_hasil?select=id,created_at,mata_pelajaran,fase,tahun_ajaran&nama_guru=eq.${encodeURIComponent(g)}&order=created_at.desc&limit=50`);
+    box.innerHTML=rows.length?rows.map(r=>`<div class="item"><div><b>${E(r.mata_pelajaran||'-')} · ${E(r.fase||'')}</b><small>${E(r.tahun_ajaran||'')} · ${E(new Date(r.created_at).toLocaleString('id-ID'))}</small></div><div class="acts"><button type="button" class="ghost" data-ppopen="${r.id}">Buka</button><button type="button" class="ghost del" data-ppdel="${r.id}">Hapus</button></div></div>`).join(''):'<p class="hint">Belum ada Prota dan Prosem tersimpan untuk guru ini.</p>';
+  }catch(e){ box.innerHTML=`<p class="hint err">Gagal memuat daftar tersimpan: ${E(e.message)}${/prota_prosem_hasil|relation|404/.test(e.message)?' (jalankan tambah-tabel-prota-prosem.sql di Supabase)':''}</p>`; }
+}
+$('pp_saved').addEventListener('click',async e=>{
+  const o=e.target.closest('[data-ppopen]'), d=e.target.closest('[data-ppdel]');
+  try{
+    if(d){ if(!confirm('Hapus Prota dan Prosem ini dari database?')) return; await sb(SB_DST,`/prota_prosem_hasil?id=eq.${d.dataset.ppdel}`,{method:'DELETE'}); if(ppId==d.dataset.ppdel) ppId=null; savedList(); return; }
+    if(!o) return;
+    const r=(await sb(SB_DST,`/prota_prosem_hasil?id=eq.${o.dataset.ppopen}&select=*`))[0]; if(!r) return;
+    const dd=$('ppdoc'); dd.innerHTML=''; const items=[];
+    [['prota',r.prota_html],['pGanjil',r.prosem_ganjil_html],['pGenap',r.prosem_genap_html]].forEach(([k,h])=>{
+      if(!h) return; const s=document.createElement('section'); s.className='pp-sec'; s.dataset.pp=k; s.innerHTML=h; dd.appendChild(s);
+      if(k!=='prota') items.push({sem:k==='pGanjil'?'Ganjil':'Genap'});
+    });
+    fillLogos(dd); dd.querySelectorAll('.sign .sp').forEach((el,i)=>{ el.innerHTML=sigTag(i%2); });
+    ppId=r.id; setEditPp(false);
+    shown(items,{nama_guru:r.nama_guru,mata_pelajaran:r.mata_pelajaran,fase:r.fase,tahun_ajaran:r.tahun_ajaran,atp_id:r.atp_id,jp_per_minggu:r.jp_per_minggu,minggu_ganjil:r.minggu_ganjil,minggu_genap:r.minggu_genap});
+    st('Prota dan Prosem tersimpan dibuka. Tekan Edit untuk menyunting.');
+  }catch(x){ st('Gagal: '+x.message,true); }
+});
+})();
+
+</script>
+<script>window.atpEnter&&window.atpEnter();</script>
+<div class="keyov" id="unitov" role="dialog" aria-modal="true" aria-labelledby="unitttl">
+  <div class="keybox">
+    <h3 id="unitttl">Pilih unit ATP</h3>
+    <p>Formulir Buat RPP akan terisi dari unit yang Anda pilih.</p>
+    <div id="unitlist"></div>
+    <div class="keybtns"><button type="button" class="ghost" id="unitcancel">Batal</button><button type="button" id="unitok">Lanjut ke Buat RPP</button></div>
+  </div>
+</div>
+<script>
+/* ===== Susun RPM berdasarkan ATP (opsional): mengisi formulir Buat RPP dari satu unit ATP. Buat RPP tetap bisa dipakai langsung tanpa ATP. ===== */
+(function(){
+const doc=$('atpdoc'), ov=$('unitov');
+const txt=e=>(e.textContent||'').replace(/\s+/g,' ').trim();
+function parseUnits(){
+  const out=[]; let sem='';
+  const els=[...doc.children];
+  els.forEach((el,i)=>{
+    const t=txt(el);
+    if(/^H[12]$/.test(el.tagName)){ const m=t.match(/SEMESTER\s*(\d)/i); if(m) sem=m[1]==='2'?'Genap':'Ganjil'; }
+    if(el.tagName==='H3'&&/^Unit\s*\d+/i.test(t)){
+      let info='', tb=null;
+      for(let j=i+1;j<els.length;j++){
+        const n=els[j]; if(/^H[1-3]$/.test(n.tagName)||n.classList.contains('sign')) break;
+        if(n.tagName==='TABLE'&&!n.classList.contains('kop')){ tb=n; break; }
+        if(!info&&n.tagName==='P') info=txt(n);
+      }
+      const tps=[]; let jp=0;
+      if(tb){
+        const rows=[...tb.rows], head=[...rows[0].cells].map(txt), ix=k=>head.findIndex(h=>new RegExp(k,'i').test(h));
+        const cK=ix('^kode'), cT=ix('tujuan'), cJ=ix('^jp');
+        rows.slice(1).forEach(r=>{
+          const c=[...r.cells].map(txt), tp=c[cT>=0?cT:2]||'', j=parseInt(c[cJ>=0?cJ:c.length-1])||0;
+          if(tp&&/mampu/i.test(tp)){ tps.push({kode:c[cK>=0?cK:0]||'',tp,jp:j}); }
+          jp+=j;
+        });
+      }
+      out.push({judul:t,topik:t.replace(/^Unit\s*\d+\s*[–—:-]\s*/i,''),info:info.replace(/^materi\s*:\s*/i,''),tps,jp,sem:sem||''});
+    }
+  });
+  return out;
+}
+let UNITS=[];
+function openPicker(){
+  UNITS=parseUnits();
+  if(!UNITS.length){ notify(false,'Unit tidak ditemukan di ATP ini. Pastikan ATP memuat judul "Unit n – …" lalu coba lagi, atau isi formulir Buat RPP secara manual.'); return; }
+  $('unitlist').innerHTML=UNITS.map((u,i)=>`<label><input type="radio" name="unitopt" value="${i}"${i===0?' checked':''}><span>${esc(u.judul)}<br><small>${u.sem?esc(u.sem)+' · ':''}${u.jp?u.jp+' JP · ':''}${u.tps.length} tujuan pembelajaran</small></span></label>`).join('');
+  ov.classList.add('on');
+}
+function closePicker(){ ov.classList.remove('on'); }
+function jpPerPertemuan(){ const m=($('waktu').value||'').match(/(\d+)\s*[×xX]/); return m?+m[1]:2; }
+function applyUnit(u){
+  const g=id=>$(id);
+  g('mapel').value=g('atp_mapel').value.trim(); g('fase').value=g('atp_fase').value;
+  g('tahun').value=g('atp_tahun').value.trim();
+  const cak=g('atp_cakupan').value; const sem=u.sem||(/^(Ganjil|Genap)$/.test(cak)?cak:'');
+  if(sem) g('semester').value=sem;
+  g('topik').value=u.topik;
+  const tps=u.tps.map(t=>`${t.kode?t.kode+' ':''}${t.tp}${t.jp?' ('+t.jp+' JP)':''}`).join('\n');
+  g('cp').value=`[Berdasarkan ATP] ${u.judul}${u.info?'\nMateri: '+u.info:''}\nTujuan Pembelajaran pada ATP:\n${tps||'(lihat ATP)'}\nSusun RPM yang selaras dengan ATP ini: tujuan pembelajaran RPM harus mencakup dan merinci tujuan di atas.`;
+  if(u.jp){ g('pertemuan').value=String(Math.min(12,Math.max(1,Math.round(u.jp/jpPerPertemuan())))); }
+  const b=$('atpfrom'); b.textContent='Terisi dari ATP: '+u.judul+(u.jp?' ('+u.jp+' JP)':'')+'. Semua isian tetap bisa diubah.'; b.hidden=false;
+  showView('make'); setStatus('Formulir Buat RPP terisi dari ATP. Periksa topik dan jumlah pertemuan, lalu tekan Susun RPM.');
+}
+$('atprpm').addEventListener('click',openPicker);
+$('unitcancel').addEventListener('click',closePicker);
+$('unitok').addEventListener('click',()=>{ const r=$('unitlist').querySelector('input:checked'); closePicker(); if(r) applyUnit(UNITS[+r.value]); });
+ov.addEventListener('click',e=>{ if(e.target===ov) closePicker(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePicker(); });
+const sync=()=>{ $('atprpm').disabled=doc.hidden; };
+new MutationObserver(sync).observe(doc,{attributes:true,attributeFilter:['hidden']}); sync();
+$('pc_close').addEventListener('click',()=>{ $('atpfrom').hidden=true; });
+/* dari daftar ATP tersimpan: Buka lalu langsung pilih unit */
+$('atp_histlist').addEventListener('click',e=>{
+  if(!e.target.closest('[data-rpm]')) return;
+  let n=0; const t=setInterval(()=>{ n++; if(!$('view-atp').hidden&&!doc.hidden&&doc.querySelector('h3')){ clearInterval(t); openPicker(); } else if(n>25) clearInterval(t); },200);
+});
+})();
 </script>
 </body>
 </html>
