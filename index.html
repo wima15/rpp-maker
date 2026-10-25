@@ -127,6 +127,7 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
   font-weight:600;
   transition:all .15s ease;
 }
+.sb-link.sb-sub{margin-left:20px;width:calc(100% - 20px);font-size:.94em}
 .sb-link svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sb-link:hover{background:var(--accent-light);color:var(--accent)}
 .sb-link[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow: 0 2px 4px rgba(13,148,136,.2)}
@@ -154,6 +155,7 @@ body[data-sb="collapsed"] .sidebar{padding:20px 8px;align-items:stretch}
 body[data-sb="collapsed"] .sb-head{justify-content:center}
 body[data-sb="collapsed"] .sb-head .sb-title,body[data-sb="collapsed"] #sb_hide,body[data-sb="collapsed"] .sb-link .lbl{display:none}
 body[data-sb="collapsed"] .sb-link{justify-content:center;padding:10px 0}
+body[data-sb="collapsed"] .sb-link.sb-sub{margin-left:0;width:auto}
 #sb_collapse svg{transition:transform .2s}
 body[data-sb="collapsed"] #sb_collapse svg{transform:rotate(180deg)}
 
@@ -573,6 +575,7 @@ main[hidden],.view-saved[hidden]{display:none!important}
   .sidebar{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;align-items:center;gap:8px;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
   .sb-title{display:none}
   .sb-link{width:auto;white-space:nowrap;padding:8px 12px}
+  .sb-link.sb-sub{margin-left:0;width:auto}
   body[data-sb="collapsed"] .app,body[data-sb="hidden"] .app{grid-template-columns:1fr}
   .sb-head{margin:0;flex:none}
   .sb-head .sb-title{display:none}
@@ -796,6 +799,10 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h6"/><path d="m16 15 2 2 4-4"/></svg>
     <span class="lbl">Buat ATP</span>
   </button>
+  <button type="button" class="sb-link sb-sub" id="nav-atpsaved" data-view="atpsaved" title="ATP Tersimpan">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 14h6"/><path d="M9 4v5"/></svg>
+    <span class="lbl">ATP Tersimpan</span>
+  </button>
   <button type="button" class="sb-link" id="nav-prota" data-view="prota" title="Prota &amp; Prosem">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4z"/><path d="M4 10h16"/><path d="M9 3v4"/><path d="M15 3v4"/><path d="M8 14h2"/><path d="M14 14h2"/></svg>
     <span class="lbl">Prota &amp; Prosem</span>
@@ -804,11 +811,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
     <span class="lbl">Buat RPP</span>
   </button>
-  <button type="button" class="sb-link" id="nav-atpsaved" data-view="atpsaved" title="ATP Tersimpan">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 14h6"/><path d="M9 4v5"/></svg>
-    <span class="lbl">ATP Tersimpan</span>
-  </button>
-  <button type="button" class="sb-link" id="nav-saved" data-view="saved" title="RPP Tersimpan">
+  <button type="button" class="sb-link sb-sub" id="nav-saved" data-view="saved" title="RPP Tersimpan">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16"/><path d="M9 14h6"/></svg>
     <span class="lbl">RPP Tersimpan</span>
   </button>
