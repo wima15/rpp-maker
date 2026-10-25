@@ -1570,19 +1570,33 @@ function imgUpErr(e){
   if(/row-level|unauthorized|not allowed|policy/i.test(m)||(e&&e.status===403)) return 'izin storage belum diatur';
   return m;
 }
-var IMGWARN='';
-async function fileToSrc(file){
-  const blob=await shrinkImage(file);
-  try{ return await uploadImg(blob); }
-  catch(e){ IMGWARN=imgUpErr(e); return await blobToDataURL(blob); }     // cadangan: tetap tampil, tapi belum di storage
-}
-/* gambar lama (base64) ikut dipindah ke storage saat dokumen disimpan */
+/* Gambar disisipkan dulu sebagai data lokal (maks 50 KB) supaya bisa diatur ukuran/posisinya atau dihapus tanpa menyentuh storage.
+   Baru saat dokumen DISIMPAN, gambar dipindah ke storage. Bila storage tidak bisa dipakai, gambar tetap di dalam dokumen seperti sebelumnya. */
+async function fileToSrc(file){ return await blobToDataURL(await shrinkImage(file)); }
+var IMGMIGFAIL='';
 async function migrateImgs(el){
   const list=[...el.querySelectorAll('img.usr-img')].filter(i=>/^data:image\//.test(i.getAttribute('src')||''));
   for(const im of list){
     try{ const b=await (await fetch(im.getAttribute('src'))).blob(); im.setAttribute('src',await uploadImg(await shrinkImage(b))); }
-    catch(e){ break; }
+    catch(e){ IMGMIGFAIL=imgUpErr(e); break; }
   }
+}
+async function migrateAll(els){
+  IMGMIGFAIL=''; for(const el of els){ if(el&&!el.hidden) await migrateImgs(el); }
+  if(IMGMIGFAIL) notify(false,'Gambar belum bisa dipindah ke storage ('+IMGMIGFAIL+'), jadi tetap disimpan di dalam dokumen. Minta pengembang menjalankan tambah-bucket-gambar.sql di Supabase.');
+}
+/* gambar storage yang tidak dipakai lagi oleh dokumen (dihapus/diganti) ikut dihapus dari storage setelah simpan berhasil */
+const imgPaths=s=>{ const out=new Set(), re=new RegExp('/object/public/'+IMGBUCKET+'/([A-Za-z0-9_./-]+)','g'); let m; while((m=re.exec(String(s||'')))) out.add(m[1]); return out; };
+async function oldImgPaths(table,id,cols){
+  if(!id||!cols.length) return new Set();
+  try{ const r=await sb(SB_DST,`/${table}?id=eq.${id}&select=${cols.join(',')}`); return imgPaths(JSON.stringify(r&&r[0]||{})); }catch(e){ return new Set(); }
+}
+async function purgeImgs(oldSet,newHtml){
+  const keep=imgPaths(newHtml); let fail='';
+  for(const p of oldSet){ if(keep.has(p)) continue;
+    try{ await stReq('DELETE','/object/'+IMGBUCKET+'/'+p); }catch(e){ fail=imgUpErr(e); }
+  }
+  if(fail) notify(false,'Gambar yang dihapus belum bisa dihapus dari storage ('+fail+'). Dokumen tetap tersimpan. Jalankan tambah-bucket-gambar.sql terbaru di Supabase.');
 }
 /* simpan salinan base64 gambar storage agar ekspor Word tidak bergantung pada internet */
 function cacheImgs(root){
@@ -1595,7 +1609,7 @@ async function insertImageFiles(files,pt,force){
   const list=[...files].filter(f=>/^image\//.test(f.type)); if(!list.length) return;
   const r=targetRange(pt,force);
   if(!r){ const m='Klik dulu di dalam dokumen yang sedang diedit, lalu sisipkan gambar.'; if(force) notify(false,m); else setStatus(m,true); return; }
-  const ed=edOf(r.startContainer); let last=null; IMGWARN='';
+  const ed=edOf(r.startContainer); let last=null;
   if(!force) setStatus('Memproses gambar…');
   for(const f of list){
     try{
@@ -1605,10 +1619,9 @@ async function insertImageFiles(files,pt,force){
   }
   if(last){
     dirtyFor(ed); selectImg(last);
-    const ok='Gambar disisipkan (maks 50 KB, disimpan di storage). Seret untuk memindah, tarik sudut kanan-bawah untuk mengubah ukuran.';
-    if(ed&&(ed.id==='atpdoc'||ed.id==='ppdoc')){ if(!IMGWARN) notify(true,'Gambar disisipkan dan disimpan di storage (maks 50 KB).'); } else setStatus(ok);
+    const ok='Gambar disisipkan (diperkecil maks 50 KB). Atur dulu: seret untuk memindah, tarik sudut kanan-bawah atau geser slider untuk ukuran, tombol Hapus untuk membuang. Gambar masuk ke storage saat dokumen disimpan.';
+    if(ed&&(ed.id==='atpdoc'||ed.id==='ppdoc')){ const s=$(ed.id==='atpdoc'?'atpstatus':'ppstatus'); if(s){ s.textContent=ok; s.className='status'; } } else setStatus(ok);
   }
-  if(IMGWARN) notify(false,'Gambar belum bisa disimpan ke storage ('+IMGWARN+'), jadi sementara dimasukkan langsung ke dokumen. Minta pengembang menjalankan tambah-bucket-gambar.sql di Supabase.');
 }
 function posBar(){
   const b=$('imgbar'); if(!b) return;
@@ -1631,6 +1644,11 @@ document.querySelectorAll('#imgbar [data-al]').forEach(b=>b.addEventListener('cl
   if(!selImg) return; imgStyle(selImg,b.dataset.al,selImg.dataset.w||50); dirtyFor(edOf(selImg)); selectImg(selImg);
 }));
 $('imgw').addEventListener('input',()=>{ if(!selImg) return; imgStyle(selImg,selImg.dataset.al||'center',+$('imgw').value); dirtyFor(edOf(selImg)); posBar(); });
+document.addEventListener('keydown',e=>{
+  if((e.key!=='Delete'&&e.key!=='Backspace')||!selImg||!anyEditing()) return;
+  const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
+  e.preventDefault(); $('imgdel').click();
+});
 $('imgdel').addEventListener('click',()=>{ if(!selImg) return; const i=selImg, ed=edOf(i); selectImg(null); i.remove(); dirtyFor(ed); });
 $('imgadd').addEventListener('click',()=>{ IMGFORCE=null; $('imgfile').click(); });
 $('imgfile').addEventListener('change',e=>{ const f=[...e.target.files], F=IMGFORCE; e.target.value=''; IMGFORCE=null; insertImageFiles(f,null,F); });
@@ -2818,10 +2836,11 @@ async function saveDb(auto,prefix,skipAses,skipLamp){
   const pre=prefix?prefix+' ':'', tbl=encodeURIComponent(readCfgForm().tOut);
   const btn=$('savedb'); btn.disabled=true;
   try{
-    for(const id of ['doc','lkpd','asesmen','lampiran']){ if(!$(id).hidden) await migrateImgs($(id)); }
+    await migrateAll(['doc','lkpd','asesmen','lampiran'].map($));
     const body=dbPayload(); let row=null;
     if(skipAses||$('asesmen').hidden) delete body.asesmen_html;
     if(skipLamp||$('lampiran').hidden) delete body.lampiran_html;
+    const htmlCols=Object.keys(body).filter(k=>/_html$/.test(k)), oldImg=await oldImgPaths(readCfgForm().tOut,curId,htmlCols);
     if(curId){
       const r=await sb(SB_DST,`/${tbl}?id=eq.${curId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})});
       row=r&&r[0];
@@ -2831,6 +2850,7 @@ async function saveDb(auto,prefix,skipAses,skipLamp){
       row=r&&r[0];
     }
     if(row&&row.id) curId=row.id;
+    purgeImgs(oldImg,htmlCols.map(k=>body[k]).join(' '));
     setDirty(false);
     if(skipAses){ setStatus(pre+'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.',true); notify(false,'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.'); }
     else if(skipLamp){ setStatus(pre+'RPM, LKPD, dan asesmen tersimpan, tetapi lampiran belum tersimpan: kolom lampiran_html belum ada di database. Jalankan tambah-kolom-lampiran.sql di Supabase.',true); notify(false,'RPM, LKPD, dan asesmen tersimpan, tetapi lampiran belum tersimpan: kolom lampiran_html belum ada di database. Jalankan tambah-kolom-lampiran.sql di Supabase.'); }
@@ -3755,7 +3775,8 @@ $('atpword').addEventListener('click',()=>{
 
 /* ---- simpan ke database (tabel atp_hasil) ---- */
 async function atpSave(auto){
-  try{ await migrateImgs($('atpdoc')); }catch(e){}
+  try{ await migrateAll([$('atpdoc')]); }catch(e){}
+  const oldImg=await oldImgPaths('atp_hasil',atpId,['atp_html']);
   const c=stripLogos($('atpdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
   const body={nama_guru:v('atp_guru'),kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),mata_pelajaran:v('atp_mapel'),
     fase:v('atp_fase'),semester:$('atp_cakupan').value,tahun_ajaran:v('atp_tahun'),model:v('atp_model'),atp_markdown:atpText,atp_html:c.innerHTML};
@@ -3765,6 +3786,7 @@ async function atpSave(auto){
     if(atpId){ const r=await sb(SB_DST,`/atp_hasil?id=eq.${atpId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
     if(!row){ const r=await sb(SB_DST,'/atp_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
     if(row&&row.id) atpId=row.id;
+    purgeImgs(oldImg,c.innerHTML);
     $('atpsave').textContent='Simpan ke database'; setStatus('Tersimpan ke database.');
     if(!auto||$('resov').classList.contains('on')) notify(true,'ATP tersimpan ke database.');
   }catch(e){
@@ -4129,7 +4151,8 @@ $('ppclear').addEventListener('click',()=>{
 const TBL_MSG=' Tabel prota_prosem_hasil belum ada: jalankan tambah-tabel-prota-prosem.sql di Supabase.';
 async function save(){
   if(!META) return;
-  try{ await migrateImgs($('ppdoc')); }catch(e){}
+  try{ await migrateAll([$('ppdoc')]); }catch(e){}
+  const oldImg=await oldImgPaths('prota_prosem_hasil',ppId,['prota_html','prosem_ganjil_html','prosem_genap_html']);
   const c=stripLogos($('ppdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
   const h={}; c.querySelectorAll('.pp-sec').forEach(s=>{ h[s.dataset.pp]=s.innerHTML; });
   const body=Object.assign({kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),prota_html:h.prota||'',prosem_ganjil_html:h.pGanjil||'',prosem_genap_html:h.pGenap||''},META);
@@ -4139,6 +4162,7 @@ async function save(){
     if(ppId){ const r=await sb(SB_DST,`/prota_prosem_hasil?id=eq.${ppId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
     if(!row){ const r=await sb(SB_DST,'/prota_prosem_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
     if(row&&row.id) ppId=row.id;
+    purgeImgs(oldImg,c.innerHTML);
     $('ppsave').textContent='Simpan ke database'; st('Tersimpan ke database.'); notify(true,'Prota dan Prosem tersimpan ke database.'); savedList();
   }catch(e){
     const h2=/relation|does not exist|schema cache|404|row-level|policy|permission/i.test(e.message)?TBL_MSG:'';

@@ -12,4 +12,14 @@ create policy "gambar-dokumen upload" on storage.objects
   with check (bucket_id = 'gambar-dokumen');
 
 -- Bucket publik: gambar bisa dibuka lewat URL tanpa policy select tambahan.
--- Tidak ada policy update/delete: gambar yang sudah diunggah tidak bisa ditimpa atau dihapus dari aplikasi.
+
+-- Hapus gambar dari storage saat gambar dibuang dari dokumen dan dokumen disimpan.
+drop policy if exists "gambar-dokumen baca" on storage.objects;
+create policy "gambar-dokumen baca" on storage.objects
+  for select to anon, authenticated
+  using (bucket_id = 'gambar-dokumen');
+
+drop policy if exists "gambar-dokumen hapus" on storage.objects;
+create policy "gambar-dokumen hapus" on storage.objects
+  for delete to anon, authenticated
+  using (bucket_id = 'gambar-dokumen');
