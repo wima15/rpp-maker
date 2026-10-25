@@ -921,9 +921,15 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <label for="cp">Capaian Pembelajaran (opsional)</label>
     <textarea id="cp" placeholder="Kosongkan agar AI merujuk CP resmi sesuai mapel dan fase"></textarea>
     <div class="row">
+      <div><label for="jpmgg">JP per minggu</label><input id="jpmgg" type="number" min="1" max="20" placeholder="mis. 6"></div>
+      <div><label for="jptotal">Total JP materi (dari ATP)</label><input id="jptotal" type="number" min="0" max="200" placeholder="mis. 26"></div>
+    </div>
+    <div class="row">
       <div><label for="pertemuan">Jumlah pertemuan</label><input id="pertemuan" type="number" min="1" max="12" value="2"></div>
       <div><label for="waktu">Durasi per pertemuan</label><input id="waktu" value="2 × 45 menit"></div>
     </div>
+    <label for="jpbagi">Pembagian JP tiap pertemuan</label><input id="jpbagi" placeholder="mis. 6-6-6-4-4 (terisi otomatis bila JP per minggu dan total JP diisi)">
+    <p class="hint">Satu pertemuan = satu minggu. Jumlah pertemuan dan pembagian JP dihitung otomatis dari JP per minggu dan total JP materi di ATP (mis. 26 JP, 6 JP/minggu menjadi 6-6-6-4-4). Pembagian boleh diubah manual. Durasi 1 JP diambil dari angka menit pada kolom Durasi (mis. 45 menit).</p>
     <label for="siswa">Karakteristik siswa</label>
     <textarea id="siswa" placeholder="mis. 30 siswa, sebagian besar visual, 3 siswa butuh pendampingan membaca"></textarea>
   </fieldset>
@@ -1362,6 +1368,28 @@ function setStatus(t, err){ const s=$('status'); s.textContent=t||''; s.classNam
 
 
 const NOTASI=`\n\nPENULISAN RUMUS DAN HURUF KHUSUS (WAJIB): (1) JANGAN memakai LaTeX atau tanda dolar. Tulis rumus dengan simbol Unicode dalam teks biasa, misalnya 3 × 3 × 3, 12 ÷ 4, √16, x², a₁, ½, ≤, ≥, ≠, π. Pangkat boleh ditulis 3^3 atau 3³. (2) Tulisan Arab ditulis dengan huruf Arab Unicode asli (bukan gambar, bukan hanya transliterasi), lengkap dengan harakat bila dibutuhkan siswa. (3) Aksara Jawa ditulis dengan karakter Unicode asli (blok Javanese, U+A980–U+A9DF). Sertakan transliterasi Latin atau arti dalam kurung bila membantu siswa. (4) TABEL: tulis setiap tabel dalam Markdown dengan tanda | di AWAL dan di AKHIR setiap baris, baris pemisah judul berbentuk |---|---|---|, satu baris tabel per satu baris teks, tanpa baris kosong di dalam tabel. Jangan menulis garis pemisah --- di luar tabel.`;
+/* membagi total JP materi ke pertemuan (1 pertemuan = 1 minggu): minggu awal penuh, minggu akhir menyesuaikan.
+   26 JP, 6 JP/minggu -> [6,6,6,4,4] */
+function distJP(total,jpw){
+  total=Math.max(0,Math.round(+total||0)); jpw=Math.max(1,Math.round(+jpw||1));
+  if(!total) return [];
+  const n=Math.ceil(total/jpw); if(total%jpw===0) return Array(n).fill(jpw);
+  let t=1; while(t<n&&(total-(n-t)*jpw)/t<jpw/2) t++;
+  const r=total-(n-t)*jpw, base=Math.floor(r/t), ex=r%t, out=Array(n-t).fill(jpw);
+  for(let i=0;i<t;i++) out.push(base+(i<ex?1:0));
+  return out;
+}
+function applyJp(){
+  const w=parseInt($('jpmgg').value)||0, t=parseInt($('jptotal').value)||0; if(!(w>0&&t>0)) return;
+  let a=distJP(t,w); if(a.length>12) a=distJP(t,Math.ceil(t/12));
+  $('pertemuan').value=String(a.length); $('jpbagi').value=a.join('-');
+}
+function pertInfo(){
+  const n=parseInt($('pertemuan').value)||0, arr=($('jpbagi').value||'').split(/[^0-9]+/).filter(Boolean).map(Number).filter(x=>x>0);
+  if(!n||arr.length!==n) return null;
+  const m=/[×xX]\s*(\d+)/.exec($('waktu').value||''), mnt=m?+m[1]:45;
+  return {n,arr,mnt,tot:arr.reduce((a,b)=>a+b,0)};
+}
 function buildPrompt(){
   const dims=[...document.querySelectorAll('#dims input:checked')].map(i=>i.value);
   return `Anda adalah pakar kurikulum dan pengembang pembelajaran di Indonesia. Susun dokumen RENCANA PEMBELAJARAN MENDALAM (RPM) yang lengkap, siap pakai, dan realistis untuk dilaksanakan guru, mengacu pada Kurikulum Merdeka terbaru dan pendekatan Pembelajaran Mendalam (deep learning) dari Kemendikdasmen: berkesadaran (mindful), bermakna (meaningful), dan menggembirakan (joyful), dengan 8 Dimensi Profil Lulusan (Keimanan dan Ketakwaan terhadap Tuhan YME, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi).
@@ -1375,7 +1403,7 @@ DATA DARI GURU:
 - Semester/Tahun ajaran: ${$('semester').value} / ${$('tahun').value}
 - Topik/materi: ${$('topik').value}
 - Capaian Pembelajaran: ${$('cp').value.trim() || '(tidak diisi; rujuk CP resmi yang sesuai mapel dan fase, dan sebutkan elemennya)'}
-- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}
+${(()=>{ const pi=pertInfo(); return pi?`- Jumlah pertemuan: ${pi.n} (satu pertemuan = satu minggu). Total ${pi.tot} JP; 1 JP = ${pi.mnt} menit. Alokasi tiap pertemuan: ${pi.arr.map((j,i)=>`Pertemuan ${i+1} = ${j} JP (${j*pi.mnt} menit)`).join('; ')}. WAJIB: durasi tiap pertemuan TIDAK sama; kolom Waktu pada tabel Pertemuan n harus berjumlah tepat sesuai menit pertemuan itu (${pi.arr.map((j,i)=>`P${i+1} ${j*pi.mnt} menit`).join(', ')}), dan banyaknya kegiatan menyesuaikan durasi (pertemuan lebih pendek = kegiatan lebih ringkas). Baris Alokasi Waktu pada tabel identitas ditulis: ${pi.n} pertemuan (${pi.arr.join('-')} JP; total ${pi.tot} JP × ${pi.mnt} menit)`:`- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}`; })()}
 - Karakteristik siswa: ${$('siswa').value.trim() || '(tidak diisi; buat asumsi umum dan nyatakan asumsinya)'}
 - Dimensi Profil Lulusan yang diinginkan: ${dims.length ? dims.join(', ') : '(pilih 2–3 yang paling relevan)'}
 - Praktik pedagogis: ${$('pedagogi').value || '(pilih yang paling cocok dan beri alasan singkat)'}
@@ -1398,7 +1426,7 @@ Tabel identitas 2 kolom dengan baris judul "Komponen | Keterangan" (Satuan Pendi
 ### Lingkungan Pembelajaran
 ### Pemanfaatan Digital
 ## C. Pengalaman Belajar
-Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan TIGA kolom saja: Tahap | Kegiatan Pembelajaran | Waktu. Jangan membuat kolom Prinsip Pembelajaran Mendalam. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Di PALING BAWAH sel Kegiatan setiap baris, setelah langkah terakhir, tambahkan satu baris baru dengan format persis: <br>**Prinsip Pembelajaran Mendalam:** berkesadaran / bermakna / menggembirakan (boleh lebih dari satu) – alasan singkat satu kalimat. Kolom Waktu berisi durasi menit saja (misalnya 10 menit), dan totalnya sesuai durasi per pertemuan.
+Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU tabel Markdown dengan TIGA kolom saja: Tahap | Kegiatan Pembelajaran | Waktu. Jangan membuat kolom Prinsip Pembelajaran Mendalam. Isi baris berurutan: Awal; Inti – Memahami; Inti – Mengaplikasi; Inti – Merefleksi; Penutup. Kolom Kegiatan berisi langkah konkret guru dan siswa, dipisah dengan <br> dan diberi nomor manual (1., 2., 3.), bukan kalimat umum. Di PALING BAWAH sel Kegiatan setiap baris, setelah langkah terakhir, tambahkan satu baris baru dengan format persis: <br>**Prinsip Pembelajaran Mendalam:** berkesadaran / bermakna / menggembirakan (boleh lebih dari satu) – alasan singkat satu kalimat. Kolom Waktu berisi durasi menit saja (misalnya 10 menit), dan totalnya sesuai durasi pertemuan tersebut (lihat alokasi tiap pertemuan pada data guru bila ada; bila tidak ada, durasi per pertemuan yang sama).
 ## D. Asesmen Pembelajaran
 ### Asesmen Awal (diagnostik)
 ### Asesmen Proses (formatif)
@@ -1876,6 +1904,7 @@ function docForWord(el){
     const td='width:60%;border:none;text-align:left;background:#fff', td2='width:40%;border:none;text-align:left;background:#fff';
     s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td2}">${fix(b.innerHTML)}</td></tr></table>`;
   }
+  c.querySelectorAll('td[data-vt]').forEach(td=>{ const d=td.querySelector('.vt'); if(d) td.innerHTML=d.innerHTML; td.setAttribute('style',(td.getAttribute('style')||'')+';mso-layout-flow-alt:bottom-to-top;text-align:center;vertical-align:middle'); });
   imgWordFix(c);
   return c.innerHTML;
 }
@@ -2386,7 +2415,7 @@ const CD={chain:Promise.resolve(),timer:null,partial:'',off:false,ok:false,rows:
 let ASK_CTX=null, PROJ=null;
 const newProj=()=>'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function projLabel(){ return [($('topik').value||'').trim(),($('mapel').value||'').trim()].filter(Boolean).join(' · ')||'(tanpa topik)'; }
-const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','pertemuan','waktu','siswa','pedagogi','bahasa','catatan'];
+const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan'];
 function formSnap(){
   const o={}; FORM_IDS.forEach(i=>{ const e=$(i); if(e) o[i]=e.value; });
   o.dims=[...document.querySelectorAll('#dims input:checked')].map(x=>x.value);
@@ -2952,7 +2981,7 @@ function closeProject(){
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
   $('empty').hidden=false; lastText=''; curId=null; PROJ=null;
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
-  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
+  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('jptotal').value=''; $('jpbagi').value=''; $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
   lastText='';
   if(inViewer()) showList(); else{ showView('make'); }
@@ -3966,6 +3995,23 @@ function prosemCols(sem,W){
   [0,1,2,3,4,5].forEach(i=>{ for(let k=0;k<b+(i<r?1:0);k++) out.push({bln:i,off:false,ket:'',a:'',z:''}); });
   return out;
 }
+/* sebaran JP per minggu efektif untuk tiap baris. Unit memakai minggu sendiri dengan pembagian distJP (mis. 26 JP = 6-6-6-4-4),
+   asesmen sumatif mengisi sisa JP minggu unit sebelumnya dulu, sisanya baru minggu baru. */
+function prosemAlloc(its,W,jpw){
+  const rows=its.map(()=>Array(W).fill(0)), free=Array(W).fill(0); let w=0, last=[];
+  its.forEach((it,k)=>{
+    let left=it.jp; if(!(left>0)) return;
+    if(it.kind!=='unit'){
+      [...last].reverse().forEach(x=>{ if(left<=0) return; const t=Math.min(left,free[x]); if(t>0){ rows[k][x]+=t; free[x]-=t; left-=t; } });
+    }
+    if(left>0){
+      const used=[];
+      distJP(left,jpw).forEach(j=>{ const x=Math.min(W-1,w); rows[k][x]+=j; free[x]=w<W?Math.max(0,jpw-j):0; used.push(x); w++; });
+      last=used;
+    }
+  });
+  return {rows,weeks:w};
+}
 function prosemTable(items,sem,W,jpw,y){
   const its=items.filter(i=>i.sem===sem), cols=prosemCols(sem,W), N=cols.length, mn=monthsFor(sem,y);
   const mon=[]; cols.forEach((c,ci)=>{ let m=mon[mon.length-1]; if(!m||m.b!==c.bln){ m={b:c.bln,name:mn[c.bln],cs:[]}; mon.push(m); } m.cs.push(ci); });
@@ -3975,29 +4021,35 @@ function prosemTable(items,sem,W,jpw,y){
   const th='style="text-align:center;vertical-align:middle;font-size:9pt;padding:2px"';
   let h1=`<tr><th rowspan="2" ${th}>No</th><th rowspan="2" ${th}>Unit / Tujuan Pembelajaran</th><th rowspan="2" ${th}>JP</th>`+mon.map(m=>`<th colspan="${m.cs.length}" ${th}>${E(m.name)}</th>`).join('')+`<th rowspan="2" ${th}>Ket.</th></tr>`;
   let h2='<tr>'+mon.map(m=>m.cs.map((ci,k)=>`<th style="text-align:center;vertical-align:middle;font-size:9pt;padding:2px;${cols[ci].off?'background:'+OFFBG:''}">${k+1}</th>`).join('')).join('')+'</tr>';
-  let a=0, n=0, sn=0, body='', over=false;
-  const total=its.reduce((x,i)=>x+i.jp,0); if(Math.ceil(total/jpw)>W) over=true;
-  its.forEach(i=>{
-    const b=a+i.jp; let w0=Math.min(W-1,Math.floor(a/jpw)), w1=Math.min(W-1,Math.max(w0,Math.ceil(b/jpw)-1));
-    if(i.jp<=0){ w0=1; w1=0; }
-    const isU=i.kind==='unit'; let lab, no='';
-    if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`+i.tps.map(t=>`<div style="font-weight:400;font-size:8.5pt">${t.kode?E(t.kode)+' ':''}${E(t.text)}</div>`).join(''); }
-    else{ sn++; const d=sumDesc(i.title); lab=`<b>Asesmen Sumatif ${sn}</b>`+(d?`<div style="font-weight:400;font-size:8.5pt">${E(d)}</div>`:''); }
-    const fill=isU?'#9dc0ea':'#f2b441', lblBg=isU?'#ffffff':'#fff4d6';
-    let cells=''; cols.forEach((c,ci)=>{
-      if(c.off){ cells+=`<td style="text-align:center;padding:1px;font-size:9pt;background:${OFFBG}"></td>`; return; }
-      const e=effIdx[ci], on=e>=w0&&e<=w1;
-      cells+=`<td style="text-align:center;padding:1px;font-size:9pt;background:${on?fill:'#ffffff'}">${on?'✓':''}</td>`; });
-    body+=`<tr><td style="text-align:center;background:${lblBg}">${no}</td><td style="text-align:left;background:${lblBg};padding:3px 5px">${lab}</td><td style="text-align:center;background:${lblBg}">${i.jp}</td>${cells}<td style="background:#ffffff"></td></tr>`;
-    a=b;
-  });
-  body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td><td colspan="${N+1}" style="background:#e8eef8"></td></tr>`;
-  // keterangan minggu tidak efektif (alasan dari admin); minggu berurutan dengan alasan sama digabung
+  const total=its.reduce((x,i)=>x+i.jp,0), al=prosemAlloc(its,W,jpw), over=al.weeks>W;
+  // minggu tidak efektif berurutan dengan alasan sama digabung jadi satu blok
   const runs=[]; cols.forEach((c,ci)=>{
     if(!c.off) return; const last=runs[runs.length-1], k=c.ket||'Tidak efektif';
     if(last&&last.end===ci-1&&last.ket===k){ last.end=ci; last.n++; last.z=c.z; }
     else runs.push({start:ci,end:ci,n:1,ket:k,a:c.a,z:c.z,bln:c.bln});
   });
+  const nr=its.length; let n=0, sn=0, body='';
+  its.forEach((i,k)=>{
+    const isU=i.kind==='unit'; let lab, no='';
+    if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`+i.tps.map(t=>`<div style="font-weight:400;font-size:8.5pt">${t.kode?E(t.kode)+' ':''}${E(t.text)}</div>`).join(''); }
+    else{ sn++; const d=sumDesc(i.title); lab=`<b>Asesmen Sumatif ${sn}</b>`+(d?`<div style="font-weight:400;font-size:8.5pt">${E(d)}</div>`:''); }
+    const fill=isU?'#9dc0ea':'#f2b441', lblBg=isU?'#ffffff':'#fff4d6';
+    let cells=''; for(let ci=0;ci<N;ci++){
+      const c=cols[ci];
+      if(c.off){
+        const r=runs.find(x=>x.start===ci);
+        if(r){ if(k===0) cells+=`<td data-vt="1" rowspan="${nr}" colspan="${r.n}" style="text-align:center;vertical-align:middle;padding:1px;background:${OFFBG}"><div class="vt" style="display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:230px;font-size:8pt;line-height:1.15;text-align:center">${E(r.ket)}</div></td>`; ci=r.end; }
+        continue;
+      }
+      const v=al.rows[k][effIdx[ci]]||0;
+      cells+=`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:${v?fill:'#ffffff'}">${v||''}</td>`;
+    }
+    body+=`<tr><td style="text-align:center;background:${lblBg}">${no}</td><td style="text-align:left;background:${lblBg};padding:3px 5px">${lab}</td><td style="text-align:center;background:${lblBg}">${i.jp}</td>${cells}<td style="background:#ffffff"></td></tr>`;
+  });
+  // baris total JP per minggu
+  const wsum=Array(W).fill(0); al.rows.forEach(r=>r.forEach((v,x)=>{ wsum[x]+=v; }));
+  const tcells=cols.map((c,ci)=>c.off?`<td style="background:${OFFBG}"></td>`:`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:#e8eef8">${wsum[effIdx[ci]]||''}</td>`).join('');
+  body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td>${tcells}<td style="background:#e8eef8"></td></tr>`;
   let ket='';
   if(runs.length){
     ket=`<div style="font-size:9.5pt;margin-top:8px"><b>Keterangan minggu tidak efektif:</b></div><table style="width:100%;font-size:9.5pt;margin-top:3px"><tr><th style="width:5%">No</th><th style="width:30%">Minggu</th><th style="width:10%">Jumlah</th><th>Keterangan</th></tr>`
@@ -4065,9 +4117,9 @@ async function generate(){
     SEMS.forEach(s=>{
       if(!items.some(i=>i.sem===s)) return;
       const p=prosemTable(items,s,Wk[s],jpw,y);
-      if(p.over) warn.push(`Semester ${s}: total ${p.total} JP melebihi kapasitas ${jpw} × ${Wk[s]} = ${jpw*Wk[s]} JP, sisa JP ditumpuk di minggu terakhir.`);
+      if(p.over) warn.push(`Semester ${s}: total ${p.total} JP membutuhkan lebih dari ${Wk[s]} minggu efektif (${jpw} JP/minggu), sisa JP ditumpuk di minggu terakhir.`);
       d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
-        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif), ${jpw} JP per minggu. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
+        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif, alasannya tertulis di dalam kolom), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
     fillLogos(d);
     ppId=null; setEditPp(false);
@@ -4258,11 +4310,14 @@ function applyUnit(u){
   g('topik').value=u.topik;
   const tps=u.tps.map(t=>`${t.kode?t.kode+' ':''}${t.tp}${t.jp?' ('+t.jp+' JP)':''}`).join('\n');
   g('cp').value=`[Berdasarkan ATP] ${u.judul}${u.info?'\nMateri: '+u.info:''}\nTujuan Pembelajaran pada ATP:\n${tps||'(lihat ATP)'}\nSusun RPM yang selaras dengan ATP ini: tujuan pembelajaran RPM harus mencakup dan merinci tujuan di atas.`;
-  if(u.jp){ g('pertemuan').value=String(Math.min(12,Math.max(1,Math.round(u.jp/jpPerPertemuan())))); }
+  g('jpmgg').value=String(parseInt($('atp_jp').value)||3);
+  if(u.jp){ g('jptotal').value=String(u.jp); applyJp(); } else { g('jptotal').value=''; g('jpbagi').value=''; }
   const b=$('atpfrom'); b.textContent='Terisi dari ATP: '+u.judul+(u.jp?' ('+u.jp+' JP)':'')+'. Semua isian tetap bisa diubah.'; b.hidden=false;
-  showView('make'); setStatus('Formulir Buat RPP terisi dari ATP. Periksa topik dan jumlah pertemuan, lalu tekan Susun RPM.');
+  showView('make'); setStatus('Formulir Buat RPP terisi dari ATP. Periksa topik, JP per minggu, dan pembagian JP tiap pertemuan, lalu tekan Susun RPM.');
 }
 $('atprpm').addEventListener('click',openPicker);
+['jpmgg','jptotal'].forEach(id=>$(id).addEventListener('input',applyJp));
+$('pertemuan').addEventListener('input',()=>{ const t=parseInt($('jptotal').value)||0, n=parseInt($('pertemuan').value)||0; if(t>0&&n>0){ const a=distJP(t,Math.ceil(t/n)); $('jpbagi').value=a.join('-'); } });
 $('unitcancel').addEventListener('click',closePicker);
 $('unitok').addEventListener('click',()=>{ const r=$('unitlist').querySelector('input:checked'); closePicker(); if(r) applyUnit(UNITS[+r.value]); });
 ov.addEventListener('click',e=>{ if(e.target===ov) closePicker(); });
