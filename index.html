@@ -2031,10 +2031,12 @@ function styleIdt(t){
   const r0=t.rows[0];
   if(r0 && [...r0.cells].every(c=>c.tagName==='TH' && !c.textContent.trim())) r0.remove();
   t.classList.add('idt'); t.setAttribute('align','center'); t.setAttribute('width','80%');
-  t.style.width='80%'; t.style.margin='6px auto 18px';
+  const dua=[...t.rows].some(r=>r.cells.length===4);
+  t.style.width=dua?'100%':'80%'; t.style.margin='6px auto 18px'; if(dua) t.setAttribute('width','100%');
   [...t.rows].forEach(r=>[...r.cells].forEach((c,i)=>{
     c.style.textAlign='left'; c.style.verticalAlign='middle';
-    if(c.tagName==='TD'){ c.style.background=i===0?'#e8eef8':'#ffffff'; c.style.fontWeight=i===0?'600':'400'; if(i===0) c.style.width='38%'; }
+    const lab=dua?(i%2===0&&!(r.cells.length===2&&i===1)):i===0;
+    if(c.tagName==='TD'){ c.style.background=lab?'#e8eef8':'#ffffff'; c.style.fontWeight=lab?'600':'400'; if(lab) c.style.width=dua?'17%':'38%'; }
   }));
 }
 /* Daftar asesmen: butir isi di bawah label ("Waktu Pelaksanaan:", "Instrumen: ...:") jadi sub-daftar, bukan bullet sejajar */
@@ -4071,9 +4073,15 @@ function prosemTable(items,sem,W,jpw,y){
   return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>${ket}`};
 }
 function identRows(r,extra){
+  /* identitas dibagi dua kolom (label | isi | label | isi) agar hemat baris */
   const rows=[['Satuan Pendidikan',$('sekolah').value],['Mata Pelajaran',r.mata_pelajaran],['Fase / Kelas',r.fase],['Tahun Pelajaran',r.tahun_ajaran]];
   if(extra) rows.push(extra); rows.push(['Penyusun',r.nama_guru]);
-  return `<table>${rows.map(x=>`<tr><td>${E(x[0])}</td><td>${E(x[1])}</td></tr>`).join('')}</table>`;
+  let h='';
+  for(let i=0;i<rows.length;i+=2){
+    const a=rows[i], b=rows[i+1];
+    h+=`<tr><td>${E(a[0])}</td><td${b?'':' colspan="3"'}>${E(a[1])}</td>${b?`<td>${E(b[0])}</td><td>${E(b[1])}</td>`:''}</tr>`;
+  }
+  return `<table>${h}</table>`;
 }
 function makeSec(key,title,r,extra,subExtra,bodyHTML,note){
   const sec=document.createElement('section'); sec.className='pp-sec'; sec.dataset.pp=key;
