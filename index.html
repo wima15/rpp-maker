@@ -920,16 +920,18 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <label for="topik">Topik / materi pokok</label><input id="topik" required placeholder="mis. Siklus air dan dampaknya">
     <label for="cp">Capaian Pembelajaran (opsional)</label>
     <textarea id="cp" placeholder="Kosongkan agar AI merujuk CP resmi sesuai mapel dan fase"></textarea>
-    <div class="row">
-      <div><label for="jpmgg">JP per minggu</label><input id="jpmgg" type="number" min="1" max="20" placeholder="mis. 6"></div>
-      <div><label for="jptotal">Total JP materi (dari ATP)</label><input id="jptotal" type="number" min="0" max="200" placeholder="mis. 26"></div>
+    <div id="atpjpbox" hidden>
+      <div class="row">
+        <div><label for="jpmgg">JP per minggu</label><input id="jpmgg" type="number" min="1" max="20" placeholder="mis. 6"></div>
+        <div><label for="menitjp">Durasi 1 JP (menit)</label><input id="menitjp" type="number" min="10" max="90" value="45"></div>
+      </div>
+      <p class="hint" id="jpinfo"></p>
+      <input type="hidden" id="jptotal"><input type="hidden" id="jpbagi">
     </div>
-    <div class="row">
+    <div class="row" id="rowpw">
       <div><label for="pertemuan">Jumlah pertemuan</label><input id="pertemuan" type="number" min="1" max="12" value="2"></div>
       <div><label for="waktu">Durasi per pertemuan</label><input id="waktu" value="2 × 45 menit"></div>
     </div>
-    <label for="jpbagi">Pembagian JP tiap pertemuan</label><input id="jpbagi" placeholder="mis. 6-6-6-4-4 (terisi otomatis bila JP per minggu dan total JP diisi)">
-    <p class="hint">Satu pertemuan = satu minggu. Jumlah pertemuan dan pembagian JP dihitung otomatis dari JP per minggu dan total JP materi di ATP (mis. 26 JP, 6 JP/minggu menjadi 6-6-6-4-4). Pembagian boleh diubah manual. Durasi 1 JP diambil dari angka menit pada kolom Durasi (mis. 45 menit).</p>
     <label for="siswa">Karakteristik siswa</label>
     <textarea id="siswa" placeholder="mis. 30 siswa, sebagian besar visual, 3 siswa butuh pendampingan membaca"></textarea>
   </fieldset>
@@ -1379,15 +1381,25 @@ function distJP(total,jpw){
   for(let i=0;i<t;i++) out.push(base+(i<ex?1:0));
   return out;
 }
+function syncAtpBox(){
+  const on=(parseInt($('jptotal').value)||0)>0;
+  $('atpjpbox').hidden=!on; $('rowpw').hidden=on;
+  if(!on){ $('jpinfo').textContent=''; return; }
+  const pi=pertInfo();
+  $('jpinfo').textContent=pi?`Dari ATP: ${pi.tot} JP → ${pi.n} pertemuan (${pi.arr.join('-')} JP), ditulis di RPM: ${pi.n} pertemuan (${pi.tot} JP × ${pi.mnt} menit).`:'Isi JP per minggu.';
+}
 function applyJp(){
-  const w=parseInt($('jpmgg').value)||0, t=parseInt($('jptotal').value)||0; if(!(w>0&&t>0)) return;
+  const w=parseInt($('jpmgg').value)||0, t=parseInt($('jptotal').value)||0, m=parseInt($('menitjp').value)||45;
+  if(!(w>0&&t>0)){ $('jpbagi').value=''; syncAtpBox(); return; }
   let a=distJP(t,w); if(a.length>12) a=distJP(t,Math.ceil(t/12));
-  $('pertemuan').value=String(a.length); $('jpbagi').value=a.join('-');
+  $('pertemuan').value=String(a.length); $('jpbagi').value=a.join('-'); $('waktu').value=w+' × '+m+' menit';
+  syncAtpBox();
 }
 function pertInfo(){
+  if(!((parseInt($('jptotal').value)||0)>0)) return null;
   const n=parseInt($('pertemuan').value)||0, arr=($('jpbagi').value||'').split(/[^0-9]+/).filter(Boolean).map(Number).filter(x=>x>0);
   if(!n||arr.length!==n) return null;
-  const m=/[×xX]\s*(\d+)/.exec($('waktu').value||''), mnt=m?+m[1]:45;
+  const mnt=parseInt($('menitjp').value)||45;
   return {n,arr,mnt,tot:arr.reduce((a,b)=>a+b,0)};
 }
 function buildPrompt(){
@@ -1403,7 +1415,7 @@ DATA DARI GURU:
 - Semester/Tahun ajaran: ${$('semester').value} / ${$('tahun').value}
 - Topik/materi: ${$('topik').value}
 - Capaian Pembelajaran: ${$('cp').value.trim() || '(tidak diisi; rujuk CP resmi yang sesuai mapel dan fase, dan sebutkan elemennya)'}
-${(()=>{ const pi=pertInfo(); return pi?`- Jumlah pertemuan: ${pi.n} (satu pertemuan = satu minggu). Total ${pi.tot} JP; 1 JP = ${pi.mnt} menit. Alokasi tiap pertemuan: ${pi.arr.map((j,i)=>`Pertemuan ${i+1} = ${j} JP (${j*pi.mnt} menit)`).join('; ')}. WAJIB: durasi tiap pertemuan TIDAK sama; kolom Waktu pada tabel Pertemuan n harus berjumlah tepat sesuai menit pertemuan itu (${pi.arr.map((j,i)=>`P${i+1} ${j*pi.mnt} menit`).join(', ')}), dan banyaknya kegiatan menyesuaikan durasi (pertemuan lebih pendek = kegiatan lebih ringkas). Baris Alokasi Waktu pada tabel identitas ditulis: ${pi.n} pertemuan (${pi.arr.join('-')} JP; total ${pi.tot} JP × ${pi.mnt} menit)`:`- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}`; })()}
+${(()=>{ const pi=pertInfo(); return pi?`- Jumlah pertemuan: ${pi.n} (satu pertemuan = satu minggu). Total ${pi.tot} JP; 1 JP = ${pi.mnt} menit. Alokasi tiap pertemuan: ${pi.arr.map((j,i)=>`Pertemuan ${i+1} = ${j} JP (${j*pi.mnt} menit)`).join('; ')}. WAJIB: durasi tiap pertemuan TIDAK sama; kolom Waktu pada tabel Pertemuan n harus berjumlah tepat sesuai menit pertemuan itu (${pi.arr.map((j,i)=>`P${i+1} ${j*pi.mnt} menit`).join(', ')}), dan banyaknya kegiatan menyesuaikan durasi (pertemuan lebih pendek = kegiatan lebih ringkas). Baris Alokasi Waktu pada tabel identitas ditulis PERSIS: ${pi.n} pertemuan (${pi.tot} JP × ${pi.mnt} menit)`:`- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}`; })()}
 - Karakteristik siswa: ${$('siswa').value.trim() || '(tidak diisi; buat asumsi umum dan nyatakan asumsinya)'}
 - Dimensi Profil Lulusan yang diinginkan: ${dims.length ? dims.join(', ') : '(pilih 2–3 yang paling relevan)'}
 - Praktik pedagogis: ${$('pedagogi').value || '(pilih yang paling cocok dan beri alasan singkat)'}
@@ -2415,7 +2427,7 @@ const CD={chain:Promise.resolve(),timer:null,partial:'',off:false,ok:false,rows:
 let ASK_CTX=null, PROJ=null;
 const newProj=()=>'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function projLabel(){ return [($('topik').value||'').trim(),($('mapel').value||'').trim()].filter(Boolean).join(' · ')||'(tanpa topik)'; }
-const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan'];
+const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','menitjp','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan'];
 function formSnap(){
   const o={}; FORM_IDS.forEach(i=>{ const e=$(i); if(e) o[i]=e.value; });
   o.dims=[...document.querySelectorAll('#dims input:checked')].map(x=>x.value);
@@ -2423,8 +2435,9 @@ function formSnap(){
 }
 function formApply(o){
   if(o.guru!=null){ $('guru').value=o.guru; onGuru(); }          // onGuru mengisi mapel bawaan; mapel dari draf dipasang sesudahnya
-  FORM_IDS.forEach(i=>{ const e=$(i); if(!e||o[i]==null||i==='guru') return; if(e.type==='hidden'&&e.value) return; e.value=o[i]; });
+  FORM_IDS.forEach(i=>{ const e=$(i); if(!e||o[i]==null||i==='guru') return; if(e.type==='hidden'&&e.value&&i!=='jptotal'&&i!=='jpbagi') return; e.value=o[i]; });
   document.querySelectorAll('#dims input').forEach(x=>{ x.checked=(o.dims||[]).includes(x.value); });
+  syncAtpBox();
 }
 function deviceName(){
   const u=navigator.userAgent||'';
@@ -2981,7 +2994,7 @@ function closeProject(){
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
   $('empty').hidden=false; lastText=''; curId=null; PROJ=null;
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
-  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('jptotal').value=''; $('jpbagi').value=''; $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
+  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('menitjp').value='45'; $('jptotal').value=''; $('jpbagi').value=''; syncAtpBox(); $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
   lastText='';
   if(inViewer()) showList(); else{ showView('make'); }
@@ -4311,13 +4324,12 @@ function applyUnit(u){
   const tps=u.tps.map(t=>`${t.kode?t.kode+' ':''}${t.tp}${t.jp?' ('+t.jp+' JP)':''}`).join('\n');
   g('cp').value=`[Berdasarkan ATP] ${u.judul}${u.info?'\nMateri: '+u.info:''}\nTujuan Pembelajaran pada ATP:\n${tps||'(lihat ATP)'}\nSusun RPM yang selaras dengan ATP ini: tujuan pembelajaran RPM harus mencakup dan merinci tujuan di atas.`;
   g('jpmgg').value=String(parseInt($('atp_jp').value)||3);
-  if(u.jp){ g('jptotal').value=String(u.jp); applyJp(); } else { g('jptotal').value=''; g('jpbagi').value=''; }
+  if(u.jp){ g('jptotal').value=String(u.jp); applyJp(); } else { g('jptotal').value=''; g('jpbagi').value=''; syncAtpBox(); }
   const b=$('atpfrom'); b.textContent='Terisi dari ATP: '+u.judul+(u.jp?' ('+u.jp+' JP)':'')+'. Semua isian tetap bisa diubah.'; b.hidden=false;
-  showView('make'); setStatus('Formulir Buat RPP terisi dari ATP. Periksa topik, JP per minggu, dan pembagian JP tiap pertemuan, lalu tekan Susun RPM.');
+  showView('make'); setStatus('Formulir Buat RPP terisi dari ATP. Total JP diambil dari ATP; periksa JP per minggu dan durasi 1 JP, lalu tekan Susun RPM.');
 }
 $('atprpm').addEventListener('click',openPicker);
-['jpmgg','jptotal'].forEach(id=>$(id).addEventListener('input',applyJp));
-$('pertemuan').addEventListener('input',()=>{ const t=parseInt($('jptotal').value)||0, n=parseInt($('pertemuan').value)||0; if(t>0&&n>0){ const a=distJP(t,Math.ceil(t/n)); $('jpbagi').value=a.join('-'); } });
+['jpmgg','menitjp'].forEach(id=>$(id).addEventListener('input',applyJp));
 $('unitcancel').addEventListener('click',closePicker);
 $('unitok').addEventListener('click',()=>{ const r=$('unitlist').querySelector('input:checked'); closePicker(); if(r) applyUnit(UNITS[+r.value]); });
 ov.addEventListener('click',e=>{ if(e.target===ov) closePicker(); });
