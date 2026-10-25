@@ -9,6 +9,8 @@
 //   SYNC_TOKEN         = kata sandi bebas buatan Anda; diketik admin di Portal Admin
 //
 // Aksi (POST, JSON):
+//   { token, action: "tahun_ajaran" }              -> baca tahun ajaran aktif + rentang tanggal semester dari
+//                                                     E-Rapor, simpan ke pengaturan_rpm (kunci 'tahun_ajaran')
 //   { token, action: "plan" }                      -> ringkasan, tidak menulis apa pun
 //   { token, action: "apply", hapus: true|false }  -> simpan ke guru_rpm
 //   (opsional pada apply: konfirmasi_hapus: true bila server meminta konfirmasi)
@@ -54,6 +56,39 @@ async function fetchAll(build: (from: number, to: number) => any) {
   return out;
 }
 
+// Cari kolom tanggal pada baris tahun_ajaran E-Rapor tanpa bergantung pada nama kolom pasti.
+// deno-lint-ignore no-explicit-any
+function tglKolom(r: any, re: RegExp): string {
+  for (const k of Object.keys(r)) {
+    const v = String(r[k] ?? "");
+    if (re.test(k) && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+  }
+  return "";
+}
+
+// Ambil semua baris tahun ajaran yang bernama sama dengan yang aktif (Ganjil & Genap),
+// lalu simpan ke pengaturan_rpm agar bisa dibaca semua guru tanpa service key.
+// deno-lint-ignore no-explicit-any
+async function simpanTahunAjaran(rapor: any, db: any, ta: { nama: string }) {
+  const { data, error } = await rapor.from("tahun_ajaran").select("*").eq("nama", ta.nama);
+  if (error) throw new Error("E-Rapor: " + error.message);
+  // deno-lint-ignore no-explicit-any
+  const sems: Record<string, any> = {};
+  // deno-lint-ignore no-explicit-any
+  for (const r of (data ?? []) as any[]) {
+    const sem = /genap|^\s*2\s*$/i.test(String(r.semester ?? "")) ? "Genap" : "Ganjil";
+    let mulai = tglKolom(r, /mulai|awal|start|from/i);
+    let selesai = tglKolom(r, /selesai|akhir|end|sampai|until/i);
+    if (mulai && selesai && mulai > selesai) { mulai = ""; selesai = ""; }
+    sems[sem] = { mulai, selesai };
+  }
+  const nilai = { nama: ta.nama, sems, diambil: new Date().toISOString() };
+  const { error: e2 } = await db.from("pengaturan_rpm")
+    .upsert({ kunci: "tahun_ajaran", nilai, updated_at: new Date().toISOString() }, { onConflict: "kunci" });
+  if (e2) throw new Error("Simpan tahun_ajaran: " + e2.message);
+  return nilai;
+}
+
 const norm = (s: unknown) => String(s ?? "").trim();
 const nkey = (s: unknown) => norm(s).toLowerCase().replace(/\s+/g, " ");
 
@@ -80,7 +115,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Token sinkron salah." }, 401);
   }
   const action = body.action;
-  if (action !== "plan" && action !== "apply") return json({ error: "Action tidak dikenal" }, 400);
+  if (action !== "plan" && action !== "apply" && action !== "tahun_ajaran") return json({ error: "Action tidak dikenal" }, 400);
 
   try {
     const rapor = createClient(RAPOR_URL, RAPOR_SERVICE_KEY);
@@ -92,6 +127,10 @@ Deno.serve(async (req: Request) => {
     if (taErr) return json({ error: "E-Rapor: " + taErr.message }, 400);
     const ta = taRows?.[0];
     if (!ta) return json({ error: "Tidak ada tahun ajaran aktif di E-Rapor." }, 400);
+
+    if (action === "tahun_ajaran") {
+      return json({ ok: true, tahun_ajaran: await simpanTahunAjaran(rapor, db, ta) });
+    }
 
     // deno-lint-ignore no-explicit-any
     const guruRows: any[] = await fetchAll((f, t) =>
@@ -187,6 +226,8 @@ Deno.serve(async (req: Request) => {
       if (error) throw new Error("Gagal menghapus guru: " + error.message);
     }
 
+    // tahun ajaran aktif ikut diperbarui (tidak menggagalkan sinkron guru bila gagal)
+    try { await simpanTahunAjaran(rapor, db, ta); } catch (_) { /* abaikan */ }
     return json({ mode: "apply", ...ringkasan });
   } catch (e) {
     return json({ error: String(e) }, 500);

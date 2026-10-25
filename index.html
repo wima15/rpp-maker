@@ -693,6 +693,21 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   #ppdoc .pp-sec{break-inside:auto}
   #ppdoc table.prosem tr{break-inside:avoid}
 }
+.wk-sem{margin:10px 0 18px}
+.wk-sem h4{margin:0 0 6px;font-size:15px}
+.wk-bln{margin:10px 0 4px;font-weight:700;font-size:13px;color:var(--muted)}
+.wk{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;margin:4px 0;background:var(--panel);cursor:pointer}
+.wk.off{opacity:.65}
+.wk input{position:absolute;opacity:0;pointer-events:none}
+.wk .sw{position:relative;width:40px;height:22px;border-radius:11px;background:var(--line);flex:none;transition:background .15s}
+.wk .sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.wk input:checked ~ .sw{background:var(--accent)}
+.wk input:checked ~ .sw::after{left:21px}
+.wk input:focus-visible ~ .sw{outline:2px solid var(--accent);outline-offset:2px}
+.wk .swt{width:34px;text-align:right;font-size:12px;font-weight:700}
+.wk .swt::before{content:"OFF";color:var(--muted)}
+.wk input:checked ~ .swt::before{content:"ON";color:var(--accent)}
+.wk .lbl{flex:1;font-size:14px}
 </style>
 </head>
 <body>
@@ -1184,7 +1199,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <div><label for="pp_jp">JP per minggu</label><input id="pp_jp" type="number" min="1" max="20" value="3"></div>
       <div><label>Minggu efektif</label><p class="hint" id="pp_mgg" style="margin-top:10px"></p></div>
     </div>
-    <p class="hint">Minggu efektif diatur admin (Portal Admin &gt; Sekolah &amp; KS). Prosem membagi minggu efektif ke 6 bulan secara merata: Juli–Desember untuk Ganjil, Januari–Juni untuk Genap.</p>
+    <p class="hint">Minggu efektif diatur admin (Portal Admin &gt; Sekolah &amp; KS) per minggu (ON/OFF) sesuai kalender tahun ajaran aktif. Prosem menyebar minggu efektif ke bulan sesuai kalender tersebut: Juli–Desember untuk Ganjil, Januari–Juni untuk Genap.</p>
   </fieldset>
   <button type="submit" class="gen" id="ppgen" disabled>Susun Prota &amp; Prosem</button>
   <fieldset style="margin-top:14px">
@@ -1276,12 +1291,11 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <p class="hint">Tempat dan tanggal ini dicetak di atas kolom tanda tangan guru pada dokumen RPP semua guru. Kosongkan bila ingin tetap diisi manual.</p>
       <div class="btns"><button type="button" id="a_schsave">Simpan data sekolah</button></div>
       <p class="hint" id="a_schmsg"></p>
-      <h3>Minggu efektif per semester</h3>
-      <p class="hint">Jumlah minggu efektif diatur admin, terpisah untuk semester Ganjil dan Genap. Nilai ini dipakai otomatis oleh semua guru saat menyusun ATP; guru tidak bisa mengubahnya.</p>
-      <div class="row">
-        <div><label for="a_mggganjil">Minggu efektif semester Ganjil</label><input id="a_mggganjil" type="number" min="1" max="40" value="18"></div>
-        <div><label for="a_mgggenap">Minggu efektif semester Genap</label><input id="a_mgggenap" type="number" min="1" max="40" value="18"></div>
-      </div>
+      <h3>Tahun ajaran &amp; minggu efektif</h3>
+      <p class="hint">Tahun ajaran aktif diambil dari E-Rapor dan otomatis dipakai semua guru (kolom Tahun ajaran terkunci). Kalender minggu disusun sesuai tahun ajaran tersebut. Tekan saklar <b>ON</b> untuk minggu efektif dan <b>OFF</b> untuk minggu tidak efektif (libur, ujian, kegiatan sekolah). Isi token sinkron di tab Sinkron lebih dulu.</p>
+      <div class="btns"><button type="button" id="a_taget">Ambil tahun ajaran aktif dari E-Rapor</button></div>
+      <p class="hint" id="a_tamsg"></p>
+      <div id="a_wkbox"></div>
       <div class="btns"><button type="button" id="a_mggsave">Simpan minggu efektif</button></div>
       <p class="hint" id="a_mggmsg"></p>
       <h3>Tanda tangan kepala sekolah</h3>
@@ -3142,7 +3156,7 @@ async function loadIdentitas(){
   try{
     const r=await sb(SB_DST,`/identitas_guru?nama_guru=eq.${encodeURIComponent(nama)}&select=*&limit=1`);
     if(r&&r[0]){
-      ID_FIELDS.forEach(([el,col])=>{ if(r[0][col]) $(el).value=r[0][col]; });
+      ID_FIELDS.forEach(([el,col])=>{ if(el==='tahun'&&window.TAS&&window.TAS.nama) return; if(r[0][col]) $(el).value=r[0][col]; });
       msg('idmsg','Identitas '+nama+' dimuat dari database.');
     }else{
       msg('idmsg','Belum ada identitas tersimpan untuk '+nama+'. Lengkapi lalu tekan "Simpan identitas ke database".');
@@ -3293,29 +3307,125 @@ async function loadSekolah(){
   }catch(e){}
   showSchool();
 }
-window.MGG={ganjil:18,genap:18};
+window.MGG={ganjil:18,genap:18,bulan:null};
+window.TAS=null;
+let ADM_OFF=new Set(), ADM_STALE=false;
 function mggRefreshAll(){ if(window.atpMggRefresh) window.atpMggRefresh(); if(window.protaMggRefresh) window.protaMggRefresh(); }
 function mggClamp(x,d){ x=parseInt(x); return (x>=1&&x<=40)?x:d; }
+/* ---- tahun ajaran dari E-Rapor (disimpan di pengaturan_rpm, kunci tahun_ajaran) ---- */
+function applyTA(){
+  const n=window.TAS&&window.TAS.nama; if(!n) return;
+  ['tahun','atp_tahun'].forEach(id=>{ const el=$(id); if(el){ el.value=n; el.readOnly=true; el.title='Diambil otomatis dari tahun ajaran aktif di E-Rapor'; } });
+}
+async function loadTA(){
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.tahun_ajaran&select=nilai&limit=1');
+    const n=r&&r[0]&&r[0].nilai; if(n&&n.nama){ window.TAS=n; applyTA(); }
+  }catch(e){}
+}
+/* ---- kalender minggu (minggu Senin–Sabtu; milik semester yang memuat hari Kamisnya) ---- */
+const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const BLN_FULL=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const isoD=d=>d.toISOString().slice(0,10);
+function parseD(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||''); return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])):null; }
+function weeksBetween(start,end){
+  const out=[], d=new Date(start); d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));
+  for(;;d.setUTCDate(d.getUTCDate()+7)){
+    const th=new Date(d); th.setUTCDate(th.getUTCDate()+3); if(th>end) break; if(th<start) continue;
+    const sat=new Date(d); sat.setUTCDate(sat.getUTCDate()+5);
+    out.push({iso:isoD(d),mon:new Date(d),sat,th});
+  }
+  return out;
+}
+function buildCalendar(){
+  const t=window.TAS; if(!t||!t.nama) return null;
+  const ys=(String(t.nama).match(/\d{4}/g)||[]).map(Number), y1=ys[0], y2=ys[1]||(y1+1); if(!y1) return null;
+  const def={Ganjil:[Date.UTC(y1,6,1),Date.UTC(y1,11,31)],Genap:[Date.UTC(y2,0,1),Date.UTC(y2,5,30)]}, cal={}, src={};
+  ['Ganjil','Genap'].forEach(s=>{
+    const c=(t.sems||{})[s]||{}; let a=parseD(c.mulai), z=parseD(c.selesai);
+    if(!a||!z||a>z){ a=new Date(def[s][0]); z=new Date(def[s][1]); src[s]='default'; } else src[s]='erapor';
+    cal[s]=weeksBetween(a,z).map(w=>{ const m=w.th.getUTCMonth(); w.bln=s==='Ganjil'?Math.min(5,Math.max(0,m-6)):Math.min(5,m); return w; });
+  });
+  return {cal,src,y1,y2};
+}
+function wkLabel(w){
+  const f=d=>d.getUTCDate()+' '+BLN[d.getUTCMonth()];
+  return f(w.mon)+' – '+f(w.sat)+' '+w.sat.getUTCFullYear();
+}
+function mggCompute(cal,off){
+  const r={};
+  ['Ganjil','Genap'].forEach(s=>{ const b=[0,0,0,0,0,0]; let n=0; cal[s].forEach(w=>{ if(!off.has(w.iso)){ b[w.bln]++; n++; } }); r[s]={n,bulan:b}; });
+  return r;
+}
+function admRenderWeeks(){
+  const box=$('a_wkbox'); if(!box) return;
+  const C=buildCalendar();
+  if(!C){ box.innerHTML='<p class="hint err">Tahun ajaran belum diambil dari E-Rapor. Tekan tombol di atas.</p>'; return; }
+  let h='';
+  if(ADM_STALE) h+='<p class="hint err">Pengaturan minggu sebelumnya milik tahun ajaran lain. Semua minggu dimulai ON; atur lalu simpan untuk tahun ajaran '+esc(window.TAS.nama)+'.</p>';
+  h+='<p class="hint"><b>Tahun ajaran '+esc(window.TAS.nama)+'</b>. Tanggal semester: Ganjil '+(C.src.Ganjil==='erapor'?'dari E-Rapor':'standar 1 Jul–31 Des')+', Genap '+(C.src.Genap==='erapor'?'dari E-Rapor':'standar 1 Jan–30 Jun')+'.</p>';
+  ['Ganjil','Genap'].forEach(s=>{
+    h+='<div class="wk-sem"><h4>Semester '+s+' — <span id="wkcnt_'+s+'"></span></h4>';
+    let last=-1, no=0;
+    C.cal[s].forEach(w=>{
+      if(w.bln!==last){ last=w.bln; const m=w.th.getUTCMonth(); h+='<div class="wk-bln">'+BLN_FULL[m]+' '+w.th.getUTCFullYear()+'</div>'; }
+      no++; const on=!ADM_OFF.has(w.iso);
+      h+='<label class="wk'+(on?'':' off')+'"><span class="lbl">Minggu ke-'+no+' · '+esc(wkLabel(w))+'</span><input type="checkbox" class="wkcb" data-iso="'+w.iso+'"'+(on?' checked':'')+'><span class="sw"></span><b class="swt"></b></label>';
+    });
+    h+='</div>';
+  });
+  box.innerHTML=h; admCount();
+}
+function admCount(){
+  const C=buildCalendar(); if(!C) return; const r=mggCompute(C.cal,ADM_OFF);
+  ['Ganjil','Genap'].forEach(s=>{ const e=$('wkcnt_'+s); if(e) e.textContent=r[s].n+' dari '+C.cal[s].length+' minggu efektif'; });
+}
+document.addEventListener('change',e=>{
+  const cb=e.target&&e.target.classList&&e.target.classList.contains('wkcb')?e.target:null; if(!cb) return;
+  if(cb.checked) ADM_OFF.delete(cb.dataset.iso); else ADM_OFF.add(cb.dataset.iso);
+  cb.closest('.wk').classList.toggle('off',!cb.checked); admCount();
+});
 async function loadMinggu(){
+  if(!window.TAS) await loadTA();
+  let n=null;
   try{
     const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.minggu_efektif&select=nilai&limit=1');
-    const n=r&&r[0]&&r[0].nilai;
-    if(n){ window.MGG={ganjil:mggClamp(n.ganjil,18),genap:mggClamp(n.genap,18)}; }
+    n=r&&r[0]&&r[0].nilai;
   }catch(e){}
-  if(document.activeElement!==$('a_mggganjil')&&document.activeElement!==$('a_mgggenap')){ $('a_mggganjil').value=window.MGG.ganjil; $('a_mgggenap').value=window.MGG.genap; }
+  const taNama=window.TAS&&window.TAS.nama;
+  ADM_STALE=!!(n&&taNama&&n.ta&&n.ta!==taNama);
+  if(n&&!ADM_STALE){
+    const bl=n.bulan||null, okB=bl&&['Ganjil','Genap'].every(s=>Array.isArray(bl[s])&&bl[s].length===6);
+    window.MGG={ganjil:mggClamp(n.ganjil,18),genap:mggClamp(n.genap,18),bulan:okB?bl:null};
+    ADM_OFF=new Set(Array.isArray(n.off)?n.off:[]);
+  }else{ window.MGG={ganjil:18,genap:18,bulan:null}; ADM_OFF=new Set(); }
+  admRenderWeeks();
   mggRefreshAll();
 }
 async function saveMinggu(){
-  const ganjil=parseInt($('a_mggganjil').value), genap=parseInt($('a_mgggenap').value);
-  if(!(ganjil>=1&&ganjil<=40)||!(genap>=1&&genap<=40)){ msg('a_mggmsg','Isi minggu efektif Ganjil dan Genap dengan angka 1–40.',true); return; }
+  const C=buildCalendar(); if(!C){ msg('a_mggmsg','Ambil tahun ajaran dari E-Rapor dulu.',true); return; }
+  const r=mggCompute(C.cal,ADM_OFF);
+  if(r.Ganjil.n<1||r.Genap.n<1){ msg('a_mggmsg','Tiap semester harus punya minimal 1 minggu efektif (ON).',true); return; }
+  const ganjil=r.Ganjil.n, genap=r.Genap.n, off=[...ADM_OFF].sort();
   const b=$('a_mggsave'); b.disabled=true; msg('a_mggmsg','Menyimpan…');
   try{
-    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'minggu_efektif',nilai:{ganjil,genap},updated_at:new Date().toISOString()}});
-    window.MGG={ganjil,genap}; mggRefreshAll();
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'minggu_efektif',nilai:{ganjil,genap,ta:window.TAS.nama,off,bulan:{Ganjil:r.Ganjil.bulan,Genap:r.Genap.bulan}},updated_at:new Date().toISOString()}});
+    window.MGG={ganjil,genap,bulan:{Ganjil:r.Ganjil.bulan,Genap:r.Genap.bulan}}; ADM_STALE=false; mggRefreshAll();
     msg('a_mggmsg','Minggu efektif tersimpan: Ganjil '+ganjil+', Genap '+genap+'. Berlaku untuk semua guru.');
   }catch(e){ msg('a_mggmsg','Gagal menyimpan: '+tblErr(e,'pengaturan_rpm'),true); }
   finally{ b.disabled=false; }
 }
+async function ambilTA(){
+  const b=$('a_taget'); b.disabled=true; msg('a_tamsg','Mengambil dari E-Rapor…');
+  try{
+    const r=await callSync({action:'tahun_ajaran'}), t=r.data&&r.data.tahun_ajaran;
+    if(!t||!t.nama) throw new Error('E-Rapor tidak mengembalikan tahun ajaran aktif.');
+    window.TAS=t; applyTA(); await loadMinggu();
+    msg('a_tamsg','Tahun ajaran aktif: '+t.nama+'. Kalender minggu diperbarui.');
+  }catch(e){ msg('a_tamsg',e instanceof TypeError?why(e):e.message,true); }
+  finally{ b.disabled=false; }
+}
+$('a_taget').addEventListener('click',ambilTA);
 $('a_mggsave').addEventListener('click',saveMinggu);
 async function saveSekolah(){
   const kepsek=$('a_kepsek').value.trim(), sekolah=$('a_sekolah').value.trim(), tempat=$('a_tempat').value.trim(), tanggal=$('a_tglrpp').value.trim();
@@ -3744,9 +3854,13 @@ function monthsFor(sem,y){
   const n=sem==='Ganjil'?['Jul','Agu','Sep','Okt','Nov','Des']:['Jan','Feb','Mar','Apr','Mei','Jun'];
   return n;
 }
-function weeksPerMonth(W){ const b=Math.floor(W/6), r=W%6; return [0,1,2,3,4,5].map(i=>b+(i<r?1:0)); }
+function weeksPerMonth(W,sem){
+  const bl=window.MGG&&window.MGG.bulan&&window.MGG.bulan[sem];
+  if(Array.isArray(bl)&&bl.length===6&&bl.reduce((a,x)=>a+x,0)===W) return bl.slice();
+  const b=Math.floor(W/6), r=W%6; return [0,1,2,3,4,5].map(i=>b+(i<r?1:0));
+}
 function prosemTable(items,sem,W,jpw,y){
-  const its=items.filter(i=>i.sem===sem), wpm=weeksPerMonth(W), mn=monthsFor(sem,y);
+  const its=items.filter(i=>i.sem===sem), wpm=weeksPerMonth(W,sem), mn=monthsFor(sem,y);
   const mon=wpm.map((w,i)=>({w,name:mn[i]})).filter(m=>m.w>0);
   const wPct=Math.max(1.6,Math.min(3.6,44/W)).toFixed(2);
   let col=`<col style="width:5%"><col style="width:35%"><col style="width:5%">`+Array.from({length:W},()=>`<col style="width:${wPct}%">`).join('')+`<col>`;
@@ -3832,7 +3946,7 @@ async function generate(){
       const p=prosemTable(items,s,Wk[s],jpw,y);
       if(p.over) warn.push(`Semester ${s}: total ${p.total} JP melebihi kapasitas ${jpw} × ${Wk[s]} = ${jpw*Wk[s]} JP, sisa JP ditumpuk di minggu terakhir.`);
       d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
-        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin), ${jpw} JP per minggu. Sebaran minggu per bulan dapat disesuaikan dengan kalender pendidikan lewat tombol Edit.`));
+        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin), ${jpw} JP per minggu. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
     fillLogos(d);
     ppId=null; setEditPp(false);
