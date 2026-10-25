@@ -115,7 +115,6 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
 .sb-link{
   display:flex;
   align-items:center;
-  justify-content:flex-start;
   gap:10px;
   width:100%;
   text-align:left;
@@ -128,7 +127,7 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
   font-weight:600;
   transition:all .15s ease;
 }
-.sb-link.sb-sub{margin-left:0;width:100%;font-size:.94em}
+.sb-link.sb-sub{margin-left:20px;width:calc(100% - 20px);font-size:.94em}
 .sb-link svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sb-link:hover{background:var(--accent-light);color:var(--accent)}
 .sb-link[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow: 0 2px 4px rgba(13,148,136,.2)}
@@ -618,10 +617,10 @@ main[hidden],.view-saved[hidden]{display:none!important}
 #intro .logo-wrap::after{display:none}
 #intro .logo-wrap::before{box-shadow:0 0 40px rgba(242,180,65,.25)}
 #intro img{position:relative;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}
-#intro .presented{margin:30px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:600;font-size:clamp(17px,4.2vw,30px);letter-spacing:.28em;text-transform:uppercase;color:#f2b441;opacity:0;transform:translateY(12px);animation:introUp .9s ease 1.4s forwards}
-#intro .dev{margin:10px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:clamp(13px,2.4vw,17px);letter-spacing:.04em;opacity:0;transform:translateY(12px);animation:introUp .9s ease 2.3s forwards}
-#intro .dev small{display:block;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:400;font-size:clamp(9px,1.6vw,11px);letter-spacing:.3em;text-transform:uppercase;color:#93aaa4;margin-bottom:4px}
-#intro .dev b{letter-spacing:.08em!important;background:linear-gradient(90deg,#f2b441,#ffe3a0,#f2b441);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.18em}
+#intro .presented{margin:30px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:500;font-size:clamp(14px,2.6vw,18px);letter-spacing:.42em;text-transform:uppercase;color:#f2b441;opacity:0;transform:translateY(12px);animation:introUp .9s ease 1.4s forwards}
+#intro .dev{margin:10px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:clamp(22px,5vw,34px);letter-spacing:.04em;opacity:0;transform:translateY(12px);animation:introUp .9s ease 2.3s forwards}
+#intro .dev small{display:block;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:400;font-size:clamp(11px,2vw,13px);letter-spacing:.3em;text-transform:uppercase;color:#93aaa4;margin-bottom:4px}
+#intro .dev b{background:linear-gradient(90deg,#f2b441,#ffe3a0,#f2b441);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.18em}
 #intro .skip{position:absolute;bottom:18px;left:0;right:0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#93aaa4;opacity:0;animation:introUp .6s ease 1s forwards}
 @keyframes introLogo{to{opacity:1;transform:scale(1) rotate(0)}}
 @keyframes introUp{to{opacity:1;transform:translateY(0)}}
@@ -695,10 +694,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
   #ppdoc table.prosem{min-width:0!important}
   #ppdoc.pp-all .pp-sec:not(:first-child){break-before:page}
   #ppdoc .pp-sec{break-inside:auto}
-  #ppdoc table tr{break-inside:avoid}
-  #ppdoc thead{display:table-header-group}
-  #ppdoc thead tr,#ppdoc tr.semrow{break-after:avoid}
-  #ppdoc .idb{break-inside:avoid;break-after:avoid}
+  #ppdoc table.prosem tr{break-inside:avoid}
 }
 .wk-sem{margin:10px 0 18px}
 .wk-sem h4{margin:0 0 6px;font-size:15px}
@@ -723,8 +719,8 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 <div id="intro" role="dialog" aria-label="Pembuka" aria-live="polite">
   <canvas id="introbg" aria-hidden="true"></canvas>
   <div class="logo-wrap"><i class="stitch s1"></i><img src="assets/logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'"></div>
-  <p class="presented">From teacher to teacher</p>
-  <p class="dev"><small>Developed by</small><b>@arhamhanif</b></p>
+  <p class="presented">Presented to you</p>
+  <p class="dev"><small>Developed by</small><b>HHH</b></p>
   <span class="skip">Ketuk untuk melewati</span>
 </div>
 <script>
@@ -986,9 +982,8 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     <div class="tgroup" id="g-lkpd">
       <span class="tlabel">LKPD</span>
       <div class="tbtns">
-        <select id="lkpd_pick" title="Pilih pertemuan yang disusun" aria-label="Pilih pertemuan LKPD" style="width:auto;min-width:150px"><option value="0">Semua pertemuan</option></select>
+        <select id="lkpd_detail" title="Tingkat kedalaman LKPD" aria-label="Tingkat kedalaman LKPD" style="width:auto;min-width:0;padding:6px 8px"><option value="sederhana">Sederhana</option><option value="cukup">Cukup</option><option value="detail" selected>Detail</option></select>
         <button type="button" id="lkpdbtn" disabled>Buat LKPD</button>
-        <button type="button" class="ghost" id="lkpdredo" disabled title="Susun ulang pertemuan yang dipilih (bukan yang lain)">Susun ulang</button>
         <button type="button" class="ghost" id="lkpdword" disabled>Ke Word</button>
         <button type="button" class="ghost" id="lkpdprint" disabled>Cetak / PDF</button>
       </div>
@@ -1176,11 +1171,7 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
     </div>
     <div class="tgroup">
       <span class="tlabel">Sunting dokumen</span>
-      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpimg" title="Sisipkan gambar (saat mode Edit). Gambar maks 50 KB, disimpan di storage">Sisipkan gambar</button></div>
-    </div>
-    <div class="tgroup">
-      <span class="tlabel">Proyek</span>
-      <div class="tbtns"><button type="button" class="ghost" id="atpclose" disabled>Tutup proyek</button></div>
+      <div class="tbtns"><button type="button" class="ghost" id="atpedit" disabled>Edit</button><button type="button" class="ghost" id="atpimg" title="Sisipkan gambar (saat mode Edit). Gambar maks 50 KB, disimpan di storage">Sisipkan gambar</button><button type="button" class="ghost" id="atpclear" disabled>Kosongkan</button></div>
     </div>
   </div>
   <div class="status" id="atpstatus"></div>
@@ -1926,7 +1917,6 @@ function docForWord(el){
     const td='width:60%;border:none;text-align:left;background:#fff', td2='width:40%;border:none;text-align:left;background:#fff';
     s.outerHTML=`<table style="width:100%;border:none;border-collapse:collapse;margin-top:30pt"><tr><td style="${td}">${fix(a.innerHTML)}</td><td style="${td2}">${fix(b.innerHTML)}</td></tr></table>`;
   }
-  c.querySelectorAll('p.idb-r').forEach(p=>{ const l=p.querySelector('.idb-l'); if(!l) return; l.removeAttribute('style'); l.insertAdjacentHTML('afterend','<span style="mso-tab-count:1">&nbsp;</span>'); });
   c.querySelectorAll('td[data-vt]').forEach(td=>{ const d=td.querySelector('.vt'); if(d) td.innerHTML=d.innerHTML; td.setAttribute('style',(td.getAttribute('style')||'')+';mso-layout-flow-alt:bottom-to-top;text-align:center;vertical-align:middle'); });
   imgWordFix(c);
   return c.innerHTML;
@@ -2022,7 +2012,7 @@ function liveFlush(){
   const h=liveHeading(own);
   $('ltxt').textContent='Menulis… '+(h?h.slice(0,70):'');
   const chars=own.length.toLocaleString('id-ID'); let info=chars+' karakter', pr='';
-  if(LIVE.kind==='rpm'){
+  if(LIVE.kind==='rpm'||LIVE.kind==='lkpd'){
     const tot=parseInt($('pertemuan').value)||0, mx=livePert(own);
     if(mx&&tot){ pr=Math.min(mx,tot)+'/'+tot; info='Pertemuan '+Math.min(mx,tot)+' dari '+tot+' · '+info; }
   }
@@ -2425,9 +2415,11 @@ function showResume(aksi,e){
   if(e&&e.aborted&&!e.partial&&!Object.keys(DONE).length) return;   // dihentikan sebelum ada teks: tidak ada yang bisa dilanjutkan
   const n=(e&&e.partial)?e.partial.length:0, extra=Object.keys(DONE).length;
   $('resume_msg').textContent='Proses '+aksi+(e&&e.aborted?' dihentikan. ':' terhenti: '+((e&&e.message)||'')+' ')+(n?`Hasil sebagian (${n.toLocaleString('id-ID')} karakter) sudah ditampilkan dan disimpan. `:(extra?'Bagian yang sudah jadi disimpan. ':''))+'Pilih API key lain, lalu lanjutkan dari titik terakhir.';
-  $('resume').dataset.aksi=aksi; $('resume').hidden=false;
+  $('resume').dataset.aksi=aksi; $('resume').dataset.mapel=normMapel($('mapel').value); $('resume').dataset.on='1'; $('resume').hidden=false;
 }
-function hideResume(){ const r=$('resume'); if(r) r.hidden=true; }
+function hideResume(){ const r=$('resume'); if(r){ r.hidden=true; delete r.dataset.on; } }
+/* banner "Lanjutkan" hanya tampil selama mapel di form sama dengan mapel saat proses terhenti */
+function syncResume(){ const r=$('resume'); if(!r||r.dataset.on!=='1') return; r.hidden=normMapel($('mapel').value)!==(r.dataset.mapel||''); }
 $('resume_go').addEventListener('click',()=>{
   const aksi=$('resume').dataset.aksi; RESUMING=true;
   if(aksi==='RPM') generate(); else $(AKSI_BTN[aksi]).click();
@@ -2440,7 +2432,7 @@ const CD={chain:Promise.resolve(),timer:null,partial:'',off:false,ok:false,rows:
 let ASK_CTX=null, PROJ=null;
 const newProj=()=>'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function projLabel(){ return [($('topik').value||'').trim(),($('mapel').value||'').trim()].filter(Boolean).join(' · ')||'(tanpa topik)'; }
-const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','menitjp','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan'];
+const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','menitjp','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan','lkpd_detail'];
 function formSnap(){
   const o={}; FORM_IDS.forEach(i=>{ const e=$(i); if(e) o[i]=e.value; });
   o.dims=[...document.querySelectorAll('#dims input:checked')].map(x=>x.value);
@@ -2488,23 +2480,36 @@ function hideCloudDraft(){ const b=$('cloudraft'); if(b) b.hidden=true; }
 function cloudRender(){
   const box=$('cloudraft'), list=$('cloudraft_list'), rows=CD.rows;
   if(!rows.length){ box.hidden=true; list.innerHTML=''; return; }
-  $('cloudraft_ttl').textContent=rows.length===1?'Ada 1 draf belum selesai di database':'Ada '+rows.length+' draf belum selesai di database (satu untuk tiap projek)';
+  const mp=($('mapel').value||'').trim(), utk=mp?' untuk '+mp:'';
+  $('cloudraft_ttl').textContent=rows.length===1?'Ada 1 draf belum selesai'+utk+' di database':'Ada '+rows.length+' draf belum selesai'+utk+' di database (satu untuk tiap projek)';
   list.innerHTML=rows.map((r,i)=>`<div class="cd-item"><p>${esc('Draf '+r.aksi+' · '+(r.project_nama||'(tanpa topik)'))}<br><small>${esc((r.panjang||0).toLocaleString('id-ID')+' karakter · '+new Date(r.updated_at).toLocaleString('id-ID')+(r.perangkat?' · '+r.perangkat:''))}</small></p><div class="resume-act"><button type="button" data-go="${i}">Lanjutkan</button><button type="button" class="ghost" data-del="${i}">Buang</button></div></div>`).join('');
   box.hidden=false;
+}
+/* draf hanya ditawarkan di mapel-nya sendiri; mapel di form masih kosong = tampilkan semua */
+const normMapel=v=>(v||'').toString().trim().toLowerCase().replace(/\s+/g,' ');
+function draftMapel(r){
+  const m=r.form&&r.form.mapel; if(m) return normMapel(m);
+  const pn=(r.project_nama||'').split(' · '); return pn.length>1?normMapel(pn[pn.length-1]):'';   // draf lama tanpa snapshot form: ambil dari label projek
+}
+function draftMapelOk(r){
+  const cur=normMapel($('mapel').value); if(!cur) return true;
+  const dm=draftMapel(r); return !dm||dm===cur;
 }
 async function cloudCheck(){
   const g=($('guru').value||'').trim();
   if(g.length<3||CD.off){ CD.rows=[]; cloudRender(); return; }
   if($('loader').classList.contains('on')) return;
   try{
-    let rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select=id,nama_guru,project_id,project_nama,aksi,draft_key,perangkat,panjang,updated_at&order=updated_at.desc&limit=20');
-    rows=(rows||[]).filter(r=>r.panjang>0&&!(DRAFT&&r.project_id===PROJ&&DRAFT.key===r.draft_key&&DRAFT.text.length>=r.panjang));   // draf yang sudah ada di layar ini tidak perlu ditawarkan
+    let rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select=id,nama_guru,project_id,project_nama,aksi,draft_key,perangkat,panjang,updated_at,form&order=updated_at.desc&limit=50');
+    rows=(rows||[]).filter(draftMapelOk).filter(r=>r.panjang>0&&!(DRAFT&&r.project_id===PROJ&&DRAFT.key===r.draft_key&&DRAFT.text.length>=r.panjang));   // draf yang sudah ada di layar ini tidak perlu ditawarkan
     CD.rows=rows; cloudRender();
   }catch(e){ if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; CD.rows=[]; cloudRender(); }
 }
 let _cdT=null; const cdSoon=()=>{ clearTimeout(_cdT); _cdT=setTimeout(cloudCheck,700); };
 $('guru').addEventListener('input',cdSoon); $('guru').addEventListener('change',cdSoon);
 setTimeout(cloudCheck,1500);
+$('mapel').addEventListener('input',()=>{ cdSoon(); syncResume(); }); $('mapel').addEventListener('change',()=>{ cdSoon(); syncResume(); });
+$('mapelchips').addEventListener('click',()=>{ cdSoon(); syncResume(); });
 function restoreRpm(text){
   lastText=text; const doc=$('doc'); doc.innerHTML=md(text)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
@@ -2540,118 +2545,76 @@ $('cloudraft_list').addEventListener('click',async e=>{
   }
 });
 
-function lkpdJumlah(){ return Math.max(1,Math.min(12,livePert($('doc').innerText)||+$('pertemuan').value||1)); }
-function lkpdPrompt(i,n,prevJudul){
-  const bhs=$('bahasa').value==='auto'
-    ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
-    : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`;
-  const lanjut=prevJudul&&prevJudul.length
-    ? `\nKESINAMBUNGAN: LKPD pertemuan sebelumnya sudah membahas: ${prevJudul.map((t,k)=>`(${k+1}) ${t}`).join('; ')}. Jangan mengulang bacaan, contoh, atau soal yang sama; bangun di atasnya dan naikkan tingkat kesulitannya secara bertahap.\n`
-    : '';
-  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) HANYA untuk PERTEMUAN ${i} dari ${n} pertemuan. Jangan menulis LKPD pertemuan lain. Ambil isinya dari tabel Pengalaman Belajar "Pertemuan ${i}" di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi, dan jangan keluar dari materi serta tujuan pembelajaran yang direncanakan untuk pertemuan ${i}. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.${lanjut}
-BAHASA LKPD: ${bhs}
+function lkpdUpaya(){
+  const v=($('lkpd_detail')||{}).value||'detail';
+  if(v==='sederhana') return `TINGKAT KEDALAMAN: SEDERHANA (ringkas, 1–2 halaman per pertemuan).
+- Tujuan Belajar: 1–2 kalimat. Petunjuk: 2–3 butir singkat. Alat dan Bahan: hanya jika benar-benar perlu.
+- Kegiatan 1 (Memahami): bacaan atau pemantik maksimal 3–4 kalimat, lalu 2 pertanyaan.
+- Kegiatan 2 (Mengaplikasi): 1 tugas utama dengan 3–4 langkah pendek dan satu tempat jawaban.
+- Kegiatan 3 (Merefleksi): 2 pertanyaan refleksi.
+- Penilaian: rubrik 2–3 kriteria saja.
+Hindari penjelasan panjang; utamakan tugas yang bisa selesai cepat.`;
+  if(v==='cukup') return `TINGKAT KEDALAMAN: CUKUP (sedang, sekitar 2–3 halaman per pertemuan).
+- Tujuan Belajar: 2–3 kalimat. Petunjuk: 3–4 butir.
+- Kegiatan 1 (Memahami): bacaan atau data singkat (1 paragraf) dan 3 pertanyaan.
+- Kegiatan 2 (Mengaplikasi): 1–2 tugas dengan langkah jelas dan tempat jawaban.
+- Kegiatan 3 (Merefleksi): 3 pertanyaan refleksi.
+- Penilaian: rubrik 3–4 kriteria.`;
+  return `TINGKAT KEDALAMAN: DETAIL (lengkap, sekitar 3–5 halaman per pertemuan).
+- Tujuan Belajar lengkap, Petunjuk Pengerjaan rinci, Alat dan Bahan lengkap bila perlu.
+- Kegiatan 1 (Memahami): bacaan, data, atau studi kasus yang cukup kaya disertai beberapa pertanyaan pemantik bertingkat.
+- Kegiatan 2 (Mengaplikasi): beberapa tugas bertahap dengan langkah rinci, contoh, dan tempat jawaban yang lengkap.
+- Kegiatan 3 (Merefleksi): 3–4 pertanyaan refleksi.
+- Penilaian: rubrik rinci dengan deskripsi tiap skor 1–4.`;
+}
+function lkpdPrompt(){
+  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
+
+BAHASA LKPD: ${$('bahasa').value==='auto'
+  ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
+  : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`}
 Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
 
-KEDALAMAN (WAJIB): satu pertemuan berarti satu LKPD yang tebal dan matang, setara 2–4 halaman cetak, bukan ringkasan. Setiap kegiatan harus punya isi nyata yang bisa langsung dikerjakan siswa tanpa guru menambah bahan. Jangan memakai perintah generik seperti "diskusikan materi", "kerjakan tugas berikut", atau "jelaskan pemahamanmu" tanpa objek yang konkret. Tuliskan sendiri bahan yang dibutuhkan: bacaan, data, tabel, kasus, contoh, dan soalnya.
-
-Format Markdown:
-# LKPD PERTEMUAN ${i}: judul kegiatan yang spesifik pada materi pertemuan ini
-Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, Pertemuan ke-${i}, Alokasi Waktu (dari RPM), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
-## Tujuan Belajar
-2–3 butir kalimat sederhana untuk siswa, selaras dengan tujuan pembelajaran RPM pertemuan ${i}.
+Format Markdown untuk tiap pertemuan:
+# LKPD PERTEMUAN n: judul kegiatan
+Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, dan Pertemuan ke-n (sudah terisi), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
+## Tujuan Belajar (kalimat sederhana untuk siswa)
 ## Petunjuk Pengerjaan
-4–6 langkah jelas, termasuk cara bekerja (individu atau kelompok), batas waktu tiap kegiatan, dan cara mengumpulkan.
-## Alat dan Bahan
-Daftar spesifik (jika diperlukan).
-## Kegiatan 1: Memahami
-Wajib berisi: (a) satu pertanyaan pemantik atau situasi nyata yang dekat dengan kehidupan siswa; (b) bacaan, studi kasus, data, atau contoh dengan kontennya ditulis lengkap (minimal 2 paragraf atau satu tabel data/contoh terisi); (c) 4–6 pertanyaan pemahaman bertingkat dari mengingat ke menganalisis, masing-masing dengan tempat jawaban (tabel sel kosong atau baris isian).
-## Kegiatan 2: Mengaplikasi
-Wajib berisi: (a) satu contoh penyelesaian atau model hasil yang sudah dikerjakan (worked example) agar siswa tahu standar yang diharapkan; (b) 5–8 tugas langkah demi langkah yang bertahap dari terbimbing ke mandiri, tiap tugas dengan instruksi yang konkret dan tempat jawaban atau produk; (c) satu tantangan lanjutan (HOTS) untuk siswa yang cepat selesai. Sesuaikan dengan kegiatan inti pada RPM pertemuan ${i}.
-## Kegiatan 3: Merefleksi
-4–5 pertanyaan refleksi yang spesifik pada materi hari ini (apa yang dipahami, bagian tersulit, kaitan dengan kehidupan nyata, rencana perbaikan), ditambah satu tabel penilaian diri dengan 4–5 pernyataan dan kolom pilihan (Sudah / Hampir / Belum).
-## Penilaian
-Tabel rubrik analitik dengan kolom Kriteria | Skor 4 | Skor 3 | Skor 2 | Skor 1, tiap sel berisi deskriptor yang konkret dan dapat diamati, minimal 4 kriteria, lalu baris Total Skor, Nilai, dan Paraf Guru.
+## Alat dan Bahan (jika diperlukan)
+## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret)
+## Kegiatan 2: Mengaplikasi (tugas langkah demi langkah sesuai kegiatan inti RPM)
+## Kegiatan 3: Merefleksi (jumlah pertanyaan sesuai TINGKAT KEDALAMAN di bawah)
+## Penilaian (tabel rubrik singkat dengan kolom Kriteria, Skor 1–4, Paraf Guru)
 
-ATURAN: Tugas harus spesifik pada topik "${$('topik').value}", bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi; data contoh boleh dibuat sendiri asalkan jelas sebagai ilustrasi. Keluarkan hanya LKPD pertemuan ${i} tanpa pembuka dan penutup.${NOTASI}
+Aturan: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Jika tugas meminta siswa menggambar, membuat sketsa, atau menempel sesuatu, sediakan tabel berisi baris judul kolom lalu SATU baris isi yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa garis titik); aplikasi menyesuaikan ukuran bingkainya. Pilihan ganda atau centang ditulis dengan awalan "- [ ] ". Beri nomor berurutan tanpa mengulang dari 1. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
+
+${lkpdUpaya()}${NOTASI}
 
 RPM:
 ${$('doc').innerText}`;
 }
 
-/* ---- LKPD: susun semua pertemuan, atau satu pertemuan saja; susun ulang per pertemuan ---- */
-let LKPD_LAST=null;
-function lkpdFillPick(){
-  const sel=$('lkpd_pick'), N=($('doc').hidden||!$('doc').innerText.trim())?0:lkpdJumlah(), cur=sel.value;
-  if(sel.options.length===N+1) return;
-  sel.innerHTML='<option value="0">Semua pertemuan</option>'+Array.from({length:N},(_,k)=>`<option value="${k+1}">Pertemuan ${k+1} saja</option>`).join('');
-  if(+cur<=N) sel.value=cur;
-}
-['mousedown','focus'].forEach(ev=>$('lkpd_pick').addEventListener(ev,lkpdFillPick));
-function lkpdSnap(){
-  const out=[]; let cur=null;
-  [...$('lkpd').children].forEach(n=>{
-    if(n.classList&&n.classList.contains('pb')) return;
-    if(n.matches&&n.matches('table.kop')){ const h=n.querySelector('h1'), m=h&&(h.textContent||'').match(/(\d{1,2})/); cur={num:m?+m[1]:out.length+1,html:''}; out.push(cur); }
-    if(cur) cur.html+=n.outerHTML;
-  });
-  return out;
-}
-function lkpdTitle(x){ const d=document.createElement('div'); d.innerHTML=x.html; const h=d.querySelector('h1'); return h?h.textContent.replace(/^[^:]*:\s*/,'').trim():''; }
-function lkpdPartHtml(t){ const d=document.createElement('div'); d.innerHTML=md(t); styleDoc(d,'lkpd'); return d.innerHTML; }
-function lkpdPut(snap,i,html){
-  const k=snap.findIndex(x=>x.num===i);
-  if(k>=0) snap[k]={num:i,html}; else{ const at=snap.findIndex(x=>x.num>i); snap.splice(at<0?snap.length:at,0,{num:i,html}); }
-}
-function lkpdRender(snap){
-  const el=$('lkpd'); el.innerHTML=snap.map(x=>x.html).join(''); styleDoc(el,'lkpd'); el.hidden=!snap.length;
-  const on=snap.length>0; ['lkpdword','lkpdprint','printboth','lkpdredo'].forEach(id=>$(id).disabled=!on);
-  return el;
-}
-new MutationObserver(()=>{ const on=!$('lkpd').hidden&&!!$('lkpd').innerText.trim(); $('lkpdredo').disabled=!on; }).observe($('lkpd'),{attributes:true,attributeFilter:['hidden']});
-async function lkpdRun(redo){
-  if($('doc').hidden||!$('doc').innerText.trim()){ setStatus('RPM belum dibuat.',true); return; }
-  lkpdFillPick();
-  const resuming=RESUMING, N=lkpdJumlah();
-  const mode=(resuming&&LKPD_LAST!=null)?LKPD_LAST:(+$('lkpd_pick').value||0);
-  if(mode>N){ setStatus('RPM hanya memiliki '+N+' pertemuan.',true); return; }
-  const had=lkpdSnap();
-  if(!resuming){
-    if(mode&&had.some(x=>x.num===mode)){ if(!confirm('LKPD pertemuan '+mode+' sudah ada. Susun ulang dan ganti isinya? Pertemuan lain tidak berubah.')) return; }
-    else if(!mode&&had.length){ if(!confirm('Susun semua LKPD dari awal? LKPD yang sekarang akan diganti seluruhnya. Untuk satu pertemuan saja, pilih "Pertemuan n saja".')) return; }
-  }
+$('lkpdbtn').addEventListener('click',async()=>{
   if(!(await pickKey('LKPD'))) return;
-  LKPD_LAST=mode;
-  const b=$('lkpdbtn'), rb=$('lkpdredo'), sel=$('lkpd_pick'); b.disabled=true; rb.disabled=true; sel.disabled=true; setStatus('');
-  let snap=mode?had:(RESUMED?had:[]), out='', last=0, selesai=[];
-  const list=mode?[mode]:Array.from({length:N},(_,k)=>k+1);
+  const b=$('lkpdbtn'); b.disabled=true; b.textContent='Menyusun LKPD…';
+  setStatus('');
+  showLoader(['Menyusun LKPD…','Membaca langkah pembelajaran di RPM…','Membuat tugas dan tempat jawaban siswa…','Menyiapkan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
   try{
-    for(const i of list){
-      last=i;
-      const lab=mode?`Menyusun LKPD pertemuan ${i}…`:`Menyusun LKPD ${selesai.length+1}/${N}…`;
-      b.textContent=lab;
-      showLoader([`Menyusun LKPD pertemuan ${i}${mode?'':' dari '+N}…`,'Membaca langkah pembelajaran di RPM…','Menulis bacaan, contoh, dan tugas siswa…','Menyiapkan tempat jawaban dan rubrik penilaian…','Hampir selesai, mohon tunggu…']);
-      liveSet($('lkpd'),mode?'':(out?out+'\n\n':''),'lkpd','LKPD pertemuan '+i+(mode?'':'/'+N));
-      const prev=snap.filter(x=>x.num<i).map(lkpdTitle).filter(Boolean);
-      const t=await ask(lkpdPrompt(i,N,prev),'LKPD:'+i);
-      out+=(out?'\n\n':'')+t; selesai.push(i);
-      lkpdPut(snap,i,lkpdPartHtml(t)); lkpdRender(snap);
-    }
-    cloudClear(); JOB_OK=true; LKPD_LAST=null;
-    const msg=mode?`LKPD pertemuan ${mode} selesai disusun${redo?' ulang':''}. Pertemuan lain tidak berubah.`:`LKPD selesai (${N} pertemuan).`;
-    setStatus(msg+' Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
-    notify(true,msg+' Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
-    $('lkpd').scrollIntoView({behavior:'smooth',block:'start'});
+    liveSet($('lkpd'),'','lkpd');
+    const t=await ask(lkpdPrompt(),'LKPD');
+    const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
+    $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
+    cloudClear(); JOB_OK=true;
+    setStatus('LKPD selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
+    notify(true,'LKPD berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
+    el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
-  }catch(e){
-    if(e.partial && !snap.some(x=>x.num===last)) lkpdPut(snap,last,lkpdPartHtml(e.partial));
-    lkpdRender(snap);
-    showResume('LKPD',e);
-    const msg=(selesai.length?`LKPD pertemuan ${selesai.join(', ')} sudah jadi, tetapi `:'')+'gagal menyusun LKPD pertemuan '+last+': '+e.message+' Tekan Buat LKPD untuk melanjutkan.';
-    if(e.aborted) setStatus('Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.'); else{ setStatus(msg,true); notify(false,msg); }
-  }finally{ hideLoader(); b.disabled=false; sel.disabled=false; b.textContent='Buat LKPD'; rb.disabled=$('lkpd').hidden; }
-}
-$('lkpdbtn').addEventListener('click',()=>lkpdRun(false));
-$('lkpdredo').addEventListener('click',()=>lkpdRun(true));
+  }catch(e){ setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.':'Gagal: '+e.message,!e.aborted); if(!e.aborted) notify(false,'LKPD gagal disusun: '+e.message);
+    if(e.partial){ const el=$('lkpd'); el.innerHTML=md(e.partial); styleDoc(el,'lkpd'); el.hidden=false; }
+    showResume('LKPD',e); }
+  finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
+});
+
 
 /* ================= ASESMEN (diagnostik, formatif, sumatif) ================= */
 const ASES_JENIS=[
@@ -3748,7 +3711,7 @@ loadSource();
 /* ===== MODUL ATP (Alur Tujuan Pembelajaran) – memakai ulang mesin RPM: gemini-proxy, pilih API key, pemuat, kop, tanda tangan, Word/PDF ===== */
 (function(){
 const CP_DEF={'bahasa inggris|E':'Pada akhir Fase E, peserta didik menggunakan teks lisan, tulisan, dan visual (multimodal) dalam bahasa Inggris untuk berkomunikasi sesuai situasi, tujuan, dan pemirsa/pembacanya (setara CEFR B1, sekitar 3.000 kata berfrekuensi tinggi). Menyimak–Berbicara: memahami alur informasi, gagasan utama, dan detail teks lisan fiksi dan nonfiksi tentang topik sehari-hari atau isu terkini; mengungkapkan pendapat dan mempertahankan argumen secara lisan. Membaca–Memirsa: memahami alur informasi, menganalisis, dan menyimpulkan informasi tersurat dan tersirat dari berbagai teks fiksi dan nonfiksi, tulis maupun multimodal. Menulis–Mempresentasikan: mengomunikasikan gagasan dan pengalaman secara tertulis atau multimodal dengan struktur teks dan unsur kebahasaan yang tepat, memakai media cetak atau digital, serta mengungkapkan dan mempertahankan argumen secara tertulis.'};
-let atpText='', atpId=null, atpEdit=false, lastAuto='', atpDirty=false, atpFromSaved=false;
+let atpText='', atpId=null, atpEdit=false, lastAuto='';
 
 /* overlay bersama dipindah ke body supaya tetap tampil walau menu Buat RPP tersembunyi */
 ['keyov','lovl','resov','loader'].forEach(id=>{ const e=$(id); if(e) document.body.appendChild(e); });
@@ -3836,7 +3799,7 @@ Per semester gunakan judul "## SEMESTER n" (tingkat dua, bukan tingkat satu) bil
 }
 
 /* ---- tampilan hasil ---- */
-const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclose'];
+const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclear'];
 function render(t){
   const d=$('atpdoc'); d.innerHTML=md(t)+signHTML(); styleDoc(d,'atp');
   const sub=['Tahun Ajaran '+v('atp_tahun'),/Satu tahun/.test($('atp_cakupan').value)?'':'Semester '+$('atp_cakupan').value].filter(Boolean).join(' · ');
@@ -3847,7 +3810,7 @@ function setEditAtp(on){
   atpEdit=on; window.ATPEDIT=!!on; document.body.classList.toggle('editing',anyEditing()); selectImg(null); $('atpdoc').contentEditable=on?'true':'false'; $('atpedit').textContent=on?'Selesai edit':'Edit';
   $('atpsave').textContent=on?'Simpan perubahan':'Simpan ke database';
 }
-$('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; atpDirty=true; });
+$('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; });
 $('atpedit').addEventListener('click',()=>setEditAtp(!atpEdit));
 
 async function atpGenerate(){
@@ -3861,7 +3824,7 @@ async function atpGenerate(){
   try{
     liveSet($('atpdoc'),'','atp'); $('atpempty').hidden=true;
     atpText=await ask(buildAtp(),'ATP');
-    render(atpText); setEditAtp(false); atpId=null; atpDirty=false; atpFromSaved=false; JOB_OK=true;
+    render(atpText); setEditAtp(false); atpId=null; JOB_OK=true;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
@@ -3875,24 +3838,10 @@ async function atpGenerate(){
 $('atpf').addEventListener('submit',e=>{ e.preventDefault(); atpGenerate(); });
 $('atpregen').addEventListener('click',atpGenerate);
 $('atpcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText($('atpdoc').innerText); setStatus('Teks disalin.'); }catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
-/* ---- tutup proyek ATP yang sedang dibuka / disusun (sama seperti Tutup proyek di Buat RPP) ---- */
-function closeAtpProject(){
-  if(!$('atpdoc').hidden){
-    const msg=atpDirty?'Ada perubahan yang belum disimpan. Tutup proyek tanpa menyimpan?'
-      :(atpId==null?'ATP ini belum tersimpan di database. Tutup proyek?':'');
-    if(msg&&!confirm(msg)) return;
-  }
-  const back=atpFromSaved;
-  setEditAtp(false);
-  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false;
-  atpText=''; atpId=null; atpDirty=false; atpFromSaved=false; lastAuto='';
-  btn.forEach(id=>$(id).disabled=true);
-  $('atp_cp').value=''; autoCP(); $('atp_catatan').value=''; $('atp_cakupan').selectedIndex=0; $('atp_jp').value='3'; $('atp_sum').value='2';
-  setStatus('');
-  if(back) showView('atpsaved'); else window.scrollTo({top:0});
-  setStatus('Proyek ditutup.');
-}
-$('atpclose').addEventListener('click',closeAtpProject);
+$('atpclear').addEventListener('click',()=>{
+  if(!confirm('Kosongkan ATP di layar? ATP yang sudah tersimpan di database tidak terhapus.')) return;
+  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus('');
+});
 
 /* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
 const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
@@ -3922,7 +3871,6 @@ async function atpSave(auto){
     if(atpId){ const r=await sb(SB_DST,`/atp_hasil?id=eq.${atpId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
     if(!row){ const r=await sb(SB_DST,'/atp_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
     if(row&&row.id) atpId=row.id;
-    atpDirty=false;
     purgeImgs(oldImg,c.innerHTML);
     $('atpsave').textContent='Simpan ke database'; setStatus('Tersimpan ke database.');
     if(!auto||$('resov').classList.contains('on')) notify(true,'ATP tersimpan ke database.');
@@ -3964,7 +3912,7 @@ $('atp_histlist').addEventListener('click',async e=>{
     if(d){ if(!confirm('Hapus ATP ini dari database?')) return; await sb(SB_DST,`/atp_hasil?id=eq.${d.dataset.del}`,{method:'DELETE'}); if(atpId==d.dataset.del) atpId=null; histList(); }
     else if(o){
       const r=(await sb(SB_DST,`/atp_hasil?id=eq.${o.dataset.open}&select=*`))[0]; if(!r) return;
-      showView('atp'); atpId=r.id; atpText=r.atp_markdown||''; atpDirty=false; atpFromSaved=true;
+      showView('atp'); atpId=r.id; atpText=r.atp_markdown||'';
       $('atp_guru').value=r.nama_guru||''; $('atp_mapel').value=r.mata_pelajaran||''; if(r.fase) $('atp_fase').value=r.fase;
       if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model;
       const doc=$('atpdoc'); doc.innerHTML=r.atp_html||md(atpText); fillLogos(doc);
@@ -4072,7 +4020,7 @@ function protaTable(items){
   let rows='', all=0, nSem=0;
   SEMS.forEach(s=>{
     const its=items.filter(i=>i.sem===s); if(!its.length) return; nSem++;
-    rows+=`<tr class="semrow"><td colspan="4" style="background:#e8eef8;font-weight:700;text-align:left">SEMESTER ${E(semLabel(s).toUpperCase())}</td></tr>`;
+    rows+=`<tr><td colspan="4" style="background:#e8eef8;font-weight:700;text-align:left">SEMESTER ${E(semLabel(s).toUpperCase())}</td></tr>`;
     let n=0, sn=0, tot=0;
     its.forEach(i=>{
       tot+=i.jp;
@@ -4089,7 +4037,7 @@ function protaTable(items){
     rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700">Jumlah JP Semester ${E(s)}</td><td ${cell}><b>${tot}</b></td></tr>`;
   });
   if(nSem>1) rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Satu Tahun</td><td style="text-align:center;background:#e8eef8"><b>${all}</b></td></tr>`;
-  return `<table><thead><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr>${rows}</table>`;
 }
 function monthsFor(sem,y){
   const n=sem==='Ganjil'?['Jul','Agu','Sep','Okt','Nov','Des']:['Jan','Feb','Mar','Apr','Mei','Jun'];
@@ -4144,8 +4092,8 @@ function prosemTable(items,sem,W,jpw,y){
     let cells=''; for(let ci=0;ci<N;ci++){
       const c=cols[ci];
       if(c.off){
-        /* sel abu-abu per baris (bukan rowspan satu blok) agar baris bisa dipecah antarhalaman dan kepala tabel tidak tertinggal sendirian */
-        cells+=`<td style="padding:1px;background:${OFFBG};${k>0?'border-top-color:'+OFFBG+';':''}border-bottom-color:${OFFBG}"></td>`;
+        const r=runs.find(x=>x.start===ci);
+        if(r){ if(k===0) cells+=`<td data-vt="1" rowspan="${nr}" colspan="${r.n}" style="text-align:center;vertical-align:middle;padding:1px;background:${OFFBG}"><div class="vt" style="display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:230px;font-size:8pt;line-height:1.15;text-align:center">${E(r.ket)}</div></td>`; ci=r.end; }
         continue;
       }
       const v=al.rows[k][effIdx[ci]]||0;
@@ -4155,21 +4103,25 @@ function prosemTable(items,sem,W,jpw,y){
   });
   // baris total JP per minggu
   const wsum=Array(W).fill(0); al.rows.forEach(r=>r.forEach((v,x)=>{ wsum[x]+=v; }));
-  const tcells=cols.map((c,ci)=>c.off?`<td style="background:${OFFBG};border-top-color:${OFFBG}"></td>`:`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:#e8eef8">${wsum[effIdx[ci]]||''}</td>`).join('');
+  const tcells=cols.map((c,ci)=>c.off?`<td style="background:${OFFBG}"></td>`:`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:#e8eef8">${wsum[effIdx[ci]]||''}</td>`).join('');
   body+=`<tr><td colspan="2" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Semester ${E(sem)}</td><td style="text-align:center;font-weight:700;background:#e8eef8">${total}</td>${tcells}<td style="background:#e8eef8"></td></tr>`;
   let ket='';
   if(runs.length){
     ket=`<div style="font-size:9.5pt;margin-top:8px"><b>Keterangan minggu tidak efektif:</b></div><table style="width:100%;font-size:9.5pt;margin-top:3px"><tr><th style="width:5%">No</th><th style="width:30%">Minggu</th><th style="width:10%">Jumlah</th><th>Keterangan</th></tr>`
       +runs.map((r,ix)=>{ const wk=r.a?`${E(mn[r.bln])} · ${E(r.a)} – ${E(r.z)}`:E(mn[r.bln]); return `<tr><td style="text-align:center">${ix+1}</td><td>${wk}</td><td style="text-align:center">${r.n} minggu</td><td>${E(r.ket)}</td></tr>`; }).join('')+`</table>`;
   }
-  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>${ket}`};
+  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>${ket}`};
 }
 function identRows(r,extra){
-  /* identitas tanpa tabel: satu baris per data, format "Label : isi" dengan titik dua sejajar */
+  /* identitas dibagi dua kolom (label | isi | label | isi) agar hemat baris */
   const rows=[['Satuan Pendidikan',$('sekolah').value],['Mata Pelajaran',r.mata_pelajaran],['Fase / Kelas',r.fase],['Tahun Pelajaran',r.tahun_ajaran]];
   if(extra) rows.push(extra); rows.push(['Penyusun',r.nama_guru]);
-  const P='margin:0 0 2pt 42mm;text-indent:-42mm;text-align:left', L='display:inline-block;width:40mm;text-indent:0;text-align:left';
-  return `<div class="idb" style="margin:8px 0 14px">`+rows.map(a=>`<p class="idb-r" style="${P}"><span class="idb-l" style="${L}">${E(a[0])}</span>: ${E(a[1])}</p>`).join('')+`</div>`;
+  let h='';
+  for(let i=0;i<rows.length;i+=2){
+    const a=rows[i], b=rows[i+1];
+    h+=`<tr><td>${E(a[0])}</td><td${b?'':' colspan="3"'}>${E(a[1])}</td>${b?`<td>${E(b[0])}</td><td>${E(b[1])}</td>`:''}</tr>`;
+  }
+  return `<table>${h}</table>`;
 }
 function makeSec(key,title,r,extra,subExtra,bodyHTML,note){
   const sec=document.createElement('section'); sec.className='pp-sec'; sec.dataset.pp=key;
@@ -4228,7 +4180,7 @@ async function generate(){
       const p=prosemTable(items,s,Wk[s],jpw,y);
       if(p.over) warn.push(`Semester ${s}: total ${p.total} JP membutuhkan lebih dari ${Wk[s]} minggu efektif (${jpw} JP/minggu), sisa JP ditumpuk di minggu terakhir.`);
       d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
-        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = minggu tidak efektif, alasannya tertulis pada tabel keterangan di bawah), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
+        `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif, alasannya tertulis di dalam kolom), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
     fillLogos(d);
     ppId=null; setEditPp(false);
