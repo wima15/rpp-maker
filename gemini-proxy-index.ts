@@ -34,10 +34,14 @@
 // permintaan Mode Otomatis diteruskan ke Groq, lalu hasilnya diubah ke bentuk Gemini supaya
 // browser tidak perlu berubah. Tidak dipakai bila guru memilih API KEY tertentu (keySlot), dan
 // tidak dipakai bila permintaan memuat gambar/berkas (Groq di sini hanya untuk teks).
-//   GROQ_API_KEY_1 ... GROQ_API_KEY_10  = key Groq (atau GROQ_API_KEY, boleh dipisah koma)
-//   GROQ_MODEL       = (opsional) nama model Groq, bawaan llama-3.3-70b-versatile
-//   GROQ_MAX_TOKENS  = (opsional) batas token keluaran Groq, bawaan 8192
+//   GEMINI_GROQ_API_KEY_1 ... GEMINI_GROQ_API_KEY_10  = key Groq (atau GEMINI_GROQ_API_KEY, boleh dipisah koma)
+//   GEMINI_GROQ_MODEL       = (opsional) nama model Groq, bawaan openai/gpt-oss-120b
+//   GEMINI_GROQ_MAX_TOKENS  = (opsional) batas token keluaran Groq, bawaan 16384
+//   GEMINI_GROQ_REASONING   = (opsional) low | medium | high, bawaan medium (high = paling teliti, paling lambat)
 //   Header x-provider: groq menandai bahwa jawaban datang dari cadangan.
+//
+//   Guru juga bisa memilih Groq langsung: { ..., groqSlot: n } -> hanya key Groq n, Gemini tidak dicoba.
+//   action "info" mengembalikan juga { groq: <jumlah key Groq> }. x-key-used berisi "g1", "g2", dst untuk Groq.
 //
 // Mode pilih key (keySlot): hanya key itu yang dipakai. Bila gagal, pesan kesalahan
 // langsung dikembalikan supaya pengguna bisa memilih key lain.
@@ -123,12 +127,28 @@ function pesanDari(teks: string) {
 // ---- cadangan: Groq (format OpenAI, diubah dari/ke format Gemini) ----
 const GROQ_KEYS = [...new Set(
   [
-    ...Array.from({ length: 10 }, (_, i) => Deno.env.get(`GROQ_API_KEY_${i + 1}`) ?? ""),
-    ...(Deno.env.get("GROQ_API_KEY") ?? "").split(","),
+    ...Array.from({ length: 10 }, (_, i) => Deno.env.get(`GEMINI_GROQ_API_KEY_${i + 1}`) ?? ""),
+    ...(Deno.env.get("GEMINI_GROQ_API_KEY") ?? "").split(","),
   ].map((k) => k.replace(/["'\s]/g, "")).filter(Boolean),
 )];
-const GROQ_MODEL = (Deno.env.get("GROQ_MODEL") ?? "").trim() || "llama-3.3-70b-versatile";
-const GROQ_MAX_TOKENS = Number(Deno.env.get("GROQ_MAX_TOKENS")) || 8192;
+const GEMINI_GROQ_MODEL = (Deno.env.get("GEMINI_GROQ_MODEL") ?? "").trim() || "openai/gpt-oss-120b";
+const GEMINI_GROQ_MAX_TOKENS = Number(Deno.env.get("GEMINI_GROQ_MAX_TOKENS")) || 16384;
+// tingkat berpikir model gpt-oss: low | medium | high (medium = lebih teliti & rinci, sedikit lebih lambat)
+const GROQ_REASONING = ((Deno.env.get("GEMINI_GROQ_REASONING") ?? "").trim().toLowerCase());
+const GROQ_REASONING_OK = ["low", "medium", "high"].includes(GROQ_REASONING) ? GROQ_REASONING : "medium";
+// Model Groq tidak sepintar Gemini dalam mengikuti format panjang & cenderung meringkas.
+// Pesan sistem ini memaksa jawaban lengkap, rinci, dan sesuai format yang diminta pengguna.
+const GROQ_SISTEM =
+  "Anda adalah penyusun perangkat ajar (RPM/RPP, ATP, LKPD, asesmen, modul) yang sangat teliti untuk guru di Indonesia. " +
+  "Tulis dalam bahasa Indonesia baku. Ikuti PERSIS struktur, urutan bagian, judul, tabel, dan format yang diminta pengguna; " +
+  "jangan melewatkan satu bagian pun dan jangan mengubah nama bagian. " +
+  "Tulis selengkap dan serinci mungkin: jangan meringkas, jangan menulis 'dan seterusnya', 'dst', atau placeholder; " +
+  "isi setiap bagian dengan konten konkret dan spesifik (langkah kegiatan berurutan beserta alokasi waktu, contoh, pertanyaan pemantik, " +
+  "indikator, rubrik, soal beserta kunci/pembahasan bila diminta), sesuai mata pelajaran, fase/kelas, dan topik yang diberikan. " +
+  "Gunakan seluruh data (identitas, tujuan, alokasi waktu) persis seperti yang diberikan, jangan mengarang data identitas. " +
+  "Bila ada asesmen/penilaian sumatif, tes, atau ulangan, WAJIB menyebut cakupannya: unit, materi, dan kode TP/indikator mana saja yang diujikan serta bentuknya; jangan menulis asesmen yang hanya berjudul tanpa cakupan. " +
+  "Bila diminta membaca atau memuat Capaian Pembelajaran (CP), tulis bunyi CP per elemen selengkapnya tanpa meringkas, analisis tiap kompetensi dan kontennya, dan pastikan setiap bagian CP terwakili oleh tujuan pembelajaran. " +
+  "Jangan memberi kalimat pembuka, penutup, atau komentar di luar dokumen. Bila diminta melanjutkan, teruskan tepat dari titik terakhir tanpa mengulang.";
 let groqGiliran = 0;
 
 // contents Gemini -> messages OpenAI. null bila ada bagian non-teks (gambar/berkas).
@@ -177,51 +197,64 @@ function sseKeGemini(src: ReadableStream<Uint8Array>) {
   }));
 }
 
-// null = Groq tidak bisa dipakai / gagal; pemanggil mengembalikan kesalahan Gemini seperti biasa
+// Mencoba Groq. slot > 0 = hanya key Groq itu (pilihan guru); slot 0 = bergiliran sebagai cadangan.
+// res = jawaban berbentuk Gemini bila berhasil; bila gagal, status + pesan untuk ditampilkan.
 async function cobaGroq(
-  contents: unknown, gc: Record<string, unknown>, stream: boolean, origin: string | null,
-): Promise<Response | null> {
-  if (!GROQ_KEYS.length) return null;
+  contents: unknown, gc: Record<string, unknown>, stream: boolean, origin: string | null, slot = 0,
+): Promise<{ res?: Response; status: number; pesan: string }> {
+  console.log(JSON.stringify({ ev: "groq_try", keys: GROQ_KEYS.length, slot, model: GEMINI_GROQ_MODEL }));
+  if (!GROQ_KEYS.length) return { status: 400, pesan: "Key Groq belum diset di server." };
   const messages = keGroqMessages(contents);
-  if (!messages) return null;
+  if (!messages) return { status: 400, pesan: "Groq hanya untuk teks; permintaan ini memuat gambar/berkas." };
   const mot = Number(gc.maxOutputTokens);
+  const dasar = Number.isFinite(mot) && mot > 0 ? mot : GEMINI_GROQ_MAX_TOKENS;
   const payload: Record<string, unknown> = {
-    model: GROQ_MODEL,
-    messages,
-    max_tokens: Math.min(Number.isFinite(mot) && mot > 0 ? mot : GROQ_MAX_TOKENS, GROQ_MAX_TOKENS),
+    model: GEMINI_GROQ_MODEL,
+    messages: [{ role: "system", content: GROQ_SISTEM }, ...messages],
+    // + ruang untuk token berpikir model; bila tetap terpotong, browser melanjutkan otomatis
+    max_tokens: Math.min(dasar + 4096, GEMINI_GROQ_MAX_TOKENS),
     stream,
   };
+  // model gpt-oss berpikir dulu; tingkat berpikir diatur lewat GEMINI_GROQ_REASONING (bawaan medium)
+  if (/^openai\/gpt-oss/i.test(GEMINI_GROQ_MODEL)) payload.reasoning_effort = GROQ_REASONING_OK;
   const temp = Number(gc.temperature);
   if (gc.temperature !== undefined && Number.isFinite(temp)) payload.temperature = Math.min(Math.max(temp, 0), 2);
   const body = JSON.stringify(payload);
-  const n = GROQ_KEYS.length, mulai = groqGiliran++ % n;
-  for (let k = 0; k < n; k++) {
-    const i = (mulai + k) % n;
+  const n = GROQ_KEYS.length;
+  const urutan = slot ? [slot - 1] : Array.from({ length: n }, (_, k) => (groqGiliran++ % n));
+  let status = 502, pesan = "Tidak bisa terhubung ke Groq.";
+  for (const i of urutan) {
     try {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEYS[i]}` },
         body,
       });
-      if (!res.ok) { await res.text(); continue; } // 429/5xx/401: coba key Groq berikutnya
-      const hdr = { "x-provider": "groq", ...corsFor(origin) };
+      if (!res.ok) { status = res.status; pesan = pesanDari(await res.text()); console.log(JSON.stringify({ ev: "groq_error", status, key: i + 1, model: GEMINI_GROQ_MODEL, msg: pesan })); continue; } // 429/5xx/401: key Groq berikutnya
+      const hdr = { "x-provider": "groq", "x-key-used": `g${i + 1}`, ...corsFor(origin) };
       if (stream && res.body) {
-        return new Response(sseKeGemini(res.body), {
-          status: 200,
-          headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", ...hdr },
-        });
+        return {
+          status: 200, pesan: "",
+          res: new Response(sseKeGemini(res.body), {
+            status: 200,
+            headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", ...hdr },
+          }),
+        };
       }
       const j = await res.json();
       const ch = j?.choices?.[0];
       const text = String(ch?.message?.content ?? "");
-      if (!text) continue;
-      return new Response(
-        JSON.stringify({ candidates: [{ content: { role: "model", parts: [{ text }] }, finishReason: akhiranGemini(ch?.finish_reason) }] }),
-        { status: 200, headers: { "Content-Type": "application/json", ...hdr } },
-      );
-    } catch { /* coba key berikutnya */ }
+      if (!text) { status = 502; pesan = "Groq tidak mengembalikan teks."; continue; }
+      return {
+        status: 200, pesan: "",
+        res: new Response(
+          JSON.stringify({ candidates: [{ content: { role: "model", parts: [{ text }] }, finishReason: akhiranGemini(ch?.finish_reason) }] }),
+          { status: 200, headers: { "Content-Type": "application/json", ...hdr } },
+        ),
+      };
+    } catch (e) { status = 502; pesan = "Tidak bisa terhubung ke Groq."; }
   }
-  return null;
+  return { status, pesan };
 }
 
 // ---- daftar model yang diizinkan ----
@@ -303,9 +336,11 @@ function kebanyakan(ip: string) {
 }
 
 Deno.serve(async (req: Request) => {
+  const t0 = Date.now();
   const origin = req.headers.get("Origin");
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsFor(origin) });
   if (req.method !== "POST") return gagal("Method not allowed", 405, origin);
+  console.log(JSON.stringify({ ev: "req_start" }));
 
   if (!API_KEYS.length) return gagal("Secret GEMINI_API_KEY_1 (dst) belum diset di Edge Functions.", 500, origin);
   if (ALLOWED_ORIGINS.length && !(origin && ALLOWED_ORIGINS.includes(origin.replace(/\/+$/, "")))) {
@@ -313,6 +348,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const sesi = await sesiSah(req);
+  console.log(JSON.stringify({ ev: "auth_done", ok: !!sesi, ms: Date.now() - t0 }));
   if (!sesi) return gagal("Belum login atau sesi berakhir. Masuk lagi lalu coba kembali.", 401, origin);
 
   const raw = await req.text();
@@ -320,6 +356,7 @@ Deno.serve(async (req: Request) => {
   let body: {
     action?: unknown;
     keySlot?: unknown;
+    groqSlot?: unknown;
     model?: unknown;
     uji?: unknown;
     stream?: unknown;
@@ -337,6 +374,7 @@ Deno.serve(async (req: Request) => {
   // model: kosong -> default admin; selain itu harus ada di daftar yang diaktifkan admin.
   // Admin boleh menguji model baru (uji: true) sebelum menambahkannya ke daftar.
   const cfg = await muatCfgModel(sesi.apikey, sesi.tok);
+  console.log(JSON.stringify({ ev: "cfg_done", ms: Date.now() - t0 }));
   const model = (String(body.model ?? "").trim() || cfg.default).toLowerCase();
   if (!MODEL_RE.test(model)) return gagal("Nama model tidak valid.", 400, origin);
   const ujiAdmin = body.uji === true && sesi.admin;
@@ -344,6 +382,18 @@ Deno.serve(async (req: Request) => {
     return gagal(`Model "${model.slice(0, 60)}" tidak tersedia. Pilih model dari daftar (default: ${cfg.default}) atau hubungi admin.`, 403, origin);
   }
   if (!Array.isArray(body.contents) || !body.contents.length) return gagal("contents wajib diisi.", 400, origin);
+
+  // pilihan Groq langsung (groqSlot: 1..jumlah key Groq): tidak mencoba Gemini sama sekali
+  if (body.groqSlot !== undefined && body.groqSlot !== null) {
+    const gs = Number(body.groqSlot);
+    if (!Number.isInteger(gs) || gs < 1 || gs > GROQ_KEYS.length) {
+      return gagal(`Groq ${String(body.groqSlot).slice(0, 10)} tidak tersedia. ` +
+        (GROQ_KEYS.length ? `Tersedia Groq 1 sampai ${GROQ_KEYS.length}.` : "Key Groq belum diset di server."), 400, origin);
+    }
+    const gcg = { ...(body.generationConfig ?? {}) } as Record<string, unknown>;
+    const r = await cobaGroq(body.contents, gcg, body.stream === true, origin, gs);
+    return r.res ?? gagal(`Groq ${gs} gagal (${r.status}). ${r.pesan} Coba pilih API KEY lain.`, r.status, origin);
+  }
 
   // pilihan key: tidak diisi = Otomatis; angka 1..jumlah key = hanya key itu
   let slot = 0;
@@ -366,6 +416,7 @@ Deno.serve(async (req: Request) => {
   let terakhir: { status: number; text: string } | null = null;
 
   const urutan = slot ? [slot - 1] : urutanKey();
+  console.log(JSON.stringify({ ev: "gemini_call", model, stream, ms: Date.now() - t0, keys: urutan.length }));
   for (const i of urutan) {
     try {
       const res = await fetch(url, {
@@ -376,7 +427,24 @@ Deno.serve(async (req: Request) => {
 
       // mode stream: bila key diterima, teruskan aliran apa adanya (isi tidak dibaca di sini)
       if (stream && res.ok && res.body) {
-        return new Response(res.body, {
+        // DIAGNOSTIK: catat jalannya aliran di Logs. Bila ada "stream_start" tanpa "stream_end",
+        // fungsi dimatikan platform di tengah aliran (lihat "sec" pada "stream_progress" terakhir).
+        const t1 = Date.now();
+        let bytes = 0, lastLog = t1;
+        console.log(JSON.stringify({ ev: "stream_start", model, key: i + 1, wait_ms: t1 - t0, req_kb: Math.round(raw.length / 1024) }));
+        const diag = res.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, c) {
+            bytes += chunk.length;
+            c.enqueue(chunk);
+            const now = Date.now();
+            if (now - lastLog >= 20_000) {
+              lastLog = now;
+              console.log(JSON.stringify({ ev: "stream_progress", sec: Math.round((now - t1) / 1000), kb: Math.round(bytes / 1024) }));
+            }
+          },
+          flush() { console.log(JSON.stringify({ ev: "stream_end", sec: Math.round((Date.now() - t1) / 1000), kb: Math.round(bytes / 1024) })); },
+        }));
+        return new Response(diag, {
           status: 200,
           headers: {
             "Content-Type": "text/event-stream; charset=utf-8",
@@ -388,6 +456,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const text = await res.text();
+      if (!res.ok) console.log(JSON.stringify({ ev: "gemini_error", status: res.status, model, key: i + 1, msg: pesanDari(text) }));
       // server Gemini sibuk/error (5xx): bila ada cadangan Groq, berhenti memutar key Gemini
       if (!slot && res.status >= 500 && GROQ_KEYS.length) {
         alasan.push(`key ${i + 1}: ${res.status}`);
@@ -412,7 +481,7 @@ Deno.serve(async (req: Request) => {
   // semua key Gemini gagal (kuota / server sibuk): coba cadangan Groq (hanya Mode Otomatis, hanya teks)
   if (!slot) {
     const g = await cobaGroq(body.contents, gc, stream, origin);
-    if (g) return g;
+    if (g.res) return g.res;
   }
 
   if (slot) return gagal(`API KEY ${slot} gagal (${terakhir!.status}). ${pesanDari(terakhir!.text)} Coba pilih API KEY lain.`, terakhir!.status, origin);
