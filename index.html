@@ -4267,10 +4267,10 @@ function prosemTable(items,sem,W,jpw,y){
   return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>${ket}`};
 }
 function identRows(r,extra){
-  /* identitas tanpa tabel: dua kolom, tiap butir ditulis "Label: isi" (contoh: Penyusun: Hanif) */
+  /* identitas tanpa tabel: dua kolom, label berlebar tetap sehingga tanda ":" lurus antar baris (contoh: Penyusun   : Hanif) */
   const rows=[['Satuan Pendidikan',$('sekolah').value],['Mata Pelajaran',r.mata_pelajaran],['Fase / Kelas',r.fase],['Tahun Pelajaran',r.tahun_ajaran]];
   if(extra) rows.push(extra); rows.push(['Penyusun',r.nama_guru]);
-  const it=rows.map(x=>`<div style="display:inline-block;width:49%;vertical-align:top;margin:2px 0;text-align:left">${E(x[0])}: ${E(x[1]==null?'':x[1])}</div>`).join('');
+  const it=rows.map(x=>`<div style="display:inline-block;box-sizing:border-box;width:49%;vertical-align:top;margin:2px 0;padding-left:9.8em;text-indent:-9.8em;text-align:left"><span style="display:inline-block;width:9em;text-indent:0">${E(x[0])}</span>: ${E(x[1]==null?'':x[1])}</div>`).join('');
   return `<div class="ppid" style="margin:10px 0 18px;font-size:11pt;line-height:1.5;text-align:left">${it}</div>`;
 }
 function makeSec(key,title,r,extra,subExtra,bodyHTML,note){
