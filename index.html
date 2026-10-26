@@ -2568,6 +2568,8 @@ async function readStream(res){
   return {text:text,finish:fin};
 }
 /* proses berpikir model memakan waktu & sumber daya server. Baru dibatasi SETELAH server kewalahan (kode 546 dst), supaya jalur normal tidak berubah. */
+/* HEMAT & CEPAT: false = tanpa streaming. Tidak ada gambar-ulang dokumen 5x/detik dan tidak ada simpan draf tiap 8 detik ke Supabase. Ubah ke true hanya bila ingin tulis langsung. */
+const USE_STREAM=false;
 const THINK_DEFAULT='low';   // tingkat berpikir Gemini sejak awal: 'low' mempercepat jawaban pertama (hindari batas waktu fungsi); '' = bawaan model
 let THINK_CFG=THINK_DEFAULT?{thinkingLevel:THINK_DEFAULT}:null;
 async function askRaw(contents,maxTok){
@@ -2576,7 +2578,7 @@ async function askRaw(contents,maxTok){
   ABORT=new AbortController();
   try{
     res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),signal:ABORT.signal,
-      body:JSON.stringify({model:modelDipakai(),keySlot:(KEY_SLOT==='auto'||isGroq(KEY_SLOT))?undefined:Number(KEY_SLOT),groqSlot:isGroq(KEY_SLOT)?Number(String(KEY_SLOT).slice(1)):undefined,contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
+      body:JSON.stringify({model:modelDipakai(),keySlot:(KEY_SLOT==='auto'||isGroq(KEY_SLOT))?undefined:Number(KEY_SLOT),groqSlot:isGroq(KEY_SLOT)?Number(String(KEY_SLOT).slice(1)):undefined,contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:USE_STREAM})});
   }catch(e){ if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(); throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   usageKey(res.headers.get('x-key-used'));
   if(res.headers.get('x-provider')==='groq') setStatus('Server Gemini sibuk, memakai server cadangan (Groq)…');
@@ -2601,7 +2603,7 @@ async function askRaw(contents,maxTok){
 /* ---- hasil panjang / terputus: simpan sebagian, lanjutkan (boleh dengan API key lain) ---- */
 const CONT_PROMPT='Lanjutkan dokumen di atas tepat dari titik terakhir. Jangan mengulang bagian yang sudah ditulis, jangan memberi kalimat pembuka atau penutup, dan pertahankan format yang sama. Teruskan dari karakter terakhir.';
 const RETRY_546=2;    // kode 546 (sumber daya fungsi habis) diulang otomatis TANPA jeda, dengan berpikir dibatasi & potongan lebih kecil; 0 = matikan
-const AUTO_RETRY=0;   // 0 = langsung gagal bila server AI kewalahan (tanpa menunggu); isi 1-4 untuk mengulang otomatis
+const AUTO_RETRY=1;   // 0 = langsung gagal bila server AI kewalahan (tanpa menunggu); isi 1-4 untuk mengulang otomatis
 const MAX_CONT=16, CHUNK_TOKENS=8192, MIN_CHUNK=1024;   // dokumen dikerjakan per potongan ~8 ribu token
 const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
 let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='', RECOMPOSE=null;   // RECOMPOSE = id projek yang sedang akan disusun ulang
@@ -2697,6 +2699,7 @@ function deviceName(){
 /* simpan (upsert per guru + projek). Berurutan lewat CD.chain supaya hapus tidak terlangkahi simpan. */
 function cloudPush(key,base,text){
   const g=($('guru').value||'').trim(); if(!g||CD.off||!text) return;
+  CD_CACHE=null;
   if(!PROJ) PROJ=newProj();
   const snap=formSnap(); snap.hasil_id=key==='RPM'?null:(curId||null);   // draf RPM = RPP baru; draf lain menempel ke RPP yang sudah tersimpan
   const row={nama_guru:g,project_id:PROJ,project_nama:projLabel(),aksi:key.split(':')[0],draft_key:key,prompt:base,teks:text,panjang:text.length,done:DONE,form:snap,
@@ -2709,6 +2712,7 @@ function cloudPush(key,base,text){
 /* hapus satu draf (tanpa menyentuh proses lain yang sedang jalan) */
 function cloudDelete(g,pid){
   g=(g||'').trim(); if(!g||!pid||CD.off) return;
+  CD_CACHE=null;
   CD.chain=CD.chain.then(()=>sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&project_id=eq.'+encodeURIComponent(pid),{method:'DELETE',headers:{Prefer:'return=minimal'}})).catch(()=>{});
 }
 /* proses projek ini selesai atau drafnya dibuang */
@@ -2772,17 +2776,20 @@ async function offerProjectDraft(){
   setStatus('Ada draf belum selesai di projek ini. Silakan lanjutkan atau buang.');
   return true;
 }
+let CD_CACHE=null;   // {g,t,rows}: daftar draf per guru; filter mapel/topik dikerjakan lokal, jadi mengetik tidak memicu request
 async function cloudCheck(){
   const g=($('guru').value||'').trim();
   if(g.length<3||CD.off){ CD.rows=[]; cloudRender(); return; }
   if($('loader').classList.contains('on')) return;
   try{
-    let rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select='+CD_COLS+'&order=updated_at.desc&limit=50');
+    let rows;
+    if(CD_CACHE&&CD_CACHE.g===g&&Date.now()-CD_CACHE.t<120000) rows=CD_CACHE.rows;
+    else{ rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select='+CD_COLS+'&order=updated_at.desc&limit=50'); CD_CACHE={g,t:Date.now(),rows:rows||[]}; }
     rows=(rows||[]).filter(r=>PROJ?r.project_id===PROJ:(draftMapelOk(r)&&draftTopikOk(r))).filter(r=>r.panjang>0&&!(DRAFT&&r.project_id===PROJ&&DRAFT.key===r.draft_key&&DRAFT.text.length>=r.panjang));   // draf yang sudah ada di layar ini tidak perlu ditawarkan
     CD.rows=rows; cloudRender();
   }catch(e){ if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; CD.rows=[]; cloudRender(); }
 }
-let _cdT=null; const cdSoon=()=>{ clearTimeout(_cdT); _cdT=setTimeout(cloudCheck,700); };
+let _cdT=null; const cdSoon=()=>{ clearTimeout(_cdT); _cdT=setTimeout(cloudCheck,2000); };
 $('guru').addEventListener('input',cdSoon); $('guru').addEventListener('change',cdSoon);
 setTimeout(cloudCheck,1500);
 $('mapel').addEventListener('input',()=>{ cdSoon(); syncResume(); }); $('mapel').addEventListener('change',()=>{ cdSoon(); syncResume(); });
@@ -3181,7 +3188,7 @@ document.getElementById('lgform').addEventListener('submit',async ev=>{
 document.getElementById('logoutbtn').addEventListener('click',async ()=>{
   if(!confirm('Keluar dari akun ini?')) return;
   try{ if(SESS&&SESS.access_token) await fetch(authBase()+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_DST.key,Authorization:'Bearer '+SESS.access_token}}); }catch(e){}
-  clearLocalUserData(); SESS=null; sessSave(); location.reload();
+  cfgCacheClear(); clearLocalUserData(); SESS=null; sessSave(); location.reload();
 });
 if(SESS&&SESS.refresh_token){
   document.getElementById('whonama').textContent=SESS.nama||SESS.email||'';
@@ -3189,7 +3196,25 @@ if(SESS&&SESS.refresh_token){
   document.getElementById('admopen').hidden=!SESS.is_admin;
 }else{ document.documentElement.removeAttribute('data-auth'); }
 
+/* ---- cache bacaan yang jarang berubah (pengaturan admin, daftar guru): hemat egress & request Supabase ---- */
+const CFG_TTL=10*60*1000;
+const cfgCacheable=p=>/^\/pengaturan_rpm\?kunci=eq\./.test(p)||/^\/guru_rpm\?select=nama,mapel/.test(p);
+const cfgKey=p=>'rpm_cfg:'+((SESS&&SESS.uid)||'')+':'+p;
+function cfgCacheClear(){ try{ Object.keys(sessionStorage).filter(k=>k.indexOf('rpm_cfg:')===0).forEach(k=>sessionStorage.removeItem(k)); }catch(e){} }
+const CFG_INFLIGHT=new Map();
 async function sb(cfg,path,opt={}){
+  const metode=opt.method||'GET';
+  if(metode!=='GET' && /^\/(pengaturan_rpm|guru_rpm)(\?|$)/.test(path)){ const r=await sb0(cfg,path,opt); cfgCacheClear(); return r; }
+  if(metode==='GET' && !opt.fresh && cfgCacheable(path)){
+    const ck=cfgKey(path);
+    try{ const c=JSON.parse(sessionStorage.getItem(ck)||'null'); if(c&&c.exp>Date.now()) return c.d; }catch(e){}
+    if(CFG_INFLIGHT.has(ck)) return CFG_INFLIGHT.get(ck);   // beberapa pemuat meminta hal yang sama: cukup satu request
+    const pr=sb0(cfg,path,opt).then(d=>{ try{ sessionStorage.setItem(ck,JSON.stringify({exp:Date.now()+CFG_TTL,d})); }catch(e){} return d; }).finally(()=>CFG_INFLIGHT.delete(ck));
+    CFG_INFLIGHT.set(ck,pr); return pr;
+  }
+  return sb0(cfg,path,opt);
+}
+async function sb0(cfg,path,opt={}){
   const h=await authH(Object.assign({'Content-Type':'application/json'},opt.headers||{}));
   if(!SESS) throw Object.assign(new Error('Belum login. Silakan masuk.'),{status:401});
   const res=await fetch(cfg.url+path,{
@@ -3199,7 +3224,7 @@ async function sb(cfg,path,opt={}){
   });
   if(res.status===401&&!opt._retry&&SESS){
     const r=await sessRefresh();
-    if(r===true) return sb(cfg,path,Object.assign({},opt,{_retry:1}));
+    if(r===true) return sb0(cfg,path,Object.assign({},opt,{_retry:1}));
     if(r===false) forceLogin('Sesi berakhir, silakan masuk lagi.');
   }
   const txt=await res.text(); let data=null;
@@ -3213,47 +3238,62 @@ async function sb(cfg,path,opt={}){
 /* ---- riwayat pemakaian API key: dihitung dari klik, disimpan di tabel api_key_usage ---- */
 const todayWib=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'});
 let USAGE_ID=null; const USAGE_KEYS=new Set();
+let USAGE_ROWS=null, USAGE_CUR=null, USAGE_AT=0, usageErr=false;   // USAGE_ROWS = salinan lokal hari ini; dimuat sekali, bukan tiap menit
+async function usageLoad(force){
+  if(!force && USAGE_ROWS && Date.now()-USAGE_AT<5*60*1000) return;
+  try{
+    let rows;
+    try{ rows=await sb(SB_DST,`/api_key_usage?select=key_slot,key_dipakai&tanggal=eq.${todayWib()}&limit=2000`); }
+    catch(e){ rows=await sb(SB_DST,`/api_key_usage?select=key_slot&tanggal=eq.${todayWib()}&limit=2000`); } // kolom key_dipakai belum ada
+    USAGE_ROWS=rows||[]; USAGE_AT=Date.now();
+  }catch(e){ if(!USAGE_ROWS) USAGE_ROWS=[]; USAGE_FAILLOAD=true; }
+}
+let USAGE_FAILLOAD=false;
 async function usageLog(aksi){
   USAGE_ID=null; USAGE_KEYS.clear();
+  USAGE_CUR={key_slot:String(KEY_SLOT),key_dipakai:''};
+  if(!USAGE_ROWS) USAGE_ROWS=[];
+  USAGE_ROWS.push(USAGE_CUR); usageRender();            // tampil seketika dari memori, tanpa membaca database lagi
+  const cur=USAGE_CUR;
   try{
     const r=await sb(SB_DST,'/api_key_usage',{method:'POST',headers:{Prefer:'return=representation'},body:{
       tanggal:todayWib(), key_slot:String(KEY_SLOT), aksi:aksi||'', model:modelDipakai(),
       nama_guru:($('guru').value||'').trim()
     }});
-    USAGE_ID=r&&r[0]&&r[0].id;
-  }catch(e){ usageErr=true; }
-  usageRender();
+    if(USAGE_CUR===cur){ USAGE_ID=r&&r[0]&&r[0].id; if(USAGE_KEYS.size) usageFlushKeys(); }
+  }catch(e){ usageErr=true; usageRender(); }
 }
-/* nomor key yang benar-benar dipakai server (header x-key-used), dicatat ke baris klik yang sama */
-function usageKey(n){
-  if(!USAGE_ID||!n) return;
-  USAGE_KEYS.add(String(n));
+/* nomor key yang benar-benar dipakai server (header x-key-used); PATCH hanya bila ada key BARU, bukan tiap potongan */
+function usageFlushKeys(){
+  if(!USAGE_ID) return;
   sb(SB_DST,`/api_key_usage?id=eq.${USAGE_ID}`,{method:'PATCH',headers:{Prefer:'return=minimal'},
-    body:{key_dipakai:[...USAGE_KEYS].sort((x,y)=>String(x).localeCompare(String(y),undefined,{numeric:true})).join(',')}}).then(usageRender).catch(()=>{});
+    body:{key_dipakai:[...USAGE_KEYS].sort((x,y)=>String(x).localeCompare(String(y),undefined,{numeric:true})).join(',')}}).catch(()=>{});
 }
-let usageErr=false;
-async function usageRender(){
+function usageKey(n){
+  if(!USAGE_CUR||!n) return;
+  n=String(n); if(USAGE_KEYS.has(n)) return;
+  USAGE_KEYS.add(n);
+  USAGE_CUR.key_dipakai=[...USAGE_KEYS].join(',');
+  usageRender(); usageFlushKeys();
+}
+function usageRender(){
   const t=$('u_total'); if(!t) return;
-  try{
-    let rows;
-    try{ rows=await sb(SB_DST,`/api_key_usage?select=key_slot,key_dipakai&tanggal=eq.${todayWib()}&limit=10000`); }
-    catch(e){ rows=await sb(SB_DST,`/api_key_usage?select=key_slot&tanggal=eq.${todayWib()}&limit=10000`); } // kolom key_dipakai belum ada
-    const by={};
-    rows.forEach(r=>{
-      const used=(r.key_dipakai||'').split(',').filter(Boolean);
-      (used.length?used:[r.key_slot]).forEach(k=>{ by[k]=(by[k]||0)+1; });
-    });
-    t.textContent=rows.length;
-    const names=Object.keys(by).sort((a,b)=>a==='auto'?-1:b==='auto'?1:String(a).localeCompare(String(b),undefined,{numeric:true}));
-    $('u_list').innerHTML=names.length
-      ? names.map(k=>`<li><span>${k==='auto'?'Otomatis (belum diketahui)':slotName(k)}</span><b>${by[k]}x</b></li>`).join('')
-      : '<li><span>Belum ada pemakaian</span></li>';
-    $('u_fail').textContent=usageErr?'Sebagian klik gagal dicatat.':''; $('u_fail').className='u-fail'+(usageErr?' bad':'');
-  }catch(e){
-    $('u_fail').textContent='Riwayat belum bisa dimuat. Jalankan SQL tabel api_key_usage.'; $('u_fail').className='u-fail bad';
-  }
+  const rows=USAGE_ROWS||[], by={};
+  rows.forEach(r=>{
+    const used=(r.key_dipakai||'').split(',').filter(Boolean);
+    (used.length?used:[r.key_slot]).forEach(k=>{ by[k]=(by[k]||0)+1; });
+  });
+  t.textContent=rows.length;
+  const names=Object.keys(by).sort((a,b)=>a==='auto'?-1:b==='auto'?1:String(a).localeCompare(String(b),undefined,{numeric:true}));
+  $('u_list').innerHTML=names.length
+    ? names.map(k=>`<li><span>${k==='auto'?'Otomatis (belum diketahui)':slotName(k)}</span><b>${by[k]}x</b></li>`).join('')
+    : '<li><span>Belum ada pemakaian</span></li>';
+  if(USAGE_FAILLOAD&&!rows.length){ $('u_fail').textContent='Riwayat belum bisa dimuat. Jalankan SQL tabel api_key_usage.'; $('u_fail').className='u-fail bad'; }
+  else{ $('u_fail').textContent=usageErr?'Sebagian klik gagal dicatat.':''; $('u_fail').className='u-fail'+(usageErr?' bad':''); }
 }
-usageRender(); setInterval(usageRender,60000);
+usageLoad().then(usageRender);
+/* segarkan dari database hanya saat tab dibuka lagi setelah >5 menit (bukan polling) */
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && USAGE_ROWS && Date.now()-USAGE_AT>5*60*1000) usageLoad(true).then(usageRender); });
 
 function getCfg(){
   let c=Object.assign({},SB_DEF);
@@ -3562,7 +3602,7 @@ async function amLoad(){
   msg('a_mmsg','Memuat…');
   let ada=false;
   try{
-    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.model_ai&select=nilai&limit=1');
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.model_ai&select=nilai&limit=1',{fresh:true});
     const c=modelClean(r&&r[0]&&r[0].nilai); ada=!!c;
     AM=amClone(c||modelClean(MODEL_SEED));
     msg('a_mmsg',ada?'Pengaturan dimuat.':'Belum ada pengaturan tersimpan (atau tidak valid). Yang tampil adalah daftar bawaan; tekan Simpan untuk menetapkannya.');
@@ -3738,7 +3778,7 @@ async function syncErapor(dry){
     msg('a_syncmsg',(dry?'Pratinjau: ':'Sinkron selesai: ')+`${d.baru} guru baru, ${d.diperbarui} diperbarui, ${d.sama} sama, ${d.dihapus} dihapus (E-Rapor: ${d.total_erapor} guru, ${d.tahun_ajaran}).`+(dry?' Belum ada yang disimpan.':''));
     if(!dry){
       try{ localStorage.setItem(SYNC_KEY,JSON.stringify({t:Date.now(),n:d.total_erapor})); }catch(e){}
-      showSyncStamp(); agLoad(); loadSource();
+      showSyncStamp(); cfgCacheClear(); agLoad(); loadSource();
     }
   }catch(e){ msg('a_syncmsg',e instanceof TypeError?why(e):e.message,true); }
   finally{ bs.forEach(b=>b.disabled=false); }
@@ -3929,7 +3969,7 @@ function applySchoolToDoc(){
 async function reloadKepsek(){
   const b=$('kepsekreload'); b.disabled=true; setStatus('Memuat data kepala sekolah…');
   try{
-    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.sekolah&select=nilai&limit=1');
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.sekolah&select=nilai&limit=1',{fresh:true});
     const n=r&&r[0]&&r[0].nilai;
     if(!n||!n.kepsek) throw new Error('Data kepala sekolah belum diatur admin.');
     const lama=$('kepsek').value.trim();
