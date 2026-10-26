@@ -2604,7 +2604,7 @@ async function askRaw(contents,maxTok){
 const CONT_PROMPT='Lanjutkan dokumen di atas tepat dari titik terakhir. Jangan mengulang bagian yang sudah ditulis, jangan memberi kalimat pembuka atau penutup, dan pertahankan format yang sama. Teruskan dari karakter terakhir.';
 const RETRY_546=2;    // kode 546 (sumber daya fungsi habis) diulang otomatis TANPA jeda, dengan berpikir dibatasi & potongan lebih kecil; 0 = matikan
 const AUTO_RETRY=1;   // 0 = langsung gagal bila server AI kewalahan (tanpa menunggu); isi 1-4 untuk mengulang otomatis
-const MAX_CONT=16, CHUNK_TOKENS=8192, MIN_CHUNK=1024;   // dokumen dikerjakan per potongan ~8 ribu token
+const MAX_CONT=24, CHUNK_TOKENS=4096, MIN_CHUNK=1024;   // potongan 4 ribu token: satu potongan selesai jauh di bawah batas 150 detik fungsi (tanpa streaming)   // dokumen dikerjakan per potongan ~8 ribu token
 const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
 let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='', RECOMPOSE=null;   // RECOMPOSE = id projek yang sedang akan disusun ulang
 function draftSave(key,prompt,text){

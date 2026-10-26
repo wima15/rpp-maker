@@ -47,7 +47,7 @@
 // langsung dikembalikan supaya pengguna bisa memilih key lain.
 //
 // Login: setiap permintaan wajib membawa sesi login guru (header Authorization: Bearer <access token>
-// dari Auth project ini). Tanpa sesi yang sah -> 401. Pengecekan memakai /auth/v1/user dan di-cache 60 detik.
+// dari Auth project ini). Tanpa sesi yang sah -> 401. Pengecekan memakai /auth/v1/user dan di-cache 5 menit.
 //
 // Model: daftar model yang boleh dipakai + model default diatur admin di Portal Admin > Model AI
 // (tabel pengaturan_rpm, kunci "model_ai"). Server MEMERIKSA ULANG setiap permintaan terhadap daftar itu,
@@ -56,7 +56,7 @@
 //   - model tidak ada di daftar / dinonaktifkan -> ditolak (403)
 //   - pengaturan belum ada, rusak, atau default-nya tidak aktif -> memakai DAFTAR BAWAAN di bawah (aman)
 //   - hanya admin yang boleh menguji model yang belum ada di daftar (permintaan dengan uji: true)
-//   Perubahan dari admin berlaku paling lama 30 detik kemudian (cache).
+//   Perubahan dari admin berlaku paling lama 5 menit kemudian (cache).
 //
 // Pembatasan: nama model harus berawalan "gemini-", maxOutputTokens dibatasi,
 // hanya contents + generationConfig yang diteruskan, ukuran permintaan dibatasi,
@@ -76,7 +76,8 @@ const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
 
 const MAX_BODY_BYTES = 300_000;
 const MAX_OUTPUT_TOKENS = 16384;
-const LIMIT_PER_MENIT = 12;
+const BATAS_TOTAL_MS = 120_000;   // Supabase mematikan fungsi di 150 dtk (kode 546); sisakan ruang untuk cadangan Groq
+const LIMIT_PER_MENIT = 60;   // sekolah biasanya berbagi satu IP; 12/menit membuat guru saling menghalangi
 
 function corsFor(origin: string | null) {
   const allow = ALLOWED_ORIGINS.length ? (origin ?? "") : "*";
@@ -293,7 +294,7 @@ async function muatCfgModel(apikey: string, tok: string): Promise<CfgModel> {
     if (r.ok) {
       const rows = await r.json();
       const cfg = bersihkanCfg(Array.isArray(rows) ? rows[0]?.nilai : null) ?? CFG_BAWAAN;
-      cfgCache = { exp: now + 30_000, cfg };
+      cfgCache = { exp: now + 5 * 60_000, cfg };   // 5 menit: hemat pembacaan pengaturan_rpm
       return cfg;
     }
   } catch { /* jatuh ke cadangan di bawah */ }
@@ -318,7 +319,7 @@ async function sesiSah(req: Request): Promise<Sesi | null> {
     const u = await r.json();
     // app_metadata hanya bisa diubah server, jadi aman dipercaya (sama dengan public.is_admin() di SQL)
     const admin = u?.app_metadata?.is_admin === true;
-    sesiOk.set(tok, { exp: now + 60_000, admin });
+    sesiOk.set(tok, { exp: now + 5 * 60_000, admin });   // 5 menit: hemat satu panggilan Auth per permintaan
     if (sesiOk.size > 2000) sesiOk.clear();
     return { admin, tok, apikey };
   } catch { return null; }
@@ -340,7 +341,6 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsFor(origin) });
   if (req.method !== "POST") return gagal("Method not allowed", 405, origin);
-  console.log(JSON.stringify({ ev: "req_start" }));
 
   if (!API_KEYS.length) return gagal("Secret GEMINI_API_KEY_1 (dst) belum diset di Edge Functions.", 500, origin);
   if (ALLOWED_ORIGINS.length && !(origin && ALLOWED_ORIGINS.includes(origin.replace(/\/+$/, "")))) {
@@ -348,7 +348,6 @@ Deno.serve(async (req: Request) => {
   }
 
   const sesi = await sesiSah(req);
-  console.log(JSON.stringify({ ev: "auth_done", ok: !!sesi, ms: Date.now() - t0 }));
   if (!sesi) return gagal("Belum login atau sesi berakhir. Masuk lagi lalu coba kembali.", 401, origin);
 
   const raw = await req.text();
@@ -374,7 +373,6 @@ Deno.serve(async (req: Request) => {
   // model: kosong -> default admin; selain itu harus ada di daftar yang diaktifkan admin.
   // Admin boleh menguji model baru (uji: true) sebelum menambahkannya ke daftar.
   const cfg = await muatCfgModel(sesi.apikey, sesi.tok);
-  console.log(JSON.stringify({ ev: "cfg_done", ms: Date.now() - t0 }));
   const model = (String(body.model ?? "").trim() || cfg.default).toLowerCase();
   if (!MODEL_RE.test(model)) return gagal("Nama model tidak valid.", 400, origin);
   const ujiAdmin = body.uji === true && sesi.admin;
@@ -416,13 +414,16 @@ Deno.serve(async (req: Request) => {
   let terakhir: { status: number; text: string } | null = null;
 
   const urutan = slot ? [slot - 1] : urutanKey();
-  console.log(JSON.stringify({ ev: "gemini_call", model, stream, ms: Date.now() - t0, keys: urutan.length }));
   for (const i of urutan) {
     try {
+      // Batas waktu sendiri (di bawah 150 dtk milik Supabase): lebih baik gagal rapi daripada dimatikan paksa (546)
+      const sisa = BATAS_TOTAL_MS - (Date.now() - t0);
+      if (!stream && sisa < 15_000) { alasan.push(`key ${i + 1}: waktu habis`); terakhir = { status: 504, text: JSON.stringify({ error: { message: "Gemini terlalu lama menjawab." } }) }; break; }
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": API_KEYS[i] },
         body: payload,
+        signal: stream ? undefined : AbortSignal.timeout(Math.max(10_000, Math.min(sisa, BATAS_TOTAL_MS))),
       });
 
       // mode stream: bila key diterima, teruskan aliran apa adanya (isi tidak dibaca di sini)
@@ -473,8 +474,12 @@ Deno.serve(async (req: Request) => {
       alasan.push(`key ${i + 1}: ${res.status}`);
       terakhir = { status: res.status, text };
     } catch (e) {
-      alasan.push(`key ${i + 1}: tidak terhubung`);
-      terakhir = { status: 502, text: JSON.stringify({ error: { message: String(e) } }) };
+      const habis = (e as Error)?.name === "TimeoutError" || (e as Error)?.name === "AbortError";
+      alasan.push(`key ${i + 1}: ${habis ? "waktu habis" : "tidak terhubung"}`);
+      terakhir = habis
+        ? { status: 504, text: JSON.stringify({ error: { message: "Gemini terlalu lama menjawab (potongan terlalu besar atau model sedang lambat)." } }) }
+        : { status: 502, text: JSON.stringify({ error: { message: String(e) } }) };
+      if (habis) break;   // sisa waktu tidak cukup untuk key lain; langsung ke cadangan Groq / minta browser mengulang dengan potongan lebih kecil
     }
   }
 
