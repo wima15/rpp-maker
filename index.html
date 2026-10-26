@@ -2499,13 +2499,16 @@ const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:
 /* ---- pilih API key (key asli tetap di server, browser hanya mengirim nomor) ---- */
 let KEY_COUNT=null, KEY_SLOT='auto';
 try{ KEY_SLOT=localStorage.getItem('rpm_keyslot')||'auto'; }catch(e){}
-const keyTag=()=>KEY_SLOT==='auto'?'':' (API KEY '+KEY_SLOT+')';
+let GROQ_COUNT=0;
+const isGroq=v=>/^g\d+$/.test(String(v));
+const slotName=v=>isGroq(v)?'Groq '+String(v).slice(1):'API KEY '+v;
+const keyTag=()=>KEY_SLOT==='auto'?'':' ('+slotName(KEY_SLOT)+')';
 async function loadKeyCount(){
   if(KEY_COUNT!==null) return KEY_COUNT;
   try{
     const res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),body:JSON.stringify({action:'info'})});
     const d=await res.json();
-    if(res.ok && Number.isInteger(d.keys) && d.keys>0) KEY_COUNT=d.keys;
+    if(res.ok && Number.isInteger(d.keys) && d.keys>0){ KEY_COUNT=d.keys; GROQ_COUNT=Number.isInteger(d.groq)&&d.groq>0?d.groq:0; }
   }catch(e){}
   return KEY_COUNT;
 }
@@ -2514,9 +2517,10 @@ async function pickKey(aksi,keep){
   list.innerHTML='<small>Memuat daftar API key…</small>'; $('keymsg').textContent='';
   $('keyok').disabled=true; ov.classList.add('on');
   const n=await loadKeyCount();
-  let cur=KEY_SLOT; if(cur!=='auto' && (!n || +cur>n)) cur='auto';
+  let cur=KEY_SLOT; if(cur!=='auto' && (!n || (isGroq(cur)?+String(cur).slice(1)>GROQ_COUNT:+cur>n))) cur='auto';
   const opts=[['auto','Otomatis (bergiliran, pindah sendiri bila gagal)']];
   for(let i=1;i<=(n||0);i++) opts.push([String(i),'API KEY '+i]);
+  for(let i=1;i<=(n?GROQ_COUNT:0);i++) opts.push(['g'+i,'Groq '+i+' (cadangan, hanya teks; model Gemini diabaikan)']);
   list.innerHTML=opts.map(o=>`<label><input type="radio" name="keyopt" value="${o[0]}"${o[0]===cur?' checked':''}> ${o[1]}</label>`).join('');
   if(!n) $('keymsg').textContent='Daftar API key tidak bisa dimuat. Pastikan gemini-proxy versi terbaru sudah di-deploy. Anda masih bisa lanjut dengan mode Otomatis.';
   $('keyok').disabled=false; $('keyok').focus();
@@ -2571,7 +2575,7 @@ async function askRaw(contents,maxTok){
   ABORT=new AbortController();
   try{
     res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),signal:ABORT.signal,
-      body:JSON.stringify({model:modelDipakai(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
+      body:JSON.stringify({model:modelDipakai(),keySlot:(KEY_SLOT==='auto'||isGroq(KEY_SLOT))?undefined:Number(KEY_SLOT),groqSlot:isGroq(KEY_SLOT)?Number(String(KEY_SLOT).slice(1)):undefined,contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
   }catch(e){ if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(); throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   usageKey(res.headers.get('x-key-used'));
   if(res.headers.get('x-provider')==='groq') setStatus('Server Gemini sibuk, memakai server cadangan (Groq)…');
@@ -3219,7 +3223,7 @@ function usageKey(n){
   if(!USAGE_ID||!n) return;
   USAGE_KEYS.add(String(n));
   sb(SB_DST,`/api_key_usage?id=eq.${USAGE_ID}`,{method:'PATCH',headers:{Prefer:'return=minimal'},
-    body:{key_dipakai:[...USAGE_KEYS].sort((x,y)=>x-y).join(',')}}).then(usageRender).catch(()=>{});
+    body:{key_dipakai:[...USAGE_KEYS].sort((x,y)=>String(x).localeCompare(String(y),undefined,{numeric:true})).join(',')}}).then(usageRender).catch(()=>{});
 }
 let usageErr=false;
 async function usageRender(){
@@ -3234,9 +3238,9 @@ async function usageRender(){
       (used.length?used:[r.key_slot]).forEach(k=>{ by[k]=(by[k]||0)+1; });
     });
     t.textContent=rows.length;
-    const names=Object.keys(by).sort((a,b)=>a==='auto'?-1:b==='auto'?1:a-b);
+    const names=Object.keys(by).sort((a,b)=>a==='auto'?-1:b==='auto'?1:String(a).localeCompare(String(b),undefined,{numeric:true}));
     $('u_list').innerHTML=names.length
-      ? names.map(k=>`<li><span>${k==='auto'?'Otomatis (belum diketahui)':'API KEY '+k}</span><b>${by[k]}x</b></li>`).join('')
+      ? names.map(k=>`<li><span>${k==='auto'?'Otomatis (belum diketahui)':slotName(k)}</span><b>${by[k]}x</b></li>`).join('')
       : '<li><span>Belum ada pemakaian</span></li>';
     $('u_fail').textContent=usageErr?'Sebagian klik gagal dicatat.':''; $('u_fail').className='u-fail'+(usageErr?' bad':'');
   }catch(e){
