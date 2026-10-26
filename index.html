@@ -2561,10 +2561,10 @@ async function readStream(res){
     buf+=dec.decode(); if(buf.trim()) eat(buf);
   }catch(e){
     if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(text);
-    const er=new Error('Koneksi ke server AI terputus di tengah proses'+(e&&e.message?' ('+e.message+')':'')+'.'); er.text=text; throw er;
+    const er=new Error('Koneksi ke server AI terputus di tengah proses'+(e&&e.message?' ('+e.message+')':'')+'.'); er.text=text; er.cut=true; throw er;
   }
   if(!text) throw new Error(fin==='MAX_TOKENS'?'Batas keluaran habis sebelum ada teks (kemungkinan terpakai untuk proses berpikir model). Coba model "flash".':'AI tidak mengembalikan teks. Coba lagi atau ganti model.');
-  if(!fin){ const er=new Error('Aliran hasil dari server AI berhenti sebelum selesai.'); er.text=text; throw er; }
+  if(!fin){ const er=new Error('Aliran hasil dari server AI berhenti sebelum selesai.'); er.text=text; er.cut=true; throw er; }
   return {text:text,finish:fin};
 }
 /* proses berpikir model memakan waktu & sumber daya server. Baru dibatasi SETELAH server kewalahan (kode 546 dst), supaya jalur normal tidak berubah. */
@@ -2614,7 +2614,7 @@ async function ask(prompt,key){
   if(DONE[key]!=null) return DONE[key];            // bagian yang sudah jadi tidak diminta ulang
   let base=prompt, acc='';
   if(DRAFT&&DRAFT.key===key){ base=DRAFT.prompt; acc=DRAFT.text; }
-  let chunk=CHUNK_TOKENS, retry=0, thinkFix=0;
+  let chunk=CHUNK_TOKENS, retry=0, thinkFix=0, cutN=0;   // cutN = berapa kali aliran terputus lalu dilanjutkan otomatis
   for(let round=0;round<=MAX_CONT;round++){
     const contents=[{role:'user',parts:[{text:base}]}];
     if(acc) contents.push({role:'model',parts:[{text:acc}]},{role:'user',parts:[{text:CONT_PROMPT}]});
@@ -2627,6 +2627,10 @@ async function ask(prompt,key){
       /* parameter berpikir ditolak model ini (400): turunkan ke bentuk lama, lalu matikan */
       if(e.status===400 && THINK_CFG && thinkFix<2 && /think/i.test(e.message||'')){
         thinkFix++; THINK_CFG=THINK_CFG.thinkingLevel?{thinkingBudget:1024}:null; round--; continue;
+      }
+      /* aliran terputus di tengah jalan (fungsi dimatikan / koneksi putus) tetapi sebagian teks sudah masuk: lanjutkan otomatis dari titik terakhir, paling banyak 3 kali */
+      if(e.cut && acc && cutN<3){
+        cutN++; round--; setStatus('Aliran terputus, melanjutkan otomatis dari titik terakhir ('+cutN+'/3)…'); continue;
       }
       if([546,504,502,408].includes(e.status) && retry<(e.status===546?Math.max(RETRY_546,AUTO_RETRY):AUTO_RETRY)){   // server kewalahan: batasi berpikir, perkecil potongan, tunggu sebentar, coba lagi otomatis
         retry++; chunk=Math.max(MIN_CHUNK,Math.floor(chunk/2)); round--;
