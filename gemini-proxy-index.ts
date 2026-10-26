@@ -33,6 +33,9 @@
 // Mode pilih key (keySlot): hanya key itu yang dipakai. Bila gagal, pesan kesalahan
 // langsung dikembalikan supaya pengguna bisa memilih key lain.
 //
+// Login: setiap permintaan wajib membawa sesi login guru (header Authorization: Bearer <access token>
+// dari Auth project ini). Tanpa sesi yang sah -> 401. Pengecekan memakai /auth/v1/user dan di-cache 60 detik.
+//
 // Pembatasan: nama model harus berawalan "gemini-", maxOutputTokens dibatasi,
 // hanya contents + generationConfig yang diteruskan, ukuran permintaan dibatasi,
 // dan ada batas permintaan per menit per alamat IP.
@@ -98,6 +101,26 @@ function pesanDari(teks: string) {
   try { return String(JSON.parse(teks)?.error?.message ?? teks).slice(0, 200); } catch { return teks.slice(0, 200); }
 }
 
+
+// ---- cek sesi login ----
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const sesiOk = new Map<string, number>(); // token -> waktu kedaluwarsa cache
+async function sesiSah(req: Request): Promise<boolean> {
+  const m = /^Bearer\s+(.+)$/i.exec(req.headers.get("Authorization") ?? "");
+  if (!m) return false;
+  const tok = m[1].trim(), now = Date.now();
+  if ((sesiOk.get(tok) ?? 0) > now) return true;
+  const apikey = req.headers.get("apikey") || SUPABASE_ANON;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey, Authorization: `Bearer ${tok}` } });
+    if (!r.ok) return false;
+    sesiOk.set(tok, now + 60_000);
+    if (sesiOk.size > 2000) sesiOk.clear();
+    return true;
+  } catch { return false; }
+}
+
 // pembatas sederhana per instance (cukup untuk menahan penyalahgunaan ringan)
 const hits = new Map<string, number[]>();
 function kebanyakan(ip: string) {
@@ -118,6 +141,8 @@ Deno.serve(async (req: Request) => {
   if (ALLOWED_ORIGINS.length && !(origin && ALLOWED_ORIGINS.includes(origin.replace(/\/+$/, "")))) {
     return gagal("Asal permintaan tidak diizinkan.", 403, origin);
   }
+
+  if (!(await sesiSah(req))) return gagal("Belum login atau sesi berakhir. Masuk lagi lalu coba kembali.", 401, origin);
 
   const raw = await req.text();
   if (raw.length > MAX_BODY_BYTES) return gagal("Permintaan terlalu besar.", 413, origin);

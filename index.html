@@ -677,6 +677,23 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 .tuto{padding-left:20px}.tuto li{margin:10px 0;line-height:1.5}.tuto ul{margin:6px 0;padding-left:18px}.tuto li li{margin:4px 0}
 @media print{.adm,#admopen,#histbox{display:none!important}}
 
+
+/* ===== Login ===== */
+#loginov{display:none;position:fixed;inset:0;z-index:900;align-items:center;justify-content:center;padding:20px;background:var(--bg);overflow:auto}
+html:not([data-auth]) #loginov{display:flex}
+html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
+#loginov .lgbox{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 24px;box-shadow:0 10px 40px rgba(0,0,0,.12)}
+#loginov .lglogo{display:flex;justify-content:center;margin-bottom:8px}
+#loginov .lglogo img{height:64px;width:auto}
+#loginov h2{margin:4px 0 2px;text-align:center;font-size:19px}
+#loginov p.lgsub{margin:0 0 10px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5}
+#loginov button.lgbtn{width:100%;margin-top:16px}
+#loginov .lgerr{min-height:18px;margin:10px 0 0;color:var(--danger);font-size:13px;text-align:center}
+.whoami{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.whoami b{color:var(--ink);font-weight:600}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media print{#loginov,.whoami{display:none!important}}
+
 /* ===== Prota & Prosem ===== */
 #pp_tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 #ppdoc .pp-sec[hidden]{display:none!important}
@@ -723,6 +740,20 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 </style>
 </head>
 <body>
+<script>try{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.refresh_token)document.documentElement.setAttribute('data-auth','1');}catch(e){}</script>
+<div id="loginov" role="dialog" aria-label="Masuk">
+  <form class="lgbox" id="lgform" autocomplete="on">
+    <div class="lglogo"><img src="assets/logo-sekolah.png" alt="" onerror="this.style.display='none'"></div>
+    <h2>Masuk</h2>
+    <p class="lgsub">Gunakan email dan kata sandi akun E-Rapor Anda.</p>
+    <label for="lgemail">Email</label>
+    <input id="lgemail" type="email" autocomplete="username" required placeholder="nama@email.com">
+    <label for="lgpw">Kata sandi</label>
+    <input id="lgpw" type="password" autocomplete="current-password" required>
+    <button type="submit" class="lgbtn" id="lgbtn">Masuk</button>
+    <p class="lgerr" id="lgerr" role="alert" aria-live="polite"></p>
+  </form>
+</div>
 <div id="intro" role="dialog" aria-label="Pembuka" aria-live="polite">
   <canvas id="introbg" aria-hidden="true"></canvas>
   <div class="logo-wrap"><i class="stitch s1"></i><img src="assets/logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'"></div>
@@ -793,7 +824,10 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
       <p>Penyusun RPM, LKPD, Asesmen, dan ATP (Alur Tujuan Pembelajaran) Kurikulum Merdeka &amp; 8 Dimensi Profil Lulusan.</p>
     </div>
   </div>
-  <button type="button" class="ghost" id="admopen">Portal Admin</button>
+  <div class="hdr-right">
+    <span class="whoami" id="whoami" hidden><span>Masuk sebagai <b id="whonama"></b></span><button type="button" class="ghost sm" id="logoutbtn">Keluar</button></span>
+    <button type="button" class="ghost" id="admopen" hidden>Portal Admin</button>
+  </div>
 </header>
 <div class="app">
 <aside class="sidebar" aria-label="Menu utama">
@@ -2381,7 +2415,7 @@ const keyTag=()=>KEY_SLOT==='auto'?'':' (API KEY '+KEY_SLOT+')';
 async function loadKeyCount(){
   if(KEY_COUNT!==null) return KEY_COUNT;
   try{
-    const res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify({action:'info'})});
+    const res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),body:JSON.stringify({action:'info'})});
     const d=await res.json();
     if(res.ok && Number.isInteger(d.keys) && d.keys>0) KEY_COUNT=d.keys;
   }catch(e){}
@@ -2441,13 +2475,15 @@ async function readStream(res){
   if(!fin){ const er=new Error('Aliran hasil dari server AI berhenti sebelum selesai.'); er.text=text; throw er; }
   return {text:text,finish:fin};
 }
+/* proses berpikir model memakan waktu & sumber daya server. Baru dibatasi SETELAH server kewalahan (kode 546 dst), supaya jalur normal tidak berubah. */
+let THINK_CFG=null;
 async function askRaw(contents,maxTok){
   let res;
   if(STOP_REQ) throw stopErr();
   ABORT=new AbortController();
   try{
-    res=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},signal:ABORT.signal,
-      body:JSON.stringify({model:$('model').value.trim(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:{temperature:0.7,maxOutputTokens:maxTok||16384},stream:true})});
+    res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),signal:ABORT.signal,
+      body:JSON.stringify({model:$('model').value.trim(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
   }catch(e){ if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(); throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   usageKey(res.headers.get('x-key-used'));
   if(res.ok && (res.headers.get('content-type')||'').includes('text/event-stream')) return await readStream(res);
@@ -2457,6 +2493,7 @@ async function askRaw(contents,maxTok){
     const m=(data&&((data.error&&data.error.message)||data.message||(typeof data.error==='string'?data.error:'')))||'';
     const E=msg=>Object.assign(new Error(msg),{status:res.status});
     if([546,504,502,408].includes(res.status)) throw E('Server AI kehabisan waktu atau sumber daya (kode '+res.status+'). Permintaan terlalu berat untuk satu kali proses. Coba lagi, pakai model "flash", atau kurangi jumlah pertemuan.'+(m?' Detail: '+m:''));
+    if(res.status===401){ forceLogin('Sesi berakhir, silakan masuk lagi.'); throw E('Sesi login berakhir. Masuk lagi lalu coba kembali.'); }
     if(res.status===429) throw E('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi'+(KEY_SLOT!=='auto'?', atau pilih API KEY lain.':'.')+(m?' Detail: '+m:''));
     throw E(m||('HTTP '+res.status));
   }
@@ -2469,7 +2506,7 @@ async function askRaw(contents,maxTok){
 
 /* ---- hasil panjang / terputus: simpan sebagian, lanjutkan (boleh dengan API key lain) ---- */
 const CONT_PROMPT='Lanjutkan dokumen di atas tepat dari titik terakhir. Jangan mengulang bagian yang sudah ditulis, jangan memberi kalimat pembuka atau penutup, dan pertahankan format yang sama. Teruskan dari karakter terakhir.';
-const MAX_CONT=8, CHUNK_TOKENS=8192, MIN_CHUNK=2048;   // dokumen dikerjakan per potongan ~8 ribu token
+const MAX_CONT=16, CHUNK_TOKENS=8192, MIN_CHUNK=1024;   // dokumen dikerjakan per potongan ~8 ribu token
 const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
 let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='', RECOMPOSE=null;   // RECOMPOSE = id projek yang sedang akan disusun ulang
 function draftSave(key,prompt,text){
@@ -2482,7 +2519,7 @@ async function ask(prompt,key){
   if(DONE[key]!=null) return DONE[key];            // bagian yang sudah jadi tidak diminta ulang
   let base=prompt, acc='';
   if(DRAFT&&DRAFT.key===key){ base=DRAFT.prompt; acc=DRAFT.text; }
-  let chunk=CHUNK_TOKENS, retry=0;
+  let chunk=CHUNK_TOKENS, retry=0, thinkFix=0;
   for(let round=0;round<=MAX_CONT;round++){
     const contents=[{role:'user',parts:[{text:base}]}];
     if(acc) contents.push({role:'model',parts:[{text:acc}]},{role:'user',parts:[{text:CONT_PROMPT}]});
@@ -2492,10 +2529,15 @@ async function ask(prompt,key){
     catch(e){
       if(e.text) acc+=e.text;
       if(acc) draftSave(key,base,acc);
-      if([546,504,502,408].includes(e.status) && retry<3 && chunk>MIN_CHUNK){   // server kewalahan: perkecil potongan, coba lagi otomatis
+      /* parameter berpikir ditolak model ini (400): turunkan ke bentuk lama, lalu matikan */
+      if(e.status===400 && THINK_CFG && thinkFix<2 && /think/i.test(e.message||'')){
+        thinkFix++; THINK_CFG=THINK_CFG.thinkingLevel?{thinkingBudget:1024}:null; round--; continue;
+      }
+      if([546,504,502,408].includes(e.status) && retry<4){   // server kewalahan: batasi berpikir, perkecil potongan, tunggu sebentar, coba lagi otomatis
         retry++; chunk=Math.max(MIN_CHUNK,Math.floor(chunk/2)); round--;
-        setStatus('Server AI kewalahan, mencoba lagi dengan potongan lebih kecil ('+chunk+' token)…');
-        await new Promise(res=>setTimeout(res,1500));
+        if(!THINK_CFG && thinkFix===0) THINK_CFG={thinkingLevel:'low'};
+        setStatus('Server AI kewalahan, mencoba lagi dengan potongan lebih kecil ('+chunk+' token), percobaan '+retry+'/4…');
+        await new Promise(res=>setTimeout(res,1500*retry*retry));
         continue;
       }
       if(acc) e.partial=acc;
@@ -2965,13 +3007,99 @@ $('lampword').addEventListener('click',()=>{
 /* ================= SUPABASE ================= */
 const SB_DST={url:'https://jvunlziapbmvxmrrnphd.supabase.co/rest/v1',key:'sb_publishable_g0I7fYBQnCwIrbzub-3FYA_cZXlH6Im'};
 const SB_DEF={tOut:'rpm_hasil',auto:true};
-// kunci "publishable" bukan JWT: kirim lewat header apikey saja
+/* ================= LOGIN (akun E-Rapor) & SESI ================= */
+/* Browser memanggil Edge Function login-guru (memeriksa email+sandi ke E-Rapor), lalu login biasa ke Auth project ini
+   untuk mendapat sesi. Semua permintaan data membawa token sesi; RLS di database membatasi data per akun. */
+const AUTH_KEY='rpm_auth', authBase=()=>SB_DST.url.replace(/\/rest\/v1$/,'');
+let SESS=null, REFRESHING=null;
+try{ SESS=JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){ SESS=null; }
+function sessSave(){ try{ if(SESS) localStorage.setItem(AUTH_KEY,JSON.stringify(SESS)); else localStorage.removeItem(AUTH_KEY); }catch(e){} }
+function applyTokens(d){
+  const am=(d.user&&d.user.app_metadata)||{};
+  SESS=Object.assign({},SESS||{},{access_token:d.access_token,refresh_token:d.refresh_token,expires_at:Date.now()+(d.expires_in||3600)*1000});
+  if(d.user){ SESS.uid=d.user.id; SESS.email=d.user.email; if(am.nama_guru) SESS.nama=am.nama_guru; SESS.is_admin=!!am.is_admin; }
+  sessSave();
+}
+function sessRefresh(){
+  if(!SESS||!SESS.refresh_token) return Promise.resolve(false);
+  if(REFRESHING) return REFRESHING;
+  REFRESHING=(async()=>{
+    try{
+      const res=await fetch(authBase()+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB_DST.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:SESS.refresh_token})});
+      if(!res.ok) return res.status>=500?'net':false;
+      applyTokens(await res.json()); return true;
+    }catch(e){ return 'net'; }
+    finally{ REFRESHING=null; }
+  })();
+  return REFRESHING;
+}
+async function authToken(){
+  if(!SESS) return null;
+  if(SESS.expires_at-Date.now()<60000){ const r=await sessRefresh(); if(r===false){ forceLogin('Sesi berakhir, silakan masuk lagi.'); return null; } }
+  return (SESS&&SESS.access_token)||null;
+}
+async function authH(extra){
+  const h=Object.assign({apikey:SB_DST.key},extra||{}), t=await authToken();
+  if(t) h.Authorization='Bearer '+t;
+  return h;
+}
+function clearLocalUserData(){
+  try{ localStorage.removeItem('rpm_draft'); Object.keys(localStorage).filter(k=>k.indexOf('rpm_pg:')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+}
+function forceLogin(msg){
+  SESS=null; sessSave(); document.documentElement.removeAttribute('data-auth');
+  const e=document.getElementById('lgerr'); if(e) e.textContent=msg||'';
+  const b=document.getElementById('lgbtn'); if(b){ b.disabled=false; b.textContent='Masuk'; }
+}
+async function doLogin(email,password){
+  const base=authBase();
+  let r, d={};
+  try{
+    r=await fetch(base+'/functions/v1/login-guru',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify({email,password})});
+    d=await r.json().catch(()=>({}));
+  }catch(e){ throw new Error('Tidak bisa terhubung ke server. Periksa koneksi internet.'); }
+  if(r.status===404) throw new Error('Edge Function login-guru belum di-deploy di Supabase.');
+  if(!r.ok||!d.ok) throw new Error((d&&(typeof d.error==='string'?d.error:(d.error&&d.error.message)))||('Gagal masuk (HTTP '+r.status+').'));
+  let t, td={};
+  try{
+    t=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB_DST.key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    td=await t.json().catch(()=>({}));
+  }catch(e){ throw new Error('Tidak bisa terhubung ke server. Periksa koneksi internet.'); }
+  if(!t.ok) throw new Error(td.error_description||td.msg||td.message||'Gagal membuat sesi login.');
+  SESS=null; applyTokens(td); SESS.nama=d.nama||SESS.nama; SESS.is_admin=!!d.is_admin; sessSave();
+  try{ const prev=localStorage.getItem('rpm_uid'); if(prev&&prev!==SESS.uid) clearLocalUserData(); localStorage.setItem('rpm_uid',SESS.uid); }catch(e){}
+}
+document.getElementById('lgform').addEventListener('submit',async ev=>{
+  ev.preventDefault();
+  const b=document.getElementById('lgbtn'), er=document.getElementById('lgerr');
+  er.textContent=''; b.disabled=true; b.textContent='Memeriksa…';
+  try{ await doLogin(document.getElementById('lgemail').value.trim(),document.getElementById('lgpw').value); location.reload(); }
+  catch(e){ er.textContent=e.message||String(e); b.disabled=false; b.textContent='Masuk'; }
+});
+document.getElementById('logoutbtn').addEventListener('click',async ()=>{
+  if(!confirm('Keluar dari akun ini?')) return;
+  try{ if(SESS&&SESS.access_token) await fetch(authBase()+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_DST.key,Authorization:'Bearer '+SESS.access_token}}); }catch(e){}
+  clearLocalUserData(); SESS=null; sessSave(); location.reload();
+});
+if(SESS&&SESS.refresh_token){
+  document.getElementById('whonama').textContent=SESS.nama||SESS.email||'';
+  document.getElementById('whoami').hidden=false;
+  document.getElementById('admopen').hidden=!SESS.is_admin;
+}else{ document.documentElement.removeAttribute('data-auth'); }
+
 async function sb(cfg,path,opt={}){
+  const h=await authH(Object.assign({'Content-Type':'application/json'},opt.headers||{}));
+  if(!SESS) throw Object.assign(new Error('Belum login. Silakan masuk.'),{status:401});
   const res=await fetch(cfg.url+path,{
     method:opt.method||'GET',
-    headers:Object.assign({apikey:cfg.key,'Content-Type':'application/json'},opt.headers||{}),
+    headers:h,
     body:opt.body!==undefined?JSON.stringify(opt.body):undefined
   });
+  if(res.status===401&&!opt._retry&&SESS){
+    const r=await sessRefresh();
+    if(r===true) return sb(cfg,path,Object.assign({},opt,{_retry:1}));
+    if(r===false) forceLogin('Sesi berakhir, silakan masuk lagi.');
+  }
   const txt=await res.text(); let data=null;
   try{ data=txt?JSON.parse(txt):null; }catch(e){ data=txt; }
   if(!res.ok){
@@ -3291,6 +3419,7 @@ const hashPw=async s=>{ try{ const b=await crypto.subtle.digest('SHA-256',new Te
 function admShow(){ $('admgate').hidden=true; $('admbody').hidden=false; try{ $('a_synctoken').value=sessionStorage.getItem('rpm_synctoken')||''; }catch(e){} admTab('sync'); }
 function openAdm(){
   $('adm').hidden=false; $('admgateerr').textContent='';
+  if(SESS&&SESS.is_admin){ try{ sessionStorage.setItem('rpm_adm','1'); }catch(e){} admShow(); return; }
   if(sessionStorage.getItem('rpm_adm')==='1'){ admShow(); return; }
   $('admgate').hidden=false; $('admbody').hidden=true; $('admpw').value='';
   const has=!!localStorage.getItem(PW_KEY);
@@ -3399,7 +3528,7 @@ const FN_URL=()=>SB_DST.url.replace(/\/rest\/v1$/,'')+'/functions/v1/sync-guru';
 async function callSync(payload){
   const token=$('a_synctoken').value.trim()||sessionStorage.getItem('rpm_synctoken')||'';
   if(!token) throw new Error('Isi token sinkron dulu.');
-  const res=await fetch(FN_URL(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify(Object.assign({token},payload))});
+  const res=await fetch(FN_URL(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),body:JSON.stringify(Object.assign({token},payload))});
   const txt=await res.text(); let d=null; try{ d=txt?JSON.parse(txt):null; }catch(e){}
   if(res.status===404) throw new Error('Edge Function sync-guru belum di-deploy di Supabase tujuan.');
   if(res.status===401&&!(d&&d.error)) throw new Error('Edge Function menolak permintaan. Matikan "Verify JWT" pada function sync-guru.');
@@ -3518,7 +3647,7 @@ function stErr(e){
 }
 async function stReq(method,path,body,headers){
   const go=async auth=>{
-    const h=Object.assign({apikey:SB_DST.key},headers||{}); if(auth) h.Authorization='Bearer '+SB_DST.key;
+    const h=await authH(headers||{}); if(!h.Authorization&&auth) h.Authorization='Bearer '+SB_DST.key;
     const res=await fetch(stBase()+path,{method,headers:h,body}); const t=await res.text(); let d=null;
     try{ d=t?JSON.parse(t):null; }catch(e){ d=t; } return {res,d};
   };
@@ -3881,7 +4010,12 @@ setInterval(()=>{ try{ pageSync(); }catch(e){} },400);   // ikut berganti saat p
 })();
 
 loadKertas(); loadSigKepsek(); loadSekolah(); loadMinggu();
-loadSource();
+loadSource().then(()=>{
+  if(!SESS||!SESS.nama) return;
+  $('guru').value=SESS.nama;
+  if(!SESS.is_admin){ $('guru').readOnly=true; $('guru').title='Nama guru mengikuti akun yang masuk.'; $('guru').removeAttribute('list'); }
+  ['input','change'].forEach(t=>$('guru').dispatchEvent(new Event(t,{bubbles:true})));
+});
 </script>
 <script>
 /* ===== MODUL ATP (Alur Tujuan Pembelajaran) – memakai ulang mesin RPM: gemini-proxy, pilih API key, pemuat, kop, tanda tangan, Word/PDF ===== */
