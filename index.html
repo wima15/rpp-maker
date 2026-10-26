@@ -2588,6 +2588,7 @@ async function askRaw(contents,maxTok){
   if(!res.ok){
     const m=(data&&((data.error&&data.error.message)||data.message||(typeof data.error==='string'?data.error:'')))||'';
     const E=msg=>Object.assign(new Error(msg),{status:res.status});
+    if(res.status===503) throw E('Server Gemini sedang sibuk (kode 503). Sudah dicoba model lain, tetap penuh. Tunggu sebentar lalu coba lagi, atau pilih model flash.'+(m?' Detail: '+m:''));
     if([546,504,502,408].includes(res.status)) throw E('Server AI kehabisan waktu atau sumber daya (kode '+res.status+'). Permintaan terlalu berat untuk satu kali proses. Coba lagi, pakai model "flash", atau kurangi jumlah pertemuan.'+(m?' Detail: '+m:''));
     if(res.status===401){ forceLogin('Sesi berakhir, silakan masuk lagi.'); throw E('Sesi login berakhir. Masuk lagi lalu coba kembali.'); }
     if(res.status===429) throw E('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi'+(KEY_SLOT!=='auto'?', atau pilih API KEY lain.':'.')+(m?' Detail: '+m:''));
@@ -2635,11 +2636,11 @@ async function ask(prompt,key){
       if(e.cut && acc && cutN<3){
         cutN++; round--; setStatus('Aliran terputus, melanjutkan otomatis dari titik terakhir ('+cutN+'/3)…'); continue;
       }
-      if([546,504,502,408].includes(e.status) && retry<(e.status===546?Math.max(RETRY_546,AUTO_RETRY):AUTO_RETRY)){   // server kewalahan: batasi berpikir, perkecil potongan, tunggu sebentar, coba lagi otomatis
+      if([546,504,503,502,408].includes(e.status) && retry<(e.status===546?Math.max(RETRY_546,AUTO_RETRY):(e.status===503?2:AUTO_RETRY))){   // server kewalahan: batasi berpikir, perkecil potongan, tunggu sebentar, coba lagi otomatis
         retry++; chunk=Math.max(MIN_CHUNK,Math.floor(chunk/2)); round--;
         if(!THINK_CFG && thinkFix===0) THINK_CFG={thinkingLevel:'low'};
         setStatus('Server AI kewalahan, mencoba lagi dengan potongan lebih kecil ('+chunk+' token), percobaan '+retry+'/'+(e.status===546?Math.max(RETRY_546,AUTO_RETRY):AUTO_RETRY)+'…');
-        if(e.status!==546) await new Promise(res=>setTimeout(res,1500*retry*retry));
+        if(e.status!==546) await new Promise(res=>setTimeout(res,(e.status===503?3000:1500)*retry*retry));
         continue;
       }
       if(acc) e.partial=acc;

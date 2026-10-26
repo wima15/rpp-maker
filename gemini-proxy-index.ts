@@ -86,7 +86,7 @@ function corsFor(origin: string | null) {
     "Vary": "Origin",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Expose-Headers": "x-key-used, x-provider",
+    "Access-Control-Expose-Headers": "x-key-used, x-provider, x-model-used",
   };
 }
 
@@ -459,7 +459,8 @@ Deno.serve(async (req: Request) => {
       const text = await res.text();
       if (!res.ok) console.log(JSON.stringify({ ev: "gemini_error", status: res.status, model, key: i + 1, msg: pesanDari(text) }));
       // server Gemini sibuk/error (5xx): bila ada cadangan Groq, berhenti memutar key Gemini
-      if (!slot && res.status >= 500 && GROQ_KEYS.length) {
+      // 503 = model Gemini kelebihan beban (bukan salah key): jangan teruskan mentah, coba model lain / cadangan di bawah
+      if (res.status >= 500 && (res.status === 503 || (!slot && GROQ_KEYS.length))) {
         alasan.push(`key ${i + 1}: ${res.status}`);
         terakhir = { status: res.status, text };
         break;
@@ -480,6 +481,35 @@ Deno.serve(async (req: Request) => {
         ? { status: 504, text: JSON.stringify({ error: { message: "Gemini terlalu lama menjawab (potongan terlalu besar atau model sedang lambat)." } }) }
         : { status: 502, text: JSON.stringify({ error: { message: String(e) } }) };
       if (habis) break;   // sisa waktu tidak cukup untuk key lain; langsung ke cadangan Groq / minta browser mengulang dengan potongan lebih kecil
+    }
+  }
+
+  // model kelebihan beban (503): coba model Gemini lain yang diizinkan admin (flash dulu) sebelum cadangan Groq
+  if (!stream && terakhir && terakhir.status === 503) {
+    const alt = cfg.ids.filter((m) => m !== model)
+      .sort((a, b) => Number(/flash/.test(b)) - Number(/flash/.test(a))).slice(0, 2);
+    for (const m of alt) {
+      const sisa = BATAS_TOTAL_MS - (Date.now() - t0);
+      if (sisa < 20_000) break;
+      let lanjutModel = false;
+      for (const i of urutan.slice(0, 2)) {
+        try {
+          const r2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": API_KEYS[i] },
+            body: payload,
+            signal: AbortSignal.timeout(sisa),
+          });
+          const tx = await r2.text();
+          if (r2.ok) {
+            console.log(JSON.stringify({ ev: "model_fallback", dari: model, ke: m, key: i + 1 }));
+            return new Response(tx, { status: 200, headers: { "Content-Type": "application/json", "x-key-used": String(i + 1), "x-model-used": m, ...corsFor(origin) } });
+          }
+          if (r2.status === 503 || r2.status >= 500) { lanjutModel = true; break; }   // model ini juga sibuk: model berikutnya
+          if (!gagalKarenaKey(r2.status, tx)) { lanjutModel = true; break; }            // mis. 400 (parameter tak cocok di model ini)
+        } catch { lanjutModel = true; break; }
+      }
+      if (lanjutModel) continue;
     }
   }
 
