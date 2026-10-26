@@ -901,9 +901,10 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
         <div><label for="mr">Kanan (mm)</label><input id="mr" type="number" min="0" max="60" step="any" value="25.4"></div>
       </div>
     </div>
-    <p class="hint">Berlaku untuk pratinjau, cetak/PDF, dan file Word. Saat mencetak, pilih margin "Default" di dialog cetak browser.</p>
-    <button type="button" class="ghost sm" id="saveKertas">Simpan pengaturan kertas ke database</button>
-    <p class="hint" id="pgmsg">Berlaku untuk semua guru dan dimuat otomatis saat halaman dibuka.</p>
+    <p class="hint">Berlaku untuk pratinjau, cetak/PDF, dan file Word, hanya untuk proyek yang sedang dibuka. Saat mencetak, pilih margin "Default" di dialog cetak browser.</p>
+    <button type="button" class="ghost sm" id="saveKertas">Simpan pengaturan kertas proyek ini</button>
+    <button type="button" class="ghost sm" id="saveKertasDef" title="Dipakai proyek baru yang belum punya pengaturan sendiri">Jadikan default proyek baru</button>
+    <p class="hint" id="pgmsg">Pengaturan kertas hanya mempengaruhi proyek yang mengaturnya. Proyek baru memakai pengaturan default.</p>
   </fieldset>
 
   <fieldset>
@@ -1868,17 +1869,79 @@ function applyPage(){
   let st=$('pagestyle');
   if(!st){ st=document.createElement('style'); st.id='pagestyle'; document.head.appendChild(st); }
   st.textContent=`@page{size:${w}mm ${h}mm;margin:${m[0]}mm ${m[1]}mm ${m[2]}mm ${m[3]}mm}`;
-  try{ localStorage.setItem('rpm_page',JSON.stringify(PAGE_IDS.map(i=>$(i).value))); }catch(e){}
 }
 function wordPage(){
+  try{ pageSync(); }catch(e){}
   const {w,h,m,land}=pageCfg();
   return `@page Section1{size:${w}mm ${h}mm;margin:${m[0]}mm ${m[1]}mm ${m[2]}mm ${m[3]}mm;mso-page-orientation:${land?'landscape':'portrait'}}div.Section1{page:Section1}`;
 }
-try{
-  const sv=JSON.parse(localStorage.getItem('rpm_page')||'null');
-  if(Array.isArray(sv)) PAGE_IDS.forEach((id,i)=>{ if(sv[i]!=null) $(id).value=sv[i]; });
-}catch(e){}
-PAGE_IDS.forEach(id=>{ $(id).addEventListener('input',applyPage); $(id).addEventListener('change',applyPage); });
+/* ===== pengaturan kertas PER PROYEK =====
+   Tiap proyek (RPM+LKPD+asesmen+lampiran, ATP, atau Prota+Prosem) punya pengaturan kertas sendiri.
+   Kunci: rpm:h<id> / atp:h<id> / pp:h<id> untuk yang sudah tersimpan di database; kunci sementara untuk yang belum.
+   Proyek tanpa pengaturan sendiri memakai default (baris 'kertas' di pengaturan_rpm, atau A4 normal). */
+const PAGE_DEF_BUILTIN={paper:'210,297',orient:'p',mpre:'25.4,25.4,25.4,25.4',mt:'25.4',mr:'25.4',mb:'25.4',ml:'25.4'};
+let PAGE_DEF=Object.assign({},PAGE_DEF_BUILTIN), PAGE_KEYNOW=null, PAGE_LOADING=false;
+const PAGE_MEM={}, PAGE_NEG=new Set(), PAGE_TMR={};
+const pageStable=k=>/^(rpm|atp|pp):h[\w-]+$/.test(k||'');
+function pageRead(){ const o={}; PAGE_IDS.forEach(id=>{ o[id]=$(id).value; }); return o; }
+function pageWrite(o){
+  PAGE_IDS.forEach(id=>{
+    const el=$(id), v=o[id]; if(v==null) return;
+    if(el.tagName==='SELECT'&&![...el.options].some(x=>x.value===String(v))) return;
+    el.value=v;
+  });
+}
+function pageKey(){
+  try{
+    const vis=n=>{ const e=$('view-'+n); return !!e&&!e.hidden; };
+    if(vis('atp')||vis('atpsaved')) return window.atpPageKey?window.atpPageKey():'atp:baru';
+    if(vis('prota')) return window.ppPageKey?window.ppPageKey():'pp:baru';
+    return 'rpm:'+(curId?'h'+curId:(PROJ||'baru'));
+  }catch(e){ return 'rpm:baru'; }
+}
+function pageGet(k){
+  if(PAGE_MEM[k]) return PAGE_MEM[k];
+  try{ const o=JSON.parse(localStorage.getItem('rpm_pg:'+k)||'null'); if(o&&typeof o==='object'){ PAGE_MEM[k]=o; return o; } }catch(e){}
+  return null;
+}
+function pageSet(k,o,noDb){
+  if(!k) return;
+  if(!o){ delete PAGE_MEM[k]; try{ localStorage.removeItem('rpm_pg:'+k); }catch(e){} return; }
+  PAGE_MEM[k]=o; PAGE_NEG.delete(k);
+  try{ localStorage.setItem('rpm_pg:'+k,JSON.stringify(o)); }catch(e){}
+  if(!noDb&&pageStable(k)){ clearTimeout(PAGE_TMR[k]); PAGE_TMR[k]=setTimeout(()=>{ pageDbSave(k).catch(()=>{}); },1200); }
+}
+/* proyek yang tadinya belum tersimpan kini punya id database: bawa pengaturannya */
+function pageCopy(a,b){ if(!a||!b||a===b) return; const o=pageGet(a); if(o) pageSet(b,Object.assign({},o)); }
+async function pageDbSave(k){
+  const o=PAGE_MEM[k]; if(!o) return;
+  await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'kertas:'+k,nilai:o,updated_at:new Date().toISOString()}});
+}
+async function pageFetch(k){
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.'+encodeURIComponent('kertas:'+k)+'&select=nilai&limit=1');
+    const n=r&&r[0]&&r[0].nilai;
+    if(n&&typeof n==='object'){ pageSet(k,n,true); if(k===PAGE_KEYNOW) pageSync(true); }
+    else PAGE_NEG.add(k);
+  }catch(e){ PAGE_NEG.add(k); }
+}
+/* samakan form pengaturan dengan proyek yang sedang terbuka */
+function pageSync(force){
+  const k=pageKey();
+  if(!force&&k===PAGE_KEYNOW) return;
+  PAGE_KEYNOW=k;
+  const o=pageGet(k);
+  PAGE_LOADING=true; pageWrite(Object.assign({},PAGE_DEF_BUILTIN,o||PAGE_DEF)); PAGE_LOADING=false;
+  applyPage();
+  if(!o&&pageStable(k)&&!PAGE_NEG.has(k)&&!force) pageFetch(k);
+}
+function onPageInput(){
+  if(PAGE_LOADING) return;
+  pageSync(); applyPage();
+  pageSet(PAGE_KEYNOW,pageRead());
+}
+PAGE_IDS.forEach(id=>{ $(id).addEventListener('input',onPageInput); $(id).addEventListener('change',onPageInput); });
+window.addEventListener('beforeprint',()=>{ try{ pageSync(); applyPage(); }catch(e){} });
 applyPage();
 
 const sigImg=[null,null], sigStored=[false,false];
@@ -2317,7 +2380,7 @@ async function pickKey(aksi,keep){
       const r=list.querySelector('input:checked'); KEY_SLOT=r?r.value:'auto';
       try{ localStorage.setItem('rpm_keyslot',KEY_SLOT); }catch(e){}
       usageLog(aksi); LAST_AKSI=aksi;
-      if(RESUMING){ RESUMED=true; RESUMING=false; } else { RESUMED=false; DONE={}; draftClear(); if((aksi==='RPM'&&!keep)||!PROJ) PROJ=newProj(); }
+      if(RESUMING){ RESUMED=true; RESUMING=false; } else { RESUMED=false; DONE={}; draftClear(); if((aksi==='RPM'&&!keep)||!PROJ){ const prev=PROJ; PROJ=newProj(); if(!prev&&!curId){ pageCopy('rpm:baru','rpm:'+PROJ); pageSet('rpm:baru',null); } } }
       hideResume(); hideCloudDraft();
       done(true);
     };
@@ -3008,7 +3071,7 @@ async function saveDb(auto,prefix,skipAses,skipLamp){
       const r=await sb(SB_DST,`/${tbl}`,{method:'POST',headers:{Prefer:'return=representation'},body});
       row=r&&r[0];
     }
-    if(row&&row.id) curId=row.id;
+    if(row&&row.id){ const k0=pageKey(); curId=row.id; pageCopy(k0,pageKey()); }
     purgeImgs(oldImg,htmlCols.map(k=>body[k]).join(' '));
     setDirty(false);
     if(skipAses){ setStatus(pre+'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.',true); notify(false,'RPM dan LKPD tersimpan, tetapi asesmen belum tersimpan: kolom asesmen_html belum ada di database. Jalankan tambah-kolom-asesmen.sql di Supabase.'); }
@@ -3108,7 +3171,7 @@ function closeProject(){
   }
   setEdit(false); setDirty(false);
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
-  $('empty').hidden=false; lastText=''; curId=null; PROJ=null; RECOMPOSE=null; hideResume(); cdSoon();
+  $('empty').hidden=false; lastText=''; curId=null; PROJ=null; RECOMPOSE=null; pageSet('rpm:baru',null); hideResume(); cdSoon();
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
   $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('menitjp').value='45'; $('jptotal').value=''; $('jpbagi').value=''; syncAtpBox(); $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
@@ -3482,11 +3545,20 @@ document.querySelectorAll('[data-sigdel]').forEach(b=>b.addEventListener('click'
 
 async function saveKertas(){
   const nilai={}; PAGE_IDS.forEach(id=>{ nilai[id]=$(id).value; });
-  const b=$('saveKertas'); b.disabled=true; msg('pgmsg','Menyimpan…');
+  const b=$('saveKertasDef'); b.disabled=true; msg('pgmsg','Menyimpan…');
   try{
     await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'kertas',nilai,updated_at:new Date().toISOString()}});
-    msg('pgmsg','Pengaturan kertas tersimpan di database dan akan dimuat otomatis.');
+    PAGE_DEF=Object.assign({},PAGE_DEF_BUILTIN,nilai);
+    msg('pgmsg','Disimpan sebagai default untuk proyek baru. Proyek yang sudah punya pengaturan sendiri tidak berubah.');
   }catch(e){ msg('pgmsg','Gagal menyimpan pengaturan kertas: '+tblErr(e,'pengaturan_rpm'),true); }
+  finally{ b.disabled=false; }
+}
+async function saveKertasProyek(){
+  pageSync(); const k=PAGE_KEYNOW; pageSet(k,pageRead(),true);
+  if(!pageStable(k)){ msg('pgmsg','Pengaturan kertas tersimpan untuk proyek ini dan ikut masuk database saat proyek disimpan.'); return; }
+  const b=$('saveKertas'); b.disabled=true; msg('pgmsg','Menyimpan…');
+  try{ await pageDbSave(k); msg('pgmsg','Pengaturan kertas tersimpan untuk proyek ini saja.'); }
+  catch(e){ msg('pgmsg','Gagal menyimpan pengaturan kertas: '+tblErr(e,'pengaturan_rpm'),true); }
   finally{ b.disabled=false; }
 }
 function showSchool(){
@@ -3538,6 +3610,7 @@ $('kepsekreload').addEventListener('click',reloadKepsek);
 (function(){
   const fs=$('pagefs'), modal=$('pgmodal'), body=$('pgmbody'); let home=null, nxt=null;
   function open(){
+    try{ pageSync(); }catch(e){}
     home=fs.parentNode; nxt=fs.nextSibling; body.appendChild(fs);
     modal.hidden=false;
   }
@@ -3706,15 +3779,18 @@ async function loadKertas(){
   try{
     const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.kertas&select=nilai&limit=1');
     const n=r&&r[0]&&r[0].nilai; if(!n) return;
+    const d={};
     PAGE_IDS.forEach(id=>{
       const el=$(id), v=n[id]; if(v==null) return;
       if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===String(v))) return;
-      el.value=v;
+      d[id]=v;
     });
-    applyPage(); msg('pgmsg','Pengaturan kertas dimuat dari database.');
+    PAGE_DEF=Object.assign({},PAGE_DEF_BUILTIN,d); pageSync(true);
   }catch(e){}
 }
-$('saveKertas').addEventListener('click',saveKertas);
+$('saveKertas').addEventListener('click',saveKertasProyek);
+$('saveKertasDef').addEventListener('click',()=>{ pageSync(); saveKertas(); });
+setInterval(()=>{ try{ pageSync(); }catch(e){} },400);   // ikut berganti saat pindah proyek / menu
 
 /* ---- mata pelajaran: dropdown + pencarian ---- */
 (function(){
@@ -3787,7 +3863,8 @@ loadSource();
 /* ===== MODUL ATP (Alur Tujuan Pembelajaran) – memakai ulang mesin RPM: gemini-proxy, pilih API key, pemuat, kop, tanda tangan, Word/PDF ===== */
 (function(){
 const CP_DEF={'bahasa inggris|E':'Pada akhir Fase E, peserta didik menggunakan teks lisan, tulisan, dan visual (multimodal) dalam bahasa Inggris untuk berkomunikasi sesuai situasi, tujuan, dan pemirsa/pembacanya (setara CEFR B1, sekitar 3.000 kata berfrekuensi tinggi). Menyimak–Berbicara: memahami alur informasi, gagasan utama, dan detail teks lisan fiksi dan nonfiksi tentang topik sehari-hari atau isu terkini; mengungkapkan pendapat dan mempertahankan argumen secara lisan. Membaca–Memirsa: memahami alur informasi, menganalisis, dan menyimpulkan informasi tersurat dan tersirat dari berbagai teks fiksi dan nonfiksi, tulis maupun multimodal. Menulis–Mempresentasikan: mengomunikasikan gagasan dan pengalaman secara tertulis atau multimodal dengan struktur teks dan unsur kebahasaan yang tepat, memakai media cetak atau digital, serta mengungkapkan dan mempertahankan argumen secara tertulis.'};
-let atpText='', atpId=null, atpEdit=false, lastAuto='';
+let atpText='', atpId=null, atpEdit=false, lastAuto='', atpTok='t'+Date.now().toString(36);
+const atpPK=()=>atpId?'atp:h'+atpId:'atp:'+atpTok; window.atpPageKey=atpPK;   // kunci pengaturan kertas proyek ATP
 
 /* overlay bersama dipindah ke body supaya tetap tampil walau menu Buat RPP tersembunyi */
 ['keyov','lovl','resov','loader'].forEach(id=>{ const e=$(id); if(e) document.body.appendChild(e); });
@@ -3900,7 +3977,7 @@ async function atpGenerate(){
   try{
     liveSet($('atpdoc'),'','atp'); $('atpempty').hidden=true;
     atpText=await ask(buildAtp(),'ATP');
-    render(atpText); setEditAtp(false); atpId=null; JOB_OK=true;
+    render(atpText); setEditAtp(false); { const k0=atpPK(); atpId=null; pageCopy(k0,atpPK()); } JOB_OK=true;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
@@ -3916,7 +3993,7 @@ $('atpregen').addEventListener('click',atpGenerate);
 $('atpcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText($('atpdoc').innerText); setStatus('Teks disalin.'); }catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
 $('atpclear').addEventListener('click',()=>{
   if(!confirm('Kosongkan ATP di layar? ATP yang sudah tersimpan di database tidak terhapus.')) return;
-  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus('');
+  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; atpTok='t'+Date.now().toString(36); setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus('');
 });
 
 /* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
@@ -3946,7 +4023,7 @@ async function atpSave(auto){
     let row=null;
     if(atpId){ const r=await sb(SB_DST,`/atp_hasil?id=eq.${atpId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
     if(!row){ const r=await sb(SB_DST,'/atp_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
-    if(row&&row.id) atpId=row.id;
+    if(row&&row.id){ const k0=atpPK(); atpId=row.id; pageCopy(k0,atpPK()); }
     purgeImgs(oldImg,c.innerHTML);
     $('atpsave').textContent='Simpan ke database'; setStatus('Tersimpan ke database.');
     if(!auto||$('resov').classList.contains('on')) notify(true,'ATP tersimpan ke database.');
@@ -4008,7 +4085,8 @@ const tx=e=>(e.textContent||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim(
 const num=s=>{ const m=/\d+/.exec(s||''); return m?parseInt(m[0],10):0; };
 const bersih=t=>String(t||'').replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
 const E=s=>esc(String(s==null?'':s));
-let CUR=null, META=null, ppId=null, ppEdit=false, ppTab='prota', HAVE={};
+let CUR=null, META=null, ppId=null, ppEdit=false, ppTab='prota', HAVE={}, ppTok='t'+Date.now().toString(36);
+const ppPK=()=>ppId?'pp:h'+ppId:'pp:'+ppTok; window.ppPageKey=ppPK;   // kunci pengaturan kertas proyek Prota/Prosem
 
 function st(t,err){ const e=$('ppstatus'); e.textContent=t||''; e.className='status'+(err?' err':''); }
 
@@ -4255,7 +4333,7 @@ async function generate(){
         `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif, alasannya tertulis di dalam kolom), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
     fillLogos(d);
-    ppId=null; setEditPp(false);
+    { const k0=ppPK(); ppId=null; pageCopy(k0,ppPK()); } setEditPp(false);
     shown(items,{nama_guru:r.nama_guru,mata_pelajaran:r.mata_pelajaran,fase:r.fase,tahun_ajaran:r.tahun_ajaran,atp_id:r.id,jp_per_minggu:jpw,minggu_ganjil:Wk.Ganjil,minggu_genap:Wk.Genap});
     st(warn.length?warn.join(' '):'Selesai. Pilih tab Prota atau Prosem untuk melihat tiap dokumen. Tekan Edit bila ingin menyunting.',warn.length>0);
     d.scrollIntoView({behavior:'smooth',block:'start'});
@@ -4330,7 +4408,7 @@ $('ppprint').addEventListener('click',()=>{
 window.addEventListener('afterprint',()=>{ const s=$('pppage'); if(s) s.remove(); $('ppdoc').classList.remove('pp-all'); });
 $('ppclear').addEventListener('click',()=>{
   if(!confirm('Kosongkan dokumen di layar? Yang sudah tersimpan di database tidak terhapus.')) return;
-  $('ppdoc').innerHTML=''; $('ppdoc').hidden=true; $('ppempty').hidden=false; ppId=null; META=null; setEditPp(false); ACT.forEach(id=>$(id).disabled=true); $('pp_tabs').innerHTML=''; st('');
+  $('ppdoc').innerHTML=''; $('ppdoc').hidden=true; $('ppempty').hidden=false; ppId=null; ppTok='t'+Date.now().toString(36); META=null; setEditPp(false); ACT.forEach(id=>$(id).disabled=true); $('pp_tabs').innerHTML=''; st('');
 });
 
 /* ---------- simpan & dokumen tersimpan (tabel prota_prosem_hasil) ---------- */
@@ -4347,7 +4425,7 @@ async function save(){
     let row=null;
     if(ppId){ const r=await sb(SB_DST,`/prota_prosem_hasil?id=eq.${ppId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:Object.assign(body,{updated_at:new Date().toISOString()})}); row=r&&r[0]; }
     if(!row){ const r=await sb(SB_DST,'/prota_prosem_hasil',{method:'POST',headers:{Prefer:'return=representation'},body}); row=r&&r[0]; }
-    if(row&&row.id) ppId=row.id;
+    if(row&&row.id){ const k0=ppPK(); ppId=row.id; pageCopy(k0,ppPK()); }
     purgeImgs(oldImg,c.innerHTML);
     $('ppsave').textContent='Simpan ke database'; st('Tersimpan ke database.'); notify(true,'Prota dan Prosem tersimpan ke database.'); savedList();
   }catch(e){
