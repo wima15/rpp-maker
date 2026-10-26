@@ -183,6 +183,12 @@ img.usr-img.img-sel{outline:2px solid var(--accent);outline-offset:2px}
 #imgbar button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 #imgbar input[type=range]{width:90px}
 #imgdrop{position:fixed;z-index:61;width:3px;background:var(--accent);border-radius:2px;pointer-events:none;display:none}
+#atpsteps{margin:4px 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.stepbar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.stepbar span{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--muted)}
+.stepbar span.cur{border-color:var(--accent);color:var(--accent)}
+.stepbar span.done{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600}
+@media print{#atpsteps{display:none!important}}
 @media print{#imgbar,#imgdrop{display:none!important}img.usr-img{outline:none!important}}
 .resume{margin:12px 0;padding:12px 14px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#78350f}
 .resume[hidden]{display:none}
@@ -1194,6 +1200,12 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     <label for="atp_catatan">Catatan tambahan (opsional)</label>
     <textarea id="atp_catatan" rows="3" placeholder="mis. ikuti buku teks tertentu, tambah unit proyek, urutan tema"></textarea>
   </fieldset>
+  <fieldset>
+    <legend>Cara menyusun</legend>
+    <label class="inline" style="margin-top:0"><input type="radio" name="atp_mode" value="step" checked> Bertahap, 3 langkah (disarankan)</label>
+    <label class="inline"><input type="radio" name="atp_mode" value="all"> Sekaligus, satu kali proses</label>
+    <p class="hint"><b>Bertahap:</b> langkah 1 = identitas, capaian pembelajaran, dan kerangka unit beserta JP; langkah 2 = tujuan pembelajaran semester pertama (atau separuh pertama unit); langkah 3 = semester kedua (atau sisa unit) dan catatan pelaksanaan. Setiap langkah bisa diperiksa dulu, atau jalankan semua sisanya sekaligus dengan satu tombol. Beban AI lebih ringan sehingga hasil lebih jarang terpotong atau gagal. <b>Sekaligus:</b> seluruh ATP dikerjakan dalam satu proses panjang.</p>
+  </fieldset>
   <button type="submit" class="gen" id="atpgen">Susun ATP</button>
 </form>
 
@@ -1223,6 +1235,15 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     </div>
   </div>
   <div class="status" id="atpstatus"></div>
+  <div id="atpsteps" hidden>
+    <div class="stepbar"><span></span><span></span><span></span></div>
+    <p class="hint" id="atpstepmsg"></p>
+    <div class="btns">
+      <button type="button" id="atpnext">Lanjut</button>
+      <button type="button" class="ghost" id="atprest">Selesaikan semua langkah sisanya</button>
+      <button type="button" class="ghost" id="atpredo">Ulangi langkah ini</button>
+    </div>
+  </div>
   <div id="atpempty" class="empty"><strong>ATP Anda akan muncul di sini</strong>Lengkapi identitas dan CP di sebelah kiri, lalu pilih Susun ATP.</div>
   <article id="atpdoc" contenteditable="false" hidden></article>
 </section>
@@ -4225,46 +4246,58 @@ $('atp_cakupan').addEventListener('change',mggInfo);
 mggInfo();
 
 /* ---- prompt ---- */
-function buildAtp(){
+/* data & aturan dipakai bersama oleh mode Sekaligus dan mode Bertahap */
+function atpCtx(){
   const jp=parseInt(v('atp_jp'))||3, plan=mggPlan(), setahun=plan.setahun, sem=plan.sems.length, tot=jp*plan.total;
   const sumN=Math.max(0,Math.min(10,isNaN(parseInt(v('atp_sum')))?2:parseInt(v('atp_sum'))));
   const mggTxt=plan.sems.map(x=>'semester '+x[0]+' '+x[1]+' minggu efektif ('+(jp*x[1])+' JP)').join(', ');
-  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor "Asesmen Sumatif 1" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). Beri tiap pelaksanaan alokasi JP yang wajar (umumnya 1–2 JP).'):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
+  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor \"Asesmen Sumatif 1\" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). Beri tiap pelaksanaan alokasi JP yang wajar (umumnya 1–2 JP).'):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
   const cp=v('atp_cp')||'(kosong: gunakan CP resmi terbaru untuk mapel dan fase ini sesuai Keputusan Kepala BSKAP Nomor 046/H/KR/2025; bila ragu atas bunyi CP, tulis ringkasan yang setia dan beri catatan agar guru mencocokkan dengan dokumen resmi)';
-  return `Anda adalah pakar kurikulum Indonesia. Susun ALUR TUJUAN PEMBELAJARAN (ATP) yang lengkap, runtut, dan siap dipakai guru berdasarkan data berikut.
+  return {jp,plan,setahun,sem,tot,sumN,mggTxt,sumTxt,cp};
+}
+function atpData(c){
+  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}`;
+}
+const atpAturan=()=>`ATURAN:\n1. Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.`;
 
-Satuan pendidikan: ${v('sekolah')}
-Mata pelajaran: ${v('mapel')} | ${v('fase')} | Tahun ajaran ${v('tahun')}
-Cakupan: ${$('atp_cakupan').value}
-Alokasi: ${jp} JP per minggu; ${mggTxt}. Total ${tot} JP untuk cakupan ini. ${sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${tot}, dan per semester harus sesuai JP semester tersebut.
-CAPAIAN PEMBELAJARAN (CP):
-${cp}
-${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}
+/* ---- prompt mode Sekaligus ---- */
+function buildAtp(){
+  const c=atpCtx(), sumN=c.sumN;
+  return `Anda adalah pakar kurikulum Indonesia. Susun ALUR TUJUAN PEMBELAJARAN (ATP) yang lengkap, runtut, dan siap dipakai guru berdasarkan data berikut.\n\n${atpData(c)}\n\n${atpAturan()}\n\nFORMAT KELUARAN (Markdown, tanpa kalimat pembuka atau penutup):\n# ALUR TUJUAN PEMBELAJARAN (ATP)\nTabel identitas dua kolom: Satuan Pendidikan, Mata Pelajaran, Fase/Kelas, Tahun Pelajaran, Penyusun (${v('guru')}).\n## A. Capaian Pembelajaran\nRingkasan CP dalam satu paragraf, lalu tabel elemen dan capaian bila CP terbagi dalam elemen.\n## B. Gambaran Umum Alur\nTabel: Semester | Unit | Tema / Materi | JP, ditutup baris total JP.\n## C. Alur Tujuan Pembelajaran\nPer semester gunakan judul "## SEMESTER n" (tingkat dua, bukan tingkat satu) bila setahun. Untuk tiap unit: judul "### Unit n – …", satu baris tebal berisi materi, unsur kebahasaan, dan dimensi profil, lalu tabel: Kode | Elemen | Tujuan Pembelajaran | Asesmen | JP. ${sumN>0?'Baris asesmen sumatif ('+sumN+' kali per semester) ditulis sebagai baris tabel dengan JP masing-masing, sesuai penempatan di atas.':'Tanpa baris asesmen sumatif tersendiri.'}\n## D. Catatan Pelaksanaan\n3–4 butir singkat (diferensiasi, asesmen, fleksibilitas urutan).${NOTASI}`;
+}
 
-ATURAN:
-1. Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.
-2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).
-3. Setiap TP berformat "Peserta didik mampu …", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.
-4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.
-5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.
-
-FORMAT KELUARAN (Markdown, tanpa kalimat pembuka atau penutup):
-# ALUR TUJUAN PEMBELAJARAN (ATP)
-Tabel identitas dua kolom: Satuan Pendidikan, Mata Pelajaran, Fase/Kelas, Tahun Pelajaran, Penyusun (${v('guru')}).
-## A. Capaian Pembelajaran
-Ringkasan CP dalam satu paragraf, lalu tabel elemen dan capaian bila CP terbagi dalam elemen.
-## B. Gambaran Umum Alur
-Tabel: Semester | Unit | Tema / Materi | JP, ditutup baris total JP.
-## C. Alur Tujuan Pembelajaran
-Per semester gunakan judul "## SEMESTER n" (tingkat dua, bukan tingkat satu) bila setahun. Untuk tiap unit: judul "### Unit n – …", satu baris tebal berisi materi, unsur kebahasaan, dan dimensi profil, lalu tabel: Kode | Elemen | Tujuan Pembelajaran | Asesmen | JP. ${sumN>0?'Baris asesmen sumatif ('+sumN+' kali per semester) ditulis sebagai baris tabel dengan JP masing-masing, sesuai penempatan di atas.':'Tanpa baris asesmen sumatif tersendiri.'}
-## D. Catatan Pelaksanaan
-3–4 butir singkat (diferensiasi, asesmen, fleksibilitas urutan).${NOTASI}`;
+/* ---- prompt mode Bertahap: 3 langkah; tiap langkah menerima hasil langkah sebelumnya sebagai acuan ---- */
+function atpStepLabels(){
+  const p=mggPlan(), n=p.sems.map(x=>x[0]);
+  return ['Kerangka: CP dan alur unit',
+    p.setahun?'TP Semester '+n[0]:'TP separuh pertama unit',
+    p.setahun?'TP Semester '+n[1]+' dan catatan':'TP sisa unit dan catatan'];
+}
+function buildAtpStep(n,prev){
+  const c=atpCtx(), sumN=c.sumN, nm=c.plan.sems.map(x=>x[0]);
+  const intro=`Anda adalah pakar kurikulum Indonesia. Anda menyusun ALUR TUJUAN PEMBELAJARAN (ATP) secara BERTAHAP dalam 3 langkah. Sekarang mengerjakan LANGKAH ${n} dari 3. Hasil semua langkah akan digabung menjadi satu dokumen, jadi ikuti format dan penomoran dengan tepat.`;
+  const sumKal=sumN>0?'Baris asesmen sumatif ('+sumN+' kali per semester) ditulis sebagai baris tabel dengan JP masing-masing, pada posisi yang sama dengan tabel B.':'Tanpa baris asesmen sumatif tersendiri.';
+  const unitFmt=`Untuk tiap unit: judul "### Unit n – …" (nomor, judul, dan JP sama persis dengan tabel B), satu baris tebal berisi materi, unsur kebahasaan, dan dimensi profil, lalu tabel: Kode | Elemen | Tujuan Pembelajaran | Asesmen | JP. ${sumKal} Lanjutkan penomoran kode TP dari bagian yang sudah ada.`;
+  const ctx=prev?`\n\nATP YANG SUDAH TERSUSUN (acuan: JANGAN ditulis ulang; tabel B menentukan jumlah unit, judul, dan JP):\n<<<ATP\n${prev}\nATP>>>`:'';
+  let fmt;
+  if(n===1){
+    fmt=`FORMAT KELUARAN LANGKAH 1 (Markdown, tanpa kalimat pembuka atau penutup):\n# ALUR TUJUAN PEMBELAJARAN (ATP)\nTabel identitas dua kolom: Satuan Pendidikan, Mata Pelajaran, Fase/Kelas, Tahun Pelajaran, Penyusun (${v('guru')}).\n## A. Capaian Pembelajaran\nRingkasan CP dalam satu paragraf, lalu tabel elemen dan capaian bila CP terbagi dalam elemen.\n## B. Gambaran Umum Alur\nTabel: Semester | Unit | Tema / Materi | JP, ditutup baris total JP.${sumN>0?' Cantumkan juga baris asesmen sumatif ('+sumN+' kali per semester) pada posisi yang tepat beserta JP-nya, supaya total JP terhitung.':''}\nBERHENTI tepat setelah tabel B. JANGAN menulis bagian C dan D; keduanya dikerjakan pada langkah berikutnya dan akan mengikuti tabel B, jadi pastikan nomor unit, judul, dan JP di tabel B sudah final dan totalnya tepat ${c.tot} JP.`;
+  }else if(n===2){
+    fmt=c.setahun
+      ?`FORMAT KELUARAN LANGKAH 2 (Markdown, tanpa kalimat pembuka atau penutup):\n## C. Alur Tujuan Pembelajaran\n## SEMESTER ${nm[0]}\nTulis SEMUA unit semester ${nm[0]} menurut tabel B. ${unitFmt}\nBERHENTI di akhir semester ${nm[0]}. JANGAN menulis semester ${nm[1]}, bagian D, ataupun mengulang bagian A dan B.`
+      :`FORMAT KELUARAN LANGKAH 2 (Markdown, tanpa kalimat pembuka atau penutup):\n## C. Alur Tujuan Pembelajaran\nTulis hanya SEPARUH PERTAMA unit pada tabel B: dari Unit 1 sampai unit ke-(jumlah unit dibagi dua, dibulatkan ke atas). Baris asesmen sumatif yang menurut tabel B terletak di antara unit-unit itu ikut ditulis. ${unitFmt}\nBERHENTI tepat di akhir unit terakhir bagian ini. JANGAN menulis unit sesudahnya, bagian D, ataupun mengulang bagian A dan B.`;
+  }else{
+    fmt=c.setahun
+      ?`FORMAT KELUARAN LANGKAH 3 (Markdown, tanpa kalimat pembuka atau penutup):\n## SEMESTER ${nm[1]}\nTulis SEMUA unit semester ${nm[1]} menurut tabel B, melanjutkan penomoran unit dan kode TP dari semester ${nm[0]} yang sudah ada. ${unitFmt}\n## D. Catatan Pelaksanaan\n3–4 butir singkat (diferensiasi, asesmen, fleksibilitas urutan).\nJANGAN mengulang bagian A, B, semester ${nm[0]}, maupun judul "## C. Alur Tujuan Pembelajaran" (sudah ada).`
+      :`FORMAT KELUARAN LANGKAH 3 (Markdown, tanpa kalimat pembuka atau penutup):\nLanjutkan bagian C mulai dari unit pertama yang BELUM ditulis sampai unit terakhir pada tabel B (termasuk baris asesmen sumatif yang tersisa; yang terakhir di akhir semester). Jangan mengulang unit yang sudah ada dan jangan menulis ulang judul bagian C. ${unitFmt}\n## D. Catatan Pelaksanaan\n3–4 butir singkat (diferensiasi, asesmen, fleksibilitas urutan).`;
+  }
+  return `${intro}\n\n${atpData(c)}\n\n${atpAturan()}${ctx}\n\n${fmt}${NOTASI}`;
 }
 
 /* ---- tampilan hasil ---- */
 const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclear'];
-function render(t){
-  const d=$('atpdoc'); d.innerHTML=md(t)+signHTML(); styleDoc(d,'atp');
+function render(t,partial){
+  const d=$('atpdoc'); d.innerHTML=md(t)+(partial?'':signHTML()); styleDoc(d,'atp');
   const sub=['Tahun Ajaran '+v('atp_tahun'),/Satu tahun/.test($('atp_cakupan').value)?'':'Semester '+$('atp_cakupan').value].filter(Boolean).join(' · ');
   d.querySelectorAll('table.kop .sub').forEach(x=>{ x.textContent=sub; });
   d.hidden=false; $('atpempty').hidden=true; btn.forEach(id=>$(id).disabled=false);
@@ -4276,13 +4309,46 @@ function setEditAtp(on){
 $('atpdoc').addEventListener('input',()=>{ $('atpsave').textContent='Simpan perubahan'; });
 $('atpedit').addEventListener('click',()=>setEditAtp(!atpEdit));
 
+/* ---- cara menyusun: Bertahap (3 langkah) atau Sekaligus ---- */
+let atpStep=0, atpFlow='', atpParts=['','',''], atpSnap='', atpBusy=false;   // atpStep = jumlah langkah bertahap yang sudah selesai
+const atpMode=()=>{ const r=document.querySelector('input[name="atp_mode"]:checked'); return r&&r.value==='all'?'all':'step'; };
+const atpGenLabel=()=>atpMode()==='step'?'Susun ATP — langkah 1 dari 3':'Susun ATP — sekaligus';
+try{ if(localStorage.getItem('atp_mode')==='all') document.querySelector('input[name="atp_mode"][value="all"]').checked=true; }catch(e){}
+document.querySelectorAll('input[name="atp_mode"]').forEach(r=>r.addEventListener('change',()=>{ try{ localStorage.setItem('atp_mode',atpMode()); }catch(e){} if(!atpBusy) $('atpgen').textContent=atpGenLabel(); }));
+$('atpgen').textContent=atpGenLabel();
+/* isian yang menentukan isi ATP; bila berubah di tengah langkah, hasil langkah berikutnya tidak akan cocok */
+const atpSig=()=>JSON.stringify([v('atp_mapel'),v('atp_fase'),$('atp_cakupan').value,v('atp_tahun'),v('atp_jp'),v('atp_sum'),v('atp_cp'),mggPlan().total]);
+const ATP_LOAD=[
+  ['Langkah 1 dari 3: menyusun kerangka ATP…','Membaca CP dan memecahnya menjadi unit…','Menghitung alokasi JP per unit…','Hampir selesai, mohon tunggu…'],
+  ['Langkah 2 dari 3: merumuskan tujuan pembelajaran…','Menyusun TP setiap unit sesuai kerangka…','Mengaitkan dimensi profil dan asesmen…','Hampir selesai, mohon tunggu…'],
+  ['Langkah 3 dari 3: melengkapi tujuan pembelajaran…','Menyusun TP unit yang tersisa…','Menulis catatan pelaksanaan…','Hampir selesai, mohon tunggu…']];
+function atpStepsUI(){
+  const box=$('atpsteps'); box.hidden=atpFlow!=='step'; if(box.hidden) return;
+  const lab=atpStepLabels(), rem=3-atpStep;
+  box.querySelectorAll('.stepbar span').forEach((el,i)=>{ el.textContent=(i+1)+'. '+lab[i]; el.className=i<atpStep?'done':(i===atpStep?'cur':''); });
+  $('atpnext').hidden=rem<=0; $('atpnext').textContent='Lanjut ke langkah '+(atpStep+1)+' dari 3';
+  $('atprest').hidden=rem<2; $('atprest').textContent='Selesaikan semua langkah sisanya ('+rem+' langkah)';
+  $('atpredo').hidden=atpStep<1; $('atpredo').textContent='Ulangi langkah '+atpStep;
+  ['atpnext','atprest','atpredo'].forEach(id=>{ $(id).disabled=atpBusy; });
+}
+/* dokumen belum lengkap: jangan bisa diunduh, dicetak, disimpan, atau disunting dulu */
+function atpLockPartial(){ if(atpFlow==='step'&&atpStep<3) ['atpword','atpprint','atpsave','atpedit'].forEach(id=>{ $(id).disabled=true; }); }
+
 async function atpGenerate(){
+  if(atpBusy) return;
   if(!v('atp_guru')||!v('atp_mapel')){ setStatus('Nama guru dan mata pelajaran wajib diisi.',true); return; }
   push();
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
+  if(atpMode()==='step'){ atpFlow='step'; atpStep=0; atpParts=['','','']; atpStepsUI(); await atpDo(1); return; }
+  await atpAll();
+}
+
+/* mode Sekaligus: satu proses untuk seluruh dokumen */
+async function atpAll(){
   if(!(await pickKey('ATP'))) return;
+  atpFlow='all'; atpStep=3; atpStepsUI();
   try{ localStorage.setItem('rpm_model',modelDipakai()); }catch(e){}
-  ['atpgen','atpregen'].forEach(id=>$(id).disabled=true); $('atpgen').textContent='Menyusun…'; setStatus('');
+  atpBusy=true; ['atpgen','atpregen'].forEach(id=>$(id).disabled=true); $('atpgen').textContent='Menyusun…'; setStatus('');
   showLoader(['Menyusun ATP Anda…','Memecah CP menjadi unit…','Merumuskan tujuan pembelajaran…','Menghitung alokasi JP…','Hampir selesai, mohon tunggu…']);
   try{
     liveSet($('atpdoc'),'','atp'); $('atpempty').hidden=true;
@@ -4296,14 +4362,68 @@ async function atpGenerate(){
     setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk tetap ditampilkan.':'Gagal: '+e.message,!e.aborted);
     if(!e.aborted) notify(false,'ATP gagal disusun: '+e.message);
     const part=e.partial||e.text; if(part){ atpText=part; render(part); }
-  }finally{ hideLoader(); $('atpgen').disabled=false; $('atpregen').disabled=!atpText; $('atpgen').textContent='Susun ATP'; }
+  }finally{ hideLoader(); atpBusy=false; $('atpgen').disabled=false; $('atpregen').disabled=!atpText; $('atpgen').textContent=atpGenLabel(); }
 }
+
+/* mode Bertahap: kerjakan langkah n (1-3). opt.keyOk = API key sudah dipilih (dipakai saat menjalankan sisa langkah berurutan). */
+async function atpDo(n,opt){
+  opt=opt||{};
+  if(atpBusy) return false;
+  if(n>1&&atpSnap!==atpSig()){ setStatus('Isian formulir (mapel, fase, cakupan, JP, CP) berubah sejak langkah 1. Kembalikan isian semula, atau tekan Susun ATP untuk mulai dari awal.',true); return false; }
+  if(!opt.keyOk&&!(await pickKey('ATP'))) return false;
+  if(n===1){ atpParts=['','','']; atpSnap=atpSig(); }
+  atpParts.fill('',n-1); atpStep=n-1;                         // mengulang langkah n membatalkan langkah sesudahnya
+  try{ localStorage.setItem('rpm_model',modelDipakai()); }catch(e){}
+  atpBusy=true; atpStepsUI();
+  ['atpgen','atpregen'].forEach(id=>$(id).disabled=true); $('atpgen').textContent='Menyusun…'; setStatus('');
+  JOBNAME.atp='ATP langkah '+n;
+  showLoader(ATP_LOAD[n-1]);
+  const prev=atpParts.slice(0,n-1).join('\n\n');
+  let ok=false;
+  try{
+    liveSet($('atpdoc'),prev?prev+'\n\n':'','atp'); $('atpempty').hidden=true;
+    const out=await ask(buildAtpStep(n,prev),'ATP'+n);
+    atpParts[n-1]=out; atpStep=n; atpText=atpParts.slice(0,n).join('\n\n');
+    render(atpText,n<3); setEditAtp(false);
+    if(n===1){ const k0=atpPK(); atpId=null; pageCopy(k0,atpPK()); }
+    JOB_OK=true; ok=true; atpLockPartial();
+    if(n<3){
+      $('atpstepmsg').textContent='Langkah '+n+' dari 3 selesai. Periksa hasilnya. Bila kurang pas, ubah "Catatan tambahan" di formulir lalu tekan Ulangi langkah '+n+'. Dokumen baru bisa diunduh, disunting, dan disimpan setelah langkah 3.';
+      setStatus('Langkah '+n+' dari 3 selesai.');
+    }else{
+      $('atpstepmsg').textContent='Semua langkah selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh. Langkah terakhir masih bisa diulang bila hasilnya kurang pas.';
+      setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
+      notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
+      $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
+      if(readCfgForm().auto) atpSave(true);
+    }
+  }catch(e){
+    setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk tetap ditampilkan.':'Gagal: '+e.message,!e.aborted);
+    if(!e.aborted) notify(false,'ATP langkah '+n+' gagal disusun: '+e.message);
+    $('atpstepmsg').textContent='Langkah '+n+' '+(e.aborted?'dihentikan':'gagal')+'. Hasil langkah sebelumnya tetap aman. Tekan "Lanjut ke langkah '+n+' dari 3" untuk mencoba lagi (Anda bisa memilih API key lain).';
+    const part=e.partial||e.text; if(part){ atpText=(prev?prev+'\n\n':'')+part; render(atpText,true); atpLockPartial(); }
+  }finally{
+    hideLoader(); JOBNAME.atp='ATP'; atpBusy=false;
+    $('atpgen').disabled=false; $('atpregen').disabled=!atpText; $('atpgen').textContent=atpGenLabel(); atpStepsUI();
+  }
+  return ok;
+}
+async function atpRest(){
+  if(atpBusy) return;
+  let n=atpStep+1;
+  if(n>1&&atpSnap!==atpSig()){ setStatus('Isian formulir (mapel, fase, cakupan, JP, CP) berubah sejak langkah 1. Kembalikan isian semula, atau tekan Susun ATP untuk mulai dari awal.',true); return; }
+  if(!(await pickKey('ATP'))) return;
+  for(;n<=3;n++){ if(!(await atpDo(n,{keyOk:true}))) break; }   // berhenti bila ada langkah yang gagal atau dihentikan
+}
+$('atpnext').addEventListener('click',()=>atpDo(atpStep+1));
+$('atprest').addEventListener('click',atpRest);
+$('atpredo').addEventListener('click',()=>atpDo(atpStep));
 $('atpf').addEventListener('submit',e=>{ e.preventDefault(); atpGenerate(); });
 $('atpregen').addEventListener('click',atpGenerate);
 $('atpcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText($('atpdoc').innerText); setStatus('Teks disalin.'); }catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
 $('atpclear').addEventListener('click',()=>{
   if(!confirm('Kosongkan ATP di layar? ATP yang sudah tersimpan di database tidak terhapus.')) return;
-  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; atpTok='t'+Date.now().toString(36); setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus('');
+  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; atpTok='t'+Date.now().toString(36); setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus(''); atpFlow=''; atpStep=0; atpParts=['','','']; atpStepsUI();
 });
 
 /* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
@@ -4375,7 +4495,7 @@ $('atp_histlist').addEventListener('click',async e=>{
     if(d){ if(!confirm('Hapus ATP ini dari database?')) return; await sb(SB_DST,`/atp_hasil?id=eq.${d.dataset.del}`,{method:'DELETE'}); if(atpId==d.dataset.del) atpId=null; histList(); }
     else if(o){
       const r=(await sb(SB_DST,`/atp_hasil?id=eq.${o.dataset.open}&select=*`))[0]; if(!r) return;
-      showView('atp'); atpId=r.id; atpText=r.atp_markdown||'';
+      showView('atp'); atpId=r.id; atpText=r.atp_markdown||''; atpFlow='all'; atpStep=3; atpStepsUI();
       $('atp_guru').value=r.nama_guru||''; $('atp_mapel').value=r.mata_pelajaran||''; if(r.fase) $('atp_fase').value=r.fase;
       if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model; fixModelSel();
       const doc=$('atpdoc'); doc.innerHTML=r.atp_html||md(atpText); fillLogos(doc);

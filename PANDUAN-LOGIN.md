@@ -59,3 +59,10 @@ Admin menentukan model apa saja yang boleh dipakai guru dan model **default**-ny
 - Aturan aman: model default harus aktif, tidak bisa dihapus/dinonaktifkan sebelum default dipindah, dan hanya ID berawalan `gemini-` yang diterima.
 - Bila pengaturan belum ada, rusak, atau database tidak terjangkau, server memakai daftar bawaan (`gemini-3.8-flash` sebagai default; sama dengan `CFG_BAWAAN` di proxy dan `MODEL_SEED` di `index.html`; ubah keduanya bersamaan bila ingin mengganti bawaan).
 - Perubahan dari admin berlaku di server paling lama 30 detik kemudian.
+
+## ATP bertahap (3 langkah) atau sekaligus
+Di menu Buat ATP ada pilihan **Cara menyusun**:
+- **Bertahap, 3 langkah (bawaan, disarankan)**: langkah 1 = identitas, CP, dan kerangka unit + JP (bagian A–B); langkah 2 = tujuan pembelajaran semester pertama (atau separuh pertama unit bila cakupan satu semester); langkah 3 = semester kedua (atau sisa unit) dan catatan pelaksanaan (bagian C lanjutan + D). Setiap langkah menerima hasil langkah sebelumnya sebagai acuan, sehingga nomor unit, JP, dan kode TP tetap konsisten. Setelah tiap langkah guru bisa memeriksa hasilnya, lanjut satu per satu, atau menekan **Selesaikan semua langkah sisanya** (API key dipilih sekali).
+- **Sekaligus**: perilaku lama, seluruh ATP dalam satu proses.
+- Dokumen baru bisa diunduh, dicetak, disunting, dan disimpan setelah langkah 3 selesai. Tidak perlu perubahan SQL atau Edge Function.
+- Bila isian formulir (mapel, fase, cakupan, JP, CP) diubah di tengah langkah, langkah berikutnya ditolak dengan pesan; kembalikan isian atau mulai dari awal.
