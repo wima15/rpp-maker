@@ -2568,7 +2568,8 @@ async function readStream(res){
   return {text:text,finish:fin};
 }
 /* proses berpikir model memakan waktu & sumber daya server. Baru dibatasi SETELAH server kewalahan (kode 546 dst), supaya jalur normal tidak berubah. */
-let THINK_CFG=null;
+const THINK_DEFAULT='low';   // tingkat berpikir Gemini sejak awal: 'low' mempercepat jawaban pertama (hindari batas waktu fungsi); '' = bawaan model
+let THINK_CFG=THINK_DEFAULT?{thinkingLevel:THINK_DEFAULT}:null;
 async function askRaw(contents,maxTok){
   let res;
   if(STOP_REQ) throw stopErr();
