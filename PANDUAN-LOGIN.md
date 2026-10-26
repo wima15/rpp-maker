@@ -50,3 +50,12 @@ dari nama yang dulu dipilih, data lama tidak ikut; admin masih bisa melihatnya.
 - Guru baru di E-Rapor otomatis bisa login; jalankan Sinkron E-Rapor agar mata pelajarannya terisi.
 - Admin yang login lewat E-Rapor langsung masuk Portal Admin tanpa kata sandi lokal.
 - 8 kali salah dalam 10 menit (per IP + email) dikunci sementara.
+
+## Model AI (diatur admin)
+Admin menentukan model apa saja yang boleh dipakai guru dan model **default**-nya di **Portal Admin > Model AI**.
+- Tidak perlu SQL baru: pengaturan disimpan di `pengaturan_rpm` (kunci `model_ai`), yang sudah hanya bisa ditulis admin.
+- Pasang ulang **gemini-proxy** (`gemini-proxy-index.ts`) dan ganti `index.html`. Server menolak model di luar daftar (403), jadi daftar ini bukan sekadar tampilan.
+- Tombol **Uji model** mengirim satu permintaan kecil untuk memastikan nama model benar sebelum ditambahkan.
+- Aturan aman: model default harus aktif, tidak bisa dihapus/dinonaktifkan sebelum default dipindah, dan hanya ID berawalan `gemini-` yang diterima.
+- Bila pengaturan belum ada, rusak, atau database tidak terjangkau, server memakai daftar bawaan (`gemini-3.8-flash` sebagai default; sama dengan `CFG_BAWAAN` di proxy dan `MODEL_SEED` di `index.html`; ubah keduanya bersamaan bila ingin mengganti bawaan).
+- Perubahan dari admin berlaku di server paling lama 30 detik kemudian.

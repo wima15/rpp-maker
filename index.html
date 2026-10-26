@@ -874,14 +874,8 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     <legend>Model AI</legend>
     <div class="keybox">
       <label for="model" style="margin-top:0">Model</label>
-      <input id="model" list="models" value="gemini-3.8-flash" autocomplete="off">
-      <datalist id="models">
-        <option value="gemini-3.8-flash">
-        <option value="gemini-3.8-pro">
-        <option value="gemini-flash-latest">
-        <option value="gemini-pro-latest">
-      </datalist>
-      <p class="hint">Bisa diketik manual. Jika muncul pesan model tidak tersedia, ganti dengan nama model terbaru dari Google AI Studio.</p>
+      <select id="model"></select>
+      <p class="hint">Pilihan model diatur admin. Bila ragu, biarkan model default. Model "flash" lebih cepat dan hemat kuota.</p>
     </div>
   </fieldset>
 
@@ -1167,7 +1161,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
   <fieldset>
     <legend>Model AI</legend>
     <label for="atp_model" style="margin-top:0">Model</label>
-    <input id="atp_model" list="models" autocomplete="off">
+    <select id="atp_model"></select>
     <p class="hint">Sama dengan menu Buat RPP. API key dipilih saat menekan Susun ATP.</p>
   </fieldset>
   <fieldset>
@@ -1336,6 +1330,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <button type="button" role="tab" data-tab="sync" aria-selected="true">Sinkron E-Rapor</button>
       <button type="button" role="tab" data-tab="guru" aria-selected="false">Data guru</button>
       <button type="button" role="tab" data-tab="ks" aria-selected="false">Sekolah &amp; KS</button>
+      <button type="button" role="tab" data-tab="model" aria-selected="false">Model AI</button>
     </div>
 
     <section data-pane="sync">
@@ -1378,6 +1373,27 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <p class="hint" id="a_ksmsg"></p>
     </section>
 
+    <section data-pane="model" hidden>
+      <h3>Model AI</h3>
+      <p class="hint">Model yang tampil di pilihan guru. Server (gemini-proxy) menolak model di luar daftar ini, jadi guru tidak bisa memakai model lain. Model <b>default</b> dipakai bila guru tidak memilih dan sebagai cadangan bila pilihan lama sudah dihapus.</p>
+      <div id="a_mlist"></div>
+      <h3>Tambah model</h3>
+      <div class="row">
+        <div><label for="a_mid">Nama model (ID dari Google AI Studio)</label><input id="a_mid" placeholder="contoh: gemini-3.8-flash" autocomplete="off" spellcheck="false"></div>
+        <div><label for="a_mlabel">Nama tampilan (opsional)</label><input id="a_mlabel" placeholder="contoh: Flash (cepat)" maxlength="60"></div>
+      </div>
+      <div class="btns">
+        <button type="button" class="ghost" id="a_muji">Uji model</button>
+        <button type="button" id="a_madd">Tambah ke daftar</button>
+      </div>
+      <p class="hint">Disarankan menekan <b>Uji model</b> dulu: server mencoba satu permintaan kecil untuk memastikan nama model benar dan kuota API key mencukupi. Hanya ID berawalan <b>gemini-</b> yang diterima.</p>
+      <div class="btns">
+        <button type="button" id="a_msave">Simpan pengaturan model</button>
+        <button type="button" class="ghost" id="a_mreset">Kembalikan daftar bawaan</button>
+      </div>
+      <p class="hint" id="a_mmsg"></p>
+    </section>
+
     <section data-pane="guru" hidden>
       <p class="hint">Daftar guru yang dipakai aplikasi, disimpan di tabel <b>guru_rpm</b>. Terisi lewat tab Sinkron E-Rapor; di sini cukup mengubah bila ada pengecualian.</p>
       <div class="btns">
@@ -1413,12 +1429,61 @@ const DIMS = [
 const $ = id => document.getElementById(id);
 // Edge Function gemini-proxy di Supabase tujuan; GEMINI_API_KEY disimpan sebagai secret di sana.
 const aiUrl = () => SB_DST.url.replace(/\/rest\/v1$/,'')+'/functions/v1/gemini-proxy';
+
+/* ===== MODEL AI: daftar & default diatur admin (pengaturan_rpm, kunci 'model_ai'); server memeriksa ulang di gemini-proxy ===== */
+const MODEL_RE=/^gemini-[a-z0-9.\-]{1,60}$/;
+/* Daftar bawaan = cadangan bila pengaturan admin belum ada / rusak. Harus sama dengan CFG_BAWAAN di gemini-proxy. */
+const MODEL_SEED={default:'gemini-3.8-flash',models:[
+  {id:'gemini-3.8-flash',label:'',aktif:true},{id:'gemini-3.8-pro',label:'',aktif:true},
+  {id:'gemini-flash-latest',label:'',aktif:true},{id:'gemini-pro-latest',label:'',aktif:true}]};
+/* null bila bentuknya salah atau default tidak termasuk model aktif */
+function modelClean(o){
+  if(!o||!Array.isArray(o.models)) return null;
+  const seen=new Set(), models=[];
+  for(const m of o.models){
+    const id=String((m&&m.id)||'').trim().toLowerCase();
+    if(!MODEL_RE.test(id)||seen.has(id)) continue; seen.add(id);
+    models.push({id,label:String((m&&m.label)||'').trim().slice(0,60),aktif:!(m&&m.aktif===false)});
+  }
+  const def=String(o.default||'').trim().toLowerCase();
+  if(!models.some(m=>m.aktif&&m.id===def)) return null;
+  return {default:def,models};
+}
+let MODELCFG=modelClean(MODEL_SEED);
+const modelNama=m=>m.label||m.id;
+/* model yang benar-benar dikirim ke server: pilihan guru bila masih aktif, kalau tidak model default */
+function modelDipakai(){
+  const el=$('model'), v=((el&&el.value)||'').trim().toLowerCase();
+  return MODELCFG.models.some(m=>m.aktif&&m.id===v)?v:MODELCFG.default;
+}
+/* isi ulang kedua pilihan model; pilihan sekarang / terakhir dipakai dipertahankan bila masih aktif */
+function fillModelSelects(){
+  const aktif=MODELCFG.models.filter(m=>m.aktif);
+  let pref=''; try{ pref=localStorage.getItem('rpm_model')||''; }catch(e){}
+  ['model','atp_model'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    const cur=(el.value||'').trim().toLowerCase();
+    el.innerHTML=aktif.map(m=>`<option value="${esc(m.id)}">${esc(modelNama(m))}${m.id===MODELCFG.default?' (default)':''}</option>`).join('');
+    el.value=[cur,pref].find(v=>v&&aktif.some(m=>m.id===v))||MODELCFG.default;
+  });
+}
+/* setelah memulihkan draf/riwayat yang menyimpan model lama: kembalikan ke default bila modelnya sudah tidak ada */
+function fixModelSel(){
+  ['model','atp_model'].forEach(id=>{ const el=$(id); if(el&&!el.value) el.value=MODELCFG.default; });
+}
+async function loadModelAI(){
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.model_ai&select=nilai&limit=1');
+    MODELCFG=modelClean(r&&r[0]&&r[0].nilai)||modelClean(MODEL_SEED);
+  }catch(e){ /* gagal baca: tetap pakai daftar yang sedang aktif (bawaan) */ }
+  fillModelSelects();
+}
+fillModelSelects();
 $('dims').innerHTML = DIMS.map((d,i)=>`<label><input type="checkbox" value="${d}"> ${d}</label>`).join('');
 
 // storage (aman bila diblokir)
 try{
   localStorage.removeItem('rpm_key'); // bersihkan kunci lama yang pernah tersimpan di browser
-  const m = localStorage.getItem('rpm_model'); if(m && !/^gemini-2/.test(m)) $('model').value=m;
 }catch(e){}
 
 function setStatus(t, err){ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); }
@@ -1822,7 +1887,7 @@ async function generate(opt){
   if(rec&&!RESUMING&&await offerProjectDraft()) return;      // projek ini punya draf belum selesai: tampilkan dulu, guru bisa lanjut
   if(!(await pickKey('RPM',rec))) return;
   RECOMPOSE=null;
-  try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
+  try{ localStorage.setItem('rpm_model',modelDipakai()); }catch(e){}
   const btns=[$('gen'),$('regen')]; btns.forEach(b=>b.disabled=true);
   $('gen').textContent='Menyusun…';
   setStatus('');
@@ -2485,7 +2550,7 @@ async function askRaw(contents,maxTok){
   ABORT=new AbortController();
   try{
     res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),signal:ABORT.signal,
-      body:JSON.stringify({model:$('model').value.trim(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
+      body:JSON.stringify({model:modelDipakai(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
   }catch(e){ if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(); throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   usageKey(res.headers.get('x-key-used'));
   if(res.ok && (res.headers.get('content-type')||'').includes('text/event-stream')) return await readStream(res);
@@ -2587,6 +2652,7 @@ function formApply(o){
   if(o.guru!=null){ $('guru').value=o.guru; onGuru(); }          // onGuru mengisi mapel bawaan; mapel dari draf dipasang sesudahnya
   FORM_IDS.forEach(i=>{ const e=$(i); if(!e||o[i]==null||i==='guru') return; if(e.type==='hidden'&&e.value&&i!=='jptotal'&&i!=='jpbagi') return; e.value=o[i]; });
   document.querySelectorAll('#dims input').forEach(x=>{ x.checked=(o.dims||[]).includes(x.value); });
+  fixModelSel();
   syncAtpBox();
 }
 function deviceName(){
@@ -2601,7 +2667,7 @@ function cloudPush(key,base,text){
   if(!PROJ) PROJ=newProj();
   const snap=formSnap(); snap.hasil_id=key==='RPM'?null:(curId||null);   // draf RPM = RPP baru; draf lain menempel ke RPP yang sudah tersimpan
   const row={nama_guru:g,project_id:PROJ,project_nama:projLabel(),aksi:key.split(':')[0],draft_key:key,prompt:base,teks:text,panjang:text.length,done:DONE,form:snap,
-    rpm_markdown:key==='RPM'?null:(lastText||null),model:$('model').value.trim(),perangkat:deviceName(),updated_at:new Date().toISOString()};
+    rpm_markdown:key==='RPM'?null:(lastText||null),model:modelDipakai(),perangkat:deviceName(),updated_at:new Date().toISOString()};
   CD.chain=CD.chain
     .then(()=>sb(SB_DST,'/rpm_draft?on_conflict=nama_guru,project_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:row}))
     .then(()=>{ CD.ok=true; })
@@ -3118,7 +3184,7 @@ async function usageLog(aksi){
   USAGE_ID=null; USAGE_KEYS.clear();
   try{
     const r=await sb(SB_DST,'/api_key_usage',{method:'POST',headers:{Prefer:'return=representation'},body:{
-      tanggal:todayWib(), key_slot:String(KEY_SLOT), aksi:aksi||'', model:$('model').value.trim(),
+      tanggal:todayWib(), key_slot:String(KEY_SLOT), aksi:aksi||'', model:modelDipakai(),
       nama_guru:($('guru').value||'').trim()
     }});
     USAGE_ID=r&&r[0]&&r[0].id;
@@ -3203,7 +3269,7 @@ function dbPayload(){
     satuan_pendidikan:$('sekolah').value.trim(), mata_pelajaran:$('mapel').value.trim(),
     fase:$('fase').value, semester:$('semester').value, tahun_ajaran:$('tahun').value.trim(),
     topik:$('topik').value.trim(), jumlah_pertemuan:parseInt($('pertemuan').value)||null,
-    model:$('model').value.trim(), rpm_markdown:lastText, rpm_html:c.innerHTML,
+    model:modelDipakai(), rpm_markdown:lastText, rpm_html:c.innerHTML,
     lkpd_html:$('lkpd').hidden?null:stripLogos($('lkpd')).innerHTML,
     asesmen_html:$('asesmen').hidden?null:stripLogos($('asesmen')).innerHTML,
     lampiran_html:$('lampiran').hidden?null:stripLogos($('lampiran')).innerHTML
@@ -3451,9 +3517,92 @@ function admTab(n){
   document.querySelectorAll('#adm [data-pane]').forEach(p=>p.hidden=p.dataset.pane!==n);
   if(n==='sync') showSyncStamp();
   if(n==='guru') agLoad();
+  if(n==='model') amLoad();
   if(n==='ks'){ loadSekolah(); loadMinggu(); loadSigKepsek(); }
 }
 document.querySelectorAll('#adm [data-tab]').forEach(b=>b.addEventListener('click',()=>admTab(b.dataset.tab)));
+
+/* --- model AI (admin) --- */
+let AM=null;   // salinan kerja: {default, models:[{id,label,aktif}]}; baru berlaku setelah Simpan
+const amClone=o=>JSON.parse(JSON.stringify(o));
+async function amLoad(){
+  msg('a_mmsg','Memuat…');
+  let ada=false;
+  try{
+    const r=await sb(SB_DST,'/pengaturan_rpm?kunci=eq.model_ai&select=nilai&limit=1');
+    const c=modelClean(r&&r[0]&&r[0].nilai); ada=!!c;
+    AM=amClone(c||modelClean(MODEL_SEED));
+    msg('a_mmsg',ada?'Pengaturan dimuat.':'Belum ada pengaturan tersimpan (atau tidak valid). Yang tampil adalah daftar bawaan; tekan Simpan untuk menetapkannya.');
+  }catch(e){ AM=amClone(MODELCFG); msg('a_mmsg','Gagal memuat pengaturan: '+tblErr(e,'pengaturan_rpm'),true); }
+  amRender();
+}
+function amRender(){
+  const a=AM.models, def=AM.default;
+  $('a_mlist').innerHTML='<table class="at"><thead><tr><th>Default</th><th>Nama model (ID)</th><th>Nama tampilan</th><th>Aktif</th><th></th></tr></thead><tbody>'+
+    a.map((m,i)=>`<tr data-i="${i}"><td style="text-align:center"><input type="radio" name="a_mdef" data-f="def" ${m.id===def?'checked':''} ${m.aktif?'':'disabled'} aria-label="Jadikan default" style="min-width:0;width:auto"></td>`+
+    `<td><code>${esc(m.id)}</code>${/latest/.test(m.id)?'<br><span class="hint">alias: bisa berganti versi sendiri</span>':''}</td>`+
+    `<td><input data-f="label" value="${esc(m.label)}" maxlength="60" placeholder="${esc(m.id)}"></td>`+
+    `<td style="text-align:center"><input type="checkbox" data-f="aktif" ${m.aktif?'checked':''} ${m.id===def?'disabled':''} aria-label="Aktif" style="min-width:0;width:auto"></td>`+
+    `<td style="white-space:nowrap"><button type="button" class="ghost sm" data-act="uji">Uji</button> <button type="button" class="ghost sm" data-act="del" ${m.id===def?'disabled title="Model default tidak bisa dihapus. Pilih default lain dulu."':''}>Hapus</button></td></tr>`).join('')+'</tbody></table>';
+}
+$('a_mlist').addEventListener('change',e=>{
+  const tr=e.target.closest('tr[data-i]'); if(!tr||!AM) return; const m=AM.models[+tr.dataset.i], f=e.target.dataset.f;
+  if(f==='def'&&m.aktif) AM.default=m.id;
+  else if(f==='aktif'&&m.id!==AM.default) m.aktif=e.target.checked;
+  else if(f==='label') m.label=e.target.value.trim().slice(0,60);
+  amRender();
+});
+$('a_mlist').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-act]'); if(!b||!AM) return;
+  const m=AM.models[+b.closest('tr').dataset.i];
+  if(b.dataset.act==='del'){
+    if(m.id===AM.default) return;
+    if(!confirm('Hapus model "'+m.id+'" dari daftar?')) return;
+    AM.models=AM.models.filter(x=>x!==m); amRender(); msg('a_mmsg','Model dihapus dari salinan. Tekan Simpan agar berlaku.');
+  }else if(b.dataset.act==='uji') amTest(m.id,b);
+});
+/* uji satu permintaan kecil lewat gemini-proxy (admin boleh menguji model yang belum ada di daftar) */
+async function amTest(id,btn){
+  id=String(id||'').trim().toLowerCase();
+  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Harus berawalan "gemini-" dan hanya berisi huruf kecil, angka, titik, atau strip.',true); return false; }
+  const old=btn&&btn.textContent; if(btn){ btn.disabled=true; btn.textContent='Menguji…'; }
+  msg('a_mmsg','Menguji '+id+'…');
+  try{
+    const res=await fetch(aiUrl(),{method:'POST',headers:await authH({'Content-Type':'application/json'}),
+      body:JSON.stringify({model:id,uji:true,contents:[{role:'user',parts:[{text:'Balas dengan satu kata: OK'}]}],generationConfig:{temperature:0,maxOutputTokens:64}})});
+    let d=null; try{ d=await res.json(); }catch(e){}
+    if(res.ok){ msg('a_mmsg','Model '+id+' bisa dipakai.'); return true; }
+    const m=(d&&d.error&&d.error.message)||('HTTP '+res.status);
+    msg('a_mmsg','Model '+id+' gagal diuji: '+m,true); return false;
+  }catch(e){ msg('a_mmsg','Tidak bisa menghubungi server AI. Periksa koneksi, lalu coba lagi.',true); return false; }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=old; } }
+}
+$('a_muji').addEventListener('click',()=>amTest($('a_mid').value,$('a_muji')));
+$('a_madd').addEventListener('click',()=>{
+  if(!AM) return;
+  const id=$('a_mid').value.trim().toLowerCase(), label=$('a_mlabel').value.trim().slice(0,60);
+  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Harus berawalan "gemini-" dan hanya berisi huruf kecil, angka, titik, atau strip.',true); return; }
+  if(AM.models.some(m=>m.id===id)){ msg('a_mmsg','Model '+id+' sudah ada di daftar.',true); return; }
+  AM.models.push({id,label,aktif:true});
+  $('a_mid').value=''; $('a_mlabel').value=''; amRender();
+  msg('a_mmsg','Model '+id+' ditambahkan ke salinan. Tekan Simpan agar guru bisa memakainya.');
+});
+$('a_msave').addEventListener('click',async()=>{
+  if(!AM) return;
+  const c=modelClean(AM);
+  if(!c){ msg('a_mmsg','Pengaturan tidak valid: default harus salah satu model yang aktif.',true); return; }
+  const b=$('a_msave'); b.disabled=true;
+  try{
+    await sb(SB_DST,'/pengaturan_rpm?on_conflict=kunci',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{kunci:'model_ai',nilai:c,updated_at:new Date().toISOString()}});
+    MODELCFG=c; AM=amClone(c); fillModelSelects(); amRender();
+    msg('a_mmsg','Tersimpan. Default: '+c.default+'. Server memakai pengaturan baru paling lama 30 detik lagi.'+(/latest/.test(c.default)?' Catatan: default berupa alias "-latest" bisa berganti versi tanpa pemberitahuan; model dengan nomor versi lebih stabil.':''));
+  }catch(e){ msg('a_mmsg','Gagal menyimpan: '+tblErr(e,'pengaturan_rpm'),true); }
+  finally{ b.disabled=false; }
+});
+$('a_mreset').addEventListener('click',()=>{
+  if(!confirm('Kembalikan daftar model ke bawaan aplikasi? (Belum tersimpan sampai Anda menekan Simpan.)')) return;
+  AM=amClone(modelClean(MODEL_SEED)); amRender(); msg('a_mmsg','Daftar bawaan dipasang di salinan. Tekan Simpan agar berlaku.');
+});
 
 /* --- data guru kelolaan --- */
 let AG=[];
@@ -4012,7 +4161,7 @@ setInterval(()=>{ try{ pageSync(); }catch(e){} },400);   // ikut berganti saat p
   ul.addEventListener('click',e=>{ const li=e.target.closest('li[data-i]'); if(li) choose(+li.dataset.i); });
 })();
 
-loadKertas(); loadSigKepsek(); loadSekolah(); loadMinggu();
+loadKertas(); loadSigKepsek(); loadSekolah(); loadMinggu(); loadModelAI();
 loadSource().then(()=>{
   if(!SESS||!SESS.nama) return;
   $('guru').value=SESS.nama;
@@ -4132,7 +4281,7 @@ async function atpGenerate(){
   push();
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
   if(!(await pickKey('ATP'))) return;
-  try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
+  try{ localStorage.setItem('rpm_model',modelDipakai()); }catch(e){}
   ['atpgen','atpregen'].forEach(id=>$(id).disabled=true); $('atpgen').textContent='Menyusun…'; setStatus('');
   showLoader(['Menyusun ATP Anda…','Memecah CP menjadi unit…','Merumuskan tujuan pembelajaran…','Menghitung alokasi JP…','Hampir selesai, mohon tunggu…']);
   try{
@@ -4178,7 +4327,7 @@ async function atpSave(auto){
   const oldImg=await oldImgPaths('atp_hasil',atpId,['atp_html']);
   const c=stripLogos($('atpdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
   const body={nama_guru:v('atp_guru'),kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),mata_pelajaran:v('atp_mapel'),
-    fase:v('atp_fase'),semester:$('atp_cakupan').value,tahun_ajaran:v('atp_tahun'),model:v('atp_model'),atp_markdown:atpText,atp_html:c.innerHTML};
+    fase:v('atp_fase'),semester:$('atp_cakupan').value,tahun_ajaran:v('atp_tahun'),model:modelDipakai(),atp_markdown:atpText,atp_html:c.innerHTML};
   const b=$('atpsave'); b.disabled=true;
   try{
     let row=null;
@@ -4228,7 +4377,7 @@ $('atp_histlist').addEventListener('click',async e=>{
       const r=(await sb(SB_DST,`/atp_hasil?id=eq.${o.dataset.open}&select=*`))[0]; if(!r) return;
       showView('atp'); atpId=r.id; atpText=r.atp_markdown||'';
       $('atp_guru').value=r.nama_guru||''; $('atp_mapel').value=r.mata_pelajaran||''; if(r.fase) $('atp_fase').value=r.fase;
-      if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model;
+      if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model; fixModelSel();
       const doc=$('atpdoc'); doc.innerHTML=r.atp_html||md(atpText); fillLogos(doc);
       doc.querySelectorAll('.sign .sp').forEach((el,i)=>{ el.innerHTML=sigTag(i); });
       doc.hidden=false; $('atpempty').hidden=true; btn.forEach(id=>$(id).disabled=false); setEditAtp(false); setStatus('ATP tersimpan dibuka. Tekan Edit untuk menyunting.');

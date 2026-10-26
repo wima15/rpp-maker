@@ -36,6 +36,15 @@
 // Login: setiap permintaan wajib membawa sesi login guru (header Authorization: Bearer <access token>
 // dari Auth project ini). Tanpa sesi yang sah -> 401. Pengecekan memakai /auth/v1/user dan di-cache 60 detik.
 //
+// Model: daftar model yang boleh dipakai + model default diatur admin di Portal Admin > Model AI
+// (tabel pengaturan_rpm, kunci "model_ai"). Server MEMERIKSA ULANG setiap permintaan terhadap daftar itu,
+// jadi guru tidak bisa memakai model di luar daftar walau mengubah isi permintaan dari browser.
+//   - model kosong            -> memakai model default
+//   - model tidak ada di daftar / dinonaktifkan -> ditolak (403)
+//   - pengaturan belum ada, rusak, atau default-nya tidak aktif -> memakai DAFTAR BAWAAN di bawah (aman)
+//   - hanya admin yang boleh menguji model yang belum ada di daftar (permintaan dengan uji: true)
+//   Perubahan dari admin berlaku paling lama 30 detik kemudian (cache).
+//
 // Pembatasan: nama model harus berawalan "gemini-", maxOutputTokens dibatasi,
 // hanya contents + generationConfig yang diteruskan, ukuran permintaan dibatasi,
 // dan ada batas permintaan per menit per alamat IP.
@@ -102,23 +111,71 @@ function pesanDari(teks: string) {
 }
 
 
+// ---- daftar model yang diizinkan ----
+const MODEL_RE = /^gemini-[a-z0-9.\-]{1,60}$/;
+// Daftar bawaan: dipakai bila pengaturan admin belum ada / tidak valid. Harus sama dengan MODEL_SEED di index.html.
+const CFG_BAWAAN = {
+  default: "gemini-3.8-flash",
+  ids: ["gemini-3.8-flash", "gemini-3.8-pro", "gemini-flash-latest", "gemini-pro-latest"],
+};
+type CfgModel = { default: string; ids: string[] };
+
+// Mengembalikan null bila bentuknya tidak valid atau default-nya tidak ada di antara model yang aktif.
+function bersihkanCfg(raw: unknown): CfgModel | null {
+  const o = raw as { default?: unknown; models?: unknown } | null;
+  if (!o || !Array.isArray(o.models)) return null;
+  const ids: string[] = [];
+  for (const m of o.models as Array<Record<string, unknown>>) {
+    const id = String(m?.id ?? "").trim().toLowerCase();
+    if (!MODEL_RE.test(id) || m?.aktif === false || ids.includes(id)) continue;
+    ids.push(id);
+  }
+  const def = String(o.default ?? "").trim().toLowerCase();
+  if (!ids.length || !ids.includes(def)) return null;
+  return { default: def, ids };
+}
+
+let cfgCache: { exp: number; cfg: CfgModel } | null = null;
+async function muatCfgModel(apikey: string, tok: string): Promise<CfgModel> {
+  const now = Date.now();
+  if (cfgCache && cfgCache.exp > now) return cfgCache.cfg;
+  try {
+    // dibaca dengan sesi guru sendiri; RLS pengaturan_rpm mengizinkan baca untuk yang login
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/pengaturan_rpm?kunci=eq.model_ai&select=nilai&limit=1`, {
+      headers: { apikey, Authorization: `Bearer ${tok}` },
+    });
+    if (r.ok) {
+      const rows = await r.json();
+      const cfg = bersihkanCfg(Array.isArray(rows) ? rows[0]?.nilai : null) ?? CFG_BAWAAN;
+      cfgCache = { exp: now + 30_000, cfg };
+      return cfg;
+    }
+  } catch { /* jatuh ke cadangan di bawah */ }
+  return cfgCache?.cfg ?? CFG_BAWAAN;
+}
+
 // ---- cek sesi login ----
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-const sesiOk = new Map<string, number>(); // token -> waktu kedaluwarsa cache
-async function sesiSah(req: Request): Promise<boolean> {
+type Sesi = { admin: boolean; tok: string; apikey: string };
+const sesiOk = new Map<string, { exp: number; admin: boolean }>(); // token -> cache
+async function sesiSah(req: Request): Promise<Sesi | null> {
   const m = /^Bearer\s+(.+)$/i.exec(req.headers.get("Authorization") ?? "");
-  if (!m) return false;
+  if (!m) return null;
   const tok = m[1].trim(), now = Date.now();
-  if ((sesiOk.get(tok) ?? 0) > now) return true;
   const apikey = req.headers.get("apikey") || SUPABASE_ANON;
+  const c = sesiOk.get(tok);
+  if (c && c.exp > now) return { admin: c.admin, tok, apikey };
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey, Authorization: `Bearer ${tok}` } });
-    if (!r.ok) return false;
-    sesiOk.set(tok, now + 60_000);
+    if (!r.ok) return null;
+    const u = await r.json();
+    // app_metadata hanya bisa diubah server, jadi aman dipercaya (sama dengan public.is_admin() di SQL)
+    const admin = u?.app_metadata?.is_admin === true;
+    sesiOk.set(tok, { exp: now + 60_000, admin });
     if (sesiOk.size > 2000) sesiOk.clear();
-    return true;
-  } catch { return false; }
+    return { admin, tok, apikey };
+  } catch { return null; }
 }
 
 // pembatas sederhana per instance (cukup untuk menahan penyalahgunaan ringan)
@@ -142,7 +199,8 @@ Deno.serve(async (req: Request) => {
     return gagal("Asal permintaan tidak diizinkan.", 403, origin);
   }
 
-  if (!(await sesiSah(req))) return gagal("Belum login atau sesi berakhir. Masuk lagi lalu coba kembali.", 401, origin);
+  const sesi = await sesiSah(req);
+  if (!sesi) return gagal("Belum login atau sesi berakhir. Masuk lagi lalu coba kembali.", 401, origin);
 
   const raw = await req.text();
   if (raw.length > MAX_BODY_BYTES) return gagal("Permintaan terlalu besar.", 413, origin);
@@ -150,6 +208,7 @@ Deno.serve(async (req: Request) => {
     action?: unknown;
     keySlot?: unknown;
     model?: unknown;
+    uji?: unknown;
     stream?: unknown;
     contents?: unknown;
     generationConfig?: Record<string, unknown>;
@@ -162,8 +221,15 @@ Deno.serve(async (req: Request) => {
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "anon";
   if (kebanyakan(ip)) return gagal("Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.", 429, origin);
 
-  const model = String(body.model ?? "").trim();
-  if (!/^gemini-[a-z0-9.\-]+$/i.test(model)) return gagal("Nama model tidak valid.", 400, origin);
+  // model: kosong -> default admin; selain itu harus ada di daftar yang diaktifkan admin.
+  // Admin boleh menguji model baru (uji: true) sebelum menambahkannya ke daftar.
+  const cfg = await muatCfgModel(sesi.apikey, sesi.tok);
+  const model = (String(body.model ?? "").trim() || cfg.default).toLowerCase();
+  if (!MODEL_RE.test(model)) return gagal("Nama model tidak valid.", 400, origin);
+  const ujiAdmin = body.uji === true && sesi.admin;
+  if (!ujiAdmin && !cfg.ids.includes(model)) {
+    return gagal(`Model "${model.slice(0, 60)}" tidak tersedia. Pilih model dari daftar (default: ${cfg.default}) atau hubungi admin.`, 403, origin);
+  }
   if (!Array.isArray(body.contents) || !body.contents.length) return gagal("contents wajib diisi.", 400, origin);
 
   // pilihan key: tidak diisi = Otomatis; angka 1..jumlah key = hanya key itu
