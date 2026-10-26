@@ -764,6 +764,8 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
 <script>
 (function(){
   var el=document.getElementById('intro'),cv=document.getElementById('introbg'),done=false,raf=0;
+  /* animasi pembuka hanya sekali di awal (per sesi tab): tidak diputar lagi setelah login/keluar atau muat ulang */
+  try{ if(sessionStorage.getItem('rpm_intro')==='1'){ el.remove(); return; } sessionStorage.setItem('rpm_intro','1'); }catch(e){}
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   function close(){ if(done) return; done=true; el.classList.add('out'); document.documentElement.style.overflow=''; setTimeout(function(){ cancelAnimationFrame(raf); el.remove(); },800); }
   document.documentElement.style.overflow='hidden';
@@ -3057,14 +3059,15 @@ async function doLogin(email,password){
   try{
     r=await fetch(base+'/functions/v1/login-guru',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify({email,password})});
     d=await r.json().catch(()=>({}));
-  }catch(e){ throw new Error('Tidak bisa terhubung ke server. Periksa koneksi internet.'); }
+  }catch(e){ throw new Error('Tidak bisa menghubungi fungsi login-guru. Kemungkinan: fungsi belum di-deploy, "Verify JWT" pada fungsi itu masih menyala, atau koneksi internet bermasalah. Hubungi admin.'); }
+  if(r.status===401&&!d.error&&(d.msg||d.message)) throw new Error('Fungsi login-guru menolak permintaan ('+(d.msg||d.message)+'). Matikan "Verify JWT" pada fungsi itu.');
   if(r.status===404) throw new Error('Edge Function login-guru belum di-deploy di Supabase.');
   if(!r.ok||!d.ok) throw new Error((d&&(typeof d.error==='string'?d.error:(d.error&&d.error.message)))||('Gagal masuk (HTTP '+r.status+').'));
   let t, td={};
   try{
     t=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB_DST.key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
     td=await t.json().catch(()=>({}));
-  }catch(e){ throw new Error('Tidak bisa terhubung ke server. Periksa koneksi internet.'); }
+  }catch(e){ throw new Error('Akun terverifikasi, tetapi tidak bisa membuat sesi di Auth Supabase. Periksa koneksi internet lalu coba lagi.'); }
   if(!t.ok) throw new Error(td.error_description||td.msg||td.message||'Gagal membuat sesi login.');
   SESS=null; applyTokens(td); SESS.nama=d.nama||SESS.nama; SESS.is_admin=!!d.is_admin; sessSave();
   try{ const prev=localStorage.getItem('rpm_uid'); if(prev&&prev!==SESS.uid) clearLocalUserData(); localStorage.setItem('rpm_uid',SESS.uid); }catch(e){}
