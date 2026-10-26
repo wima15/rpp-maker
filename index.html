@@ -115,10 +115,10 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
 .sb-link{
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:flex-start;
   gap:10px;
   width:100%;
-  text-align:right;
+  text-align:left;
   padding:10px 14px;
   border:1px solid transparent;
   border-radius:8px;
@@ -618,10 +618,10 @@ main[hidden],.view-saved[hidden]{display:none!important}
 #intro .logo-wrap::after{display:none}
 #intro .logo-wrap::before{box-shadow:0 0 40px rgba(242,180,65,.25)}
 #intro img{position:relative;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}
-#intro .presented{margin:30px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:500;font-size:clamp(14px,2.6vw,18px);letter-spacing:.42em;text-transform:uppercase;color:#f2b441;opacity:0;transform:translateY(12px);animation:introUp .9s ease 1.4s forwards}
-#intro .dev{margin:10px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:clamp(22px,5vw,34px);letter-spacing:.04em;opacity:0;transform:translateY(12px);animation:introUp .9s ease 2.3s forwards}
-#intro .dev small{display:block;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:400;font-size:clamp(11px,2vw,13px);letter-spacing:.3em;text-transform:uppercase;color:#93aaa4;margin-bottom:4px}
-#intro .dev b{background:linear-gradient(90deg,#f2b441,#ffe3a0,#f2b441);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.18em}
+#intro .presented{margin:30px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:500;font-size:clamp(18px,5vw,34px);letter-spacing:.14em;line-height:1.25;max-width:92vw;text-transform:uppercase;color:#f2b441;opacity:0;transform:translateY(12px);animation:introUp .9s ease 1.4s forwards}
+#intro .dev{margin:10px 0 0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:clamp(13px,2.4vw,17px);letter-spacing:.04em;opacity:0;transform:translateY(12px);animation:introUp .9s ease 2.3s forwards}
+#intro .dev small{display:block;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:400;font-size:clamp(9px,1.6vw,11px);letter-spacing:.3em;text-transform:uppercase;color:#93aaa4;margin-bottom:3px}
+#intro .dev b{background:linear-gradient(90deg,#f2b441,#ffe3a0,#f2b441);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.06em}
 #intro .skip{position:absolute;bottom:18px;left:0;right:0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#93aaa4;opacity:0;animation:introUp .6s ease 1s forwards}
 @keyframes introLogo{to{opacity:1;transform:scale(1) rotate(0)}}
 @keyframes introUp{to{opacity:1;transform:translateY(0)}}
@@ -720,8 +720,8 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 <div id="intro" role="dialog" aria-label="Pembuka" aria-live="polite">
   <canvas id="introbg" aria-hidden="true"></canvas>
   <div class="logo-wrap"><i class="stitch s1"></i><img src="assets/logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'"></div>
-  <p class="presented">Presented to you</p>
-  <p class="dev"><small>Developed by</small><b>HHH</b></p>
+  <p class="presented">From Teacher to Teacher</p>
+  <p class="dev"><small>Developed by</small><b>@arhamhanif</b></p>
   <span class="skip">Ketuk untuk melewati</span>
 </div>
 <script>
@@ -1773,9 +1773,12 @@ function imgWordFix(c){
 
 
 let lastText='';
-async function generate(){
+async function generate(opt){
+  const rec=!!(opt&&opt.recompose)||(!!PROJ&&RECOMPOSE===PROJ);   // susun ulang projek yang sama (bukan projek baru)
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
-  if(!(await pickKey('RPM'))) return;
+  if(rec&&!RESUMING&&await offerProjectDraft()) return;      // projek ini punya draf belum selesai: tampilkan dulu, guru bisa lanjut
+  if(!(await pickKey('RPM',rec))) return;
+  RECOMPOSE=null;
   try{ localStorage.setItem('rpm_model',$('model').value); }catch(e){}
   const btns=[$('gen'),$('regen')]; btns.forEach(b=>b.disabled=true);
   $('gen').textContent='Menyusun…';
@@ -1810,7 +1813,7 @@ async function generate(){
 }
 
 $('f').addEventListener('submit',e=>{ e.preventDefault(); generate(); });
-$('regen').addEventListener('click',generate);
+$('regen').addEventListener('click',()=>generate({recompose:true}));
 $('copy').addEventListener('click',async()=>{
   try{ await navigator.clipboard.writeText($('doc').innerText); setStatus('Teks disalin.'); }
   catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); }
@@ -2297,7 +2300,7 @@ async function loadKeyCount(){
   }catch(e){}
   return KEY_COUNT;
 }
-async function pickKey(aksi){
+async function pickKey(aksi,keep){
   const ov=$('keyov'), list=$('keylist');
   list.innerHTML='<small>Memuat daftar API key…</small>'; $('keymsg').textContent='';
   $('keyok').disabled=true; ov.classList.add('on');
@@ -2314,7 +2317,7 @@ async function pickKey(aksi){
       const r=list.querySelector('input:checked'); KEY_SLOT=r?r.value:'auto';
       try{ localStorage.setItem('rpm_keyslot',KEY_SLOT); }catch(e){}
       usageLog(aksi); LAST_AKSI=aksi;
-      if(RESUMING){ RESUMED=true; RESUMING=false; } else { RESUMED=false; DONE={}; draftClear(); if(aksi==='RPM'||!PROJ) PROJ=newProj(); }
+      if(RESUMING){ RESUMED=true; RESUMING=false; } else { RESUMED=false; DONE={}; draftClear(); if((aksi==='RPM'&&!keep)||!PROJ) PROJ=newProj(); }
       hideResume(); hideCloudDraft();
       done(true);
     };
@@ -2381,9 +2384,9 @@ async function askRaw(contents,maxTok){
 const CONT_PROMPT='Lanjutkan dokumen di atas tepat dari titik terakhir. Jangan mengulang bagian yang sudah ditulis, jangan memberi kalimat pembuka atau penutup, dan pertahankan format yang sama. Teruskan dari karakter terakhir.';
 const MAX_CONT=8, CHUNK_TOKENS=8192, MIN_CHUNK=2048;   // dokumen dikerjakan per potongan ~8 ribu token
 const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
-let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='';
+let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='', RECOMPOSE=null;   // RECOMPOSE = id projek yang sedang akan disusun ulang
 function draftSave(key,prompt,text){
-  DRAFT={key,prompt,text}; cloudPush(key,prompt,text);
+  DRAFT={key,prompt,text,proj:PROJ}; cloudPush(key,prompt,text);
   try{ localStorage.setItem('rpm_draft',JSON.stringify({key,prompt,text,t:Date.now()})); }catch(e){}
 }
 function draftClear(){ DRAFT=null; try{ localStorage.removeItem('rpm_draft'); }catch(e){} }
@@ -2426,16 +2429,16 @@ function showResume(aksi,e){
   if(e&&e.aborted&&!e.partial&&!Object.keys(DONE).length) return;   // dihentikan sebelum ada teks: tidak ada yang bisa dilanjutkan
   const n=(e&&e.partial)?e.partial.length:0, extra=Object.keys(DONE).length;
   $('resume_msg').textContent='Proses '+aksi+(e&&e.aborted?' dihentikan. ':' terhenti: '+((e&&e.message)||'')+' ')+(n?`Hasil sebagian (${n.toLocaleString('id-ID')} karakter) sudah ditampilkan dan disimpan. `:(extra?'Bagian yang sudah jadi disimpan. ':''))+'Pilih API key lain, lalu lanjutkan dari titik terakhir.';
-  $('resume').dataset.aksi=aksi; $('resume').dataset.mapel=normMapel($('mapel').value); $('resume').dataset.on='1'; $('resume').hidden=false;
+  $('resume').dataset.aksi=aksi; $('resume').dataset.mapel=normMapel($('mapel').value); $('resume').dataset.proj=PROJ||''; $('resume').dataset.on='1'; $('resume').hidden=false;
 }
 function hideResume(){ const r=$('resume'); if(r){ r.hidden=true; delete r.dataset.on; } }
 /* banner "Lanjutkan" hanya tampil selama mapel di form sama dengan mapel saat proses terhenti */
-function syncResume(){ const r=$('resume'); if(!r||r.dataset.on!=='1') return; r.hidden=normMapel($('mapel').value)!==(r.dataset.mapel||''); }
+function syncResume(){ const r=$('resume'); if(!r||r.dataset.on!=='1') return; r.hidden=normMapel($('mapel').value)!==(r.dataset.mapel||'')||(r.dataset.proj||'')!==(PROJ||''); }
 $('resume_go').addEventListener('click',()=>{
   const aksi=$('resume').dataset.aksi; RESUMING=true;
   if(aksi==='RPM') generate(); else $(AKSI_BTN[aksi]).click();
 });
-$('resume_drop').addEventListener('click',()=>{ DONE={}; draftClear(); cloudClear(); hideResume(); setStatus('Draft dibuang.'); });
+$('resume_drop').addEventListener('click',()=>{ DONE={}; draftClear(); cloudClear(); hideResume(); CD.rows=CD.rows.filter(x=>x.project_id!==PROJ); cloudRender(); setStatus('Draft dibuang.'); });
 
 /* ================= DRAF DI DATABASE: per guru, per projek, bisa dilanjutkan di perangkat lain ================= */
 /* Projek = satu RPM beserta LKPD, asesmen, dan lampirannya. Tiap projek punya satu draf (kunci: nama_guru + project_id). */
@@ -2492,7 +2495,9 @@ function cloudRender(){
   const box=$('cloudraft'), list=$('cloudraft_list'), rows=CD.rows;
   if(!rows.length){ box.hidden=true; list.innerHTML=''; return; }
   const mp=($('mapel').value||'').trim(), utk=mp?' untuk '+mp:'';
-  $('cloudraft_ttl').textContent=rows.length===1?'Ada 1 draf belum selesai'+utk+' di database':'Ada '+rows.length+' draf belum selesai'+utk+' di database (satu untuk tiap projek)';
+  const own=!!PROJ&&rows.every(r=>r.project_id===PROJ);
+  if(own) $('cloudraft_ttl').textContent='Projek ini punya draf belum selesai di database. Lanjutkan dari titik terakhir, atau buang untuk menyusun dari awal.';
+  else $('cloudraft_ttl').textContent=rows.length===1?'Ada 1 draf belum selesai'+utk+' di database':'Ada '+rows.length+' draf belum selesai'+utk+' di database (satu untuk tiap projek)';
   list.innerHTML=rows.map((r,i)=>`<div class="cd-item"><p>${esc('Draf '+r.aksi+' · '+(r.project_nama||'(tanpa topik)'))}<br><small>${esc((r.panjang||0).toLocaleString('id-ID')+' karakter · '+new Date(r.updated_at).toLocaleString('id-ID')+(r.perangkat?' · '+r.perangkat:''))}</small></p><div class="resume-act"><button type="button" data-go="${i}">Lanjutkan</button><button type="button" class="ghost" data-del="${i}">Buang</button></div></div>`).join('');
   box.hidden=false;
 }
@@ -2506,13 +2511,44 @@ function draftMapelOk(r){
   const cur=normMapel($('mapel').value); if(!cur) return true;
   const dm=draftMapel(r); return !dm||dm===cur;
 }
+function draftTopikOk(r){
+  const cur=normMapel($('topik').value); if(!cur) return true;
+  const t=normMapel(r.form&&r.form.topik); return !t||t.includes(cur)||cur.includes(t);
+}
+const CD_COLS='id,nama_guru,project_id,project_nama,aksi,draft_key,perangkat,panjang,updated_at,form';
+/* draf milik projek yang sedang terbuka (satu guru + satu projek = paling banyak satu draf) */
+async function projectDraftRows(){
+  const g=($('guru').value||'').trim(); if(!PROJ||g.length<3||CD.off) return [];
+  try{
+    const rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&project_id=eq.'+encodeURIComponent(PROJ)+'&select='+CD_COLS+'&limit=5');
+    return (rows||[]).filter(r=>r.panjang>0);
+  }catch(e){ if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; return []; }
+}
+/* dipanggil saat Susun ulang: bila projek ini punya draf, langsung tampilkan supaya guru bisa lanjut. true = ada draf, penyusunan baru ditahan */
+async function offerProjectDraft(){
+  if(!PROJ) return false;
+  const aksi=DRAFT&&DRAFT.proj===PROJ&&DRAFT.text?DRAFT.key.split(':')[0]:'';
+  if(aksi&&(aksi==='RPM'||AKSI_BTN[aksi])){            // draf terbaru masih ada di layar ini
+    const r=$('resume');
+    $('resume_msg').textContent='Projek ini punya draf '+aksi+' yang belum selesai ('+DRAFT.text.length.toLocaleString('id-ID')+' karakter). Pilih API key, lalu lanjutkan dari titik terakhir. Untuk menyusun dari awal, tekan Buang draft lalu Susun ulang.';
+    r.dataset.aksi=aksi; r.dataset.mapel=normMapel($('mapel').value); r.dataset.proj=PROJ; r.dataset.on='1'; r.hidden=false;
+    hideCloudDraft(); r.scrollIntoView({behavior:'smooth',block:'center'});
+    setStatus('Ada draf belum selesai di projek ini. Silakan lanjutkan atau buang.');
+    return true;
+  }
+  const rows=await projectDraftRows(); if(!rows.length) return false;
+  hideResume(); CD.rows=rows; cloudRender();
+  $('cloudraft').scrollIntoView({behavior:'smooth',block:'center'});
+  setStatus('Ada draf belum selesai di projek ini. Silakan lanjutkan atau buang.');
+  return true;
+}
 async function cloudCheck(){
   const g=($('guru').value||'').trim();
   if(g.length<3||CD.off){ CD.rows=[]; cloudRender(); return; }
   if($('loader').classList.contains('on')) return;
   try{
-    let rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select=id,nama_guru,project_id,project_nama,aksi,draft_key,perangkat,panjang,updated_at,form&order=updated_at.desc&limit=50');
-    rows=(rows||[]).filter(draftMapelOk).filter(r=>r.panjang>0&&!(DRAFT&&r.project_id===PROJ&&DRAFT.key===r.draft_key&&DRAFT.text.length>=r.panjang));   // draf yang sudah ada di layar ini tidak perlu ditawarkan
+    let rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select='+CD_COLS+'&order=updated_at.desc&limit=50');
+    rows=(rows||[]).filter(r=>PROJ?r.project_id===PROJ:(draftMapelOk(r)&&draftTopikOk(r))).filter(r=>r.panjang>0&&!(DRAFT&&r.project_id===PROJ&&DRAFT.key===r.draft_key&&DRAFT.text.length>=r.panjang));   // draf yang sudah ada di layar ini tidak perlu ditawarkan
     CD.rows=rows; cloudRender();
   }catch(e){ if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; CD.rows=[]; cloudRender(); }
 }
@@ -2521,6 +2557,7 @@ $('guru').addEventListener('input',cdSoon); $('guru').addEventListener('change',
 setTimeout(cloudCheck,1500);
 $('mapel').addEventListener('input',()=>{ cdSoon(); syncResume(); }); $('mapel').addEventListener('change',()=>{ cdSoon(); syncResume(); });
 $('mapelchips').addEventListener('click',()=>{ cdSoon(); syncResume(); });
+$('topik').addEventListener('input',cdSoon);
 function restoreRpm(text){
   lastText=text; const doc=$('doc'); doc.innerHTML=md(text)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
@@ -2531,7 +2568,7 @@ function cloudResume(r){
   if(r.aksi!=='RPM') restoreRpm(r.rpm_markdown);
   PROJ=r.project_id||newProj();
   curId=(r.form&&r.form.hasil_id)||null;   // jangan mewarisi RPP tersimpan milik projek lain di layar (akan tertimpa saat simpan)
-  DONE=r.done||{}; DRAFT={key:r.draft_key,prompt:r.prompt,text:r.teks};
+  DONE=r.done||{}; DRAFT={key:r.draft_key,prompt:r.prompt,text:r.teks,proj:PROJ};
   CD.rows=CD.rows.filter(x=>x.id!==r.id); cloudRender(); hideResume(); RESUMING=true;
   if(r.aksi==='RPM') generate(); else if(AKSI_BTN[r.aksi]) $(AKSI_BTN[r.aksi]).click(); else RESUMING=false;
 }
@@ -2547,7 +2584,7 @@ $('cloudraft_list').addEventListener('click',async e=>{
     if($('loader').classList.contains('on')){ setStatus('Tunggu proses yang sedang berjalan selesai atau hentikan dahulu.',true); return; }
     const r0=CD.rows[+go.dataset.go]; if(!r0) return;
     if(!canLeave()) return;
-    if(!$('doc').hidden&&curId==null&&!confirm('RPM yang sedang tampil belum tersimpan di database dan akan diganti oleh draf ini. Lanjutkan?')) return;
+    if(!$('doc').hidden&&curId==null&&r0.project_id!==PROJ&&!confirm('RPM yang sedang tampil belum tersimpan di database dan akan diganti oleh draf ini. Lanjutkan?')) return;
     go.disabled=true; go.textContent='Memuat…';
     let r=null; try{ const x=await sb(SB_DST,'/rpm_draft?id=eq.'+encodeURIComponent(r0.id)+'&select=*&limit=1'); r=x&&x[0]; }catch(err){ r=null; }
     go.disabled=false; go.textContent='Lanjutkan';
@@ -3071,7 +3108,7 @@ function closeProject(){
   }
   setEdit(false); setDirty(false);
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
-  $('empty').hidden=false; lastText=''; curId=null; PROJ=null;
+  $('empty').hidden=false; lastText=''; curId=null; PROJ=null; RECOMPOSE=null; hideResume(); cdSoon();
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
   $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('menitjp').value='45'; $('jptotal').value=''; $('jpbagi').value=''; syncAtpBox(); $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
@@ -3102,7 +3139,9 @@ $('sv_back').addEventListener('click',()=>{ if(!canLeave()) return; setEdit(fals
 $('pc_resusun').addEventListener('click',()=>{
   if(!canLeave()) return;
   setEdit(false); showView('make');
+  RECOMPOSE=PROJ;
   setStatus('Data RPP sudah terisi di form. Ubah bila perlu, lalu tekan Susun RPM.');
+  offerProjectDraft();      // bila projek ini punya draf belum selesai, langsung tampilkan
 });
 document.querySelectorAll('.sb-link').forEach(b=>b.addEventListener('click',()=>{ if(inViewer()&&!canLeave()) return; if(inViewer()) setEdit(false); showView(b.dataset.view); }));
 $('histguru').addEventListener('change',loadHist);
@@ -3141,7 +3180,7 @@ $('histlist').addEventListener('click',async e=>{
     if(r.asesmen_html){ showAses(r.asesmen_html); } else resetAses();
     if(r.lampiran_html){ showLamp(r.lampiran_html); } else resetLamp();
     ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
-    curId=r.id; PROJ='h'+r.id; setEdit(false); setDirty(false); openViewer(r.topik);
+    curId=r.id; PROJ='h'+r.id; RECOMPOSE=null; hideResume(); hideCloudDraft(); cdSoon(); setEdit(false); setDirty(false); openViewer(r.topik);
     setStatus('Data dibuka dari database (mode baca). Tekan Edit untuk menyunting; perubahan disimpan dengan tombol Simpan ke database.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){ setStatus('Gagal membuka data: '+err.message,true); }
