@@ -1969,8 +1969,10 @@ function signHTML(){
   return `<div class="sign"><div>Mengetahui,<br>Kepala Sekolah<span class="sp">${sigTag(0)}</span><span class="nm">${k}</span><br>NIP. ..................</div><div><span class="tgl">${esc(tglRPP()||TGL_KOSONG)}</span><br>Guru Mata Pelajaran<span class="sp">${sigTag(1)}</span><span class="nm">${g}</span><br>NIP. ..................</div></div>`;
 }
 function applySigs(){
-  const sps=document.querySelectorAll('#doc .sign .sp');
-  sps.forEach((el,i)=>{ el.innerHTML=sigTag(i); });
+  /* tanda tangan yang baru diunggah/dimuat langsung terpasang di dokumen yang sudah jadi (RPM, ATP, Prota & Prosem) */
+  document.querySelectorAll('#doc .sign, #atpdoc .sign, #ppdoc .sign').forEach(b=>{
+    b.querySelectorAll('.sp').forEach((el,i)=>{ el.innerHTML=sigTag(i); });
+  });
   const pv=$('a_ksprev'); if(pv) pv.innerHTML=sigImg[0]?`<img src="${sigImg[0]}" alt="Tanda tangan kepala sekolah" style="height:68px;max-width:100%;object-fit:contain;background:#fff;border:1px solid #ccc;border-radius:6px;padding:4px">`:'<span class="hint">Belum ada tanda tangan kepala sekolah.</span>';
 }
 const sigMsg=(i,t,err)=>msg(i===0?'a_ksmsg':'sigmsg',t,err);
@@ -1985,7 +1987,7 @@ function loadSig(i,file){
       c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
       c.getContext('2d').drawImage(im,0,0,c.width,c.height);
       sigImg[i]=c.toDataURL('image/png'); sigStored[i]=false; applySigs();
-      sigMsg(i,i===0?'Gambar dipasang. Tekan Simpan ke storage agar berlaku untuk semua guru.':'Tanda tangan dipasang.');
+      sigMsg(i,i===0?'Gambar dipasang. Tekan Simpan ke storage agar berlaku untuk semua guru.':'Tanda tangan dipasang, juga di dokumen yang sudah jadi. Tekan Simpan ke database bila dokumen sudah tersimpan.');
     };
     im.src=r.result;
   };
