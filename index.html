@@ -4205,7 +4205,7 @@ function protaTable(items){
       if(i.kind==='unit'){
         n++;
         const tps=i.tps.map(t=>`${t.kode?'<b>'+E(t.kode)+'</b> ':''}${E(t.text)}`).join('<br>')||'–';
-        rows+=`<tr><td ${cell}>${n}</td><td><b>${E(i.title)}</b>${i.materi?'<br>'+E(i.materi):''}</td><td>${tps}</td><td ${cell}>${i.jp}</td></tr>`;
+        rows+=`<tr style="page-break-inside:auto;break-inside:auto"><td ${cell}>${n}</td><td><b>${E(i.title)}</b>${i.materi?'<br>'+E(i.materi):''}</td><td>${tps}</td><td ${cell}>${i.jp}</td></tr>`;
       }else{
         sn++; const d=sumDesc(i.title);
         rows+=`<tr><td ${cell}></td><td style="background:#fff4d6"><b>Asesmen Sumatif ${sn}</b></td><td style="background:#fff4d6">${d?E(d):'–'}</td><td ${cell}>${i.jp}</td></tr>`;
@@ -4261,28 +4261,33 @@ function prosemTable(items,sem,W,jpw,y){
     if(last&&last.end===ci-1&&last.ket===k){ last.end=ci; last.n++; last.z=c.z; }
     else runs.push({start:ci,end:ci,n:1,ket:k,a:c.a,z:c.z,bln:c.bln});
   });
-  const nr=its.length; let n=0, sn=0, body='';
+  /* tiap unit dipecah: 1 baris judul unit (berisi JP & sebaran minggu) + 1 baris per TP. Baris kecil-kecil supaya tabel
+     bisa mulai langsung di halaman yang sama dengan kop dan berpindah halaman dengan wajar (bukan satu baris raksasa yang
+     memaksa seluruh tabel pindah ke halaman berikutnya). */
+  const drows=[]; its.forEach((i,k)=>{ drows.push({k,main:true}); if(i.kind==='unit') i.tps.forEach(t=>drows.push({k,tp:t})); });
+  const nr=drows.length; let n=0, sn=0, body='';
   /* label vertikal minggu tidak efektif diulang per kelompok ~3 baris (bukan satu sel setinggi seluruh tabel), supaya tabel bisa berpindah halaman dan labelnya tampil di tiap halaman */
   const GRP={starts:[],spans:[],cover:[]}; { let a=0; while(a<nr){ let e=a+3; if(nr-e<3) e=nr; GRP.starts.push(a); GRP.spans.push(e-a); for(let q=a+1;q<e;q++) GRP.cover[q]=true; a=e; } }
-  its.forEach((i,k)=>{
-    const isU=i.kind==='unit'; let lab, no='';
-    if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`+i.tps.map(t=>`<div style="font-weight:400;font-size:8.5pt">${t.kode?E(t.kode)+' ':''}${E(t.text)}</div>`).join(''); }
+  drows.forEach((dr,di)=>{
+    const k=dr.k, i=its[k], isU=i.kind==='unit', isT=!!dr.tp; let lab, no='';
+    if(isT){ lab=`<div style="font-weight:400;font-size:8.5pt">${dr.tp.kode?'<b>'+E(dr.tp.kode)+'</b> ':''}${E(dr.tp.text)}</div>`; }
+    else if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`; }
     else{ sn++; const d=sumDesc(i.title); lab=`<b>Asesmen Sumatif ${sn}</b>`+(d?`<div style="font-weight:400;font-size:8.5pt">${E(d)}</div>`:''); }
     const fill=isU?'#9dc0ea':'#f2b441', lblBg=isU?'#ffffff':'#fff4d6';
     let cells=''; for(let ci=0;ci<N;ci++){
       const c=cols[ci];
       if(c.off){
         const r=runs.find(x=>x.start===ci);
-        if(r){ const gi=GRP.starts.indexOf(k);
+        if(r){ const gi=GRP.starts.indexOf(di);
           if(gi>=0) cells+=`<td data-vt="1" rowspan="${GRP.spans[gi]}" colspan="${r.n}" style="text-align:center;vertical-align:middle;padding:1px;background:${OFFBG}"><div class="vt" style="display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:230px;font-size:8pt;line-height:1.15;text-align:center">${E(r.ket)}</div></td>`;
-          else if(!GRP.cover[k]) cells+=`<td colspan="${r.n}" style="padding:1px;background:${OFFBG}"></td>`;
+          else if(!GRP.cover[di]) cells+=`<td colspan="${r.n}" style="padding:1px;background:${OFFBG}"></td>`;
           ci=r.end; }
         continue;
       }
-      const v=al.rows[k][effIdx[ci]]||0;
+      const v=isT?0:(al.rows[k][effIdx[ci]]||0);
       cells+=`<td style="text-align:center;padding:1px;font-size:9pt;font-weight:700;background:${v?fill:'#ffffff'}">${v||''}</td>`;
     }
-    body+=`<tr><td style="text-align:center;background:${lblBg}">${no}</td><td style="text-align:left;background:${lblBg};padding:3px 5px">${lab}</td><td style="text-align:center;background:${lblBg}">${i.jp}</td>${cells}<td style="background:#ffffff"></td></tr>`;
+    body+=`<tr style="page-break-inside:avoid;break-inside:avoid"><td style="text-align:center;background:${lblBg}">${no}</td><td style="text-align:left;background:${lblBg};padding:3px 5px${isT?';padding-left:14px':''}">${lab}</td><td style="text-align:center;background:${lblBg}">${isT?'':i.jp}</td>${cells}<td style="background:#ffffff"></td></tr>`;
   });
   // baris total JP per minggu
   const wsum=Array(W).fill(0); al.rows.forEach(r=>r.forEach((v,x)=>{ wsum[x]+=v; }));
