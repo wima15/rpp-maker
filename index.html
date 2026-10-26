@@ -687,6 +687,12 @@ textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;m
 #ppdoc table.prosem th{overflow-wrap:normal;word-break:normal}
 @media screen{#ppdoc{max-width:297mm}#ppdoc .pp-sec{overflow-x:auto}#ppdoc table.prosem{min-width:640px}}
 #ppdoc table.prosem td:nth-child(2){text-align:left}
+/* kepala tabel berulang di tiap halaman dan tidak boleh tertinggal sendirian di halaman sebelumnya */
+@media print{
+  thead{display:table-header-group;break-after:avoid;page-break-after:avoid;break-inside:avoid}
+  thead tr,thead th{break-after:avoid;page-break-after:avoid;break-inside:avoid}
+  tfoot{display:table-footer-group}
+}
 @media print{
   #ppdoc table.prosem{font-size:8.5pt!important}
   .app{display:block!important}
@@ -1941,7 +1947,7 @@ function onPageInput(){
   pageSet(PAGE_KEYNOW,pageRead());
 }
 PAGE_IDS.forEach(id=>{ $(id).addEventListener('input',onPageInput); $(id).addEventListener('change',onPageInput); });
-window.addEventListener('beforeprint',()=>{ try{ pageSync(); applyPage(); }catch(e){} });
+window.addEventListener('beforeprint',()=>{ try{ ensureThead(document); pageSync(); applyPage(); }catch(e){} });
 applyPage();
 
 const sigImg=[null,null], sigStored=[false,false];
@@ -2344,11 +2350,27 @@ function styleDoc(root,kind){
   fixPengalaman(root);
   fixText(root);
   fillLogos(root);
+  ensureThead(root);
 }
+/* baris judul tabel dipindah ke <thead>: berulang di tiap halaman (cetak/PDF/Word) dan tidak terpisah dari isinya */
+function ensureThead(root){
+  (root||document).querySelectorAll('table:not(.kop):not(.idt)').forEach(t=>{
+    if(t.tHead) return;
+    const rows=[...t.rows]; let n=0;
+    while(n<rows.length&&rows[n].cells.length&&[...rows[n].cells].every(c=>c.tagName==='TH')) n++;
+    if(!n||n>=rows.length) return;
+    if(rows.slice(0,n).some((r,i)=>[...r.cells].some(c=>c.rowSpan>n-i))) return;   // judul bertingkat yang melewati baris isi: biarkan
+    const th=t.createTHead(); rows.slice(0,n).forEach(r=>th.appendChild(r));
+  });
+}
+(function(){
+  let tm=null; const run=()=>{ clearTimeout(tm); tm=setTimeout(()=>{ try{ ensureThead(document); }catch(e){} },300); };
+  ['doc','lkpd','asesmen','lampiran','atpdoc','ppdoc'].forEach(id=>{ const e=document.getElementById(id); if(e) new MutationObserver(run).observe(e,{childList:true,subtree:true}); });
+})();
 /* logo tidak ikut disimpan ke database (diisi ulang saat dibuka) */
 function stripLogos(el){ const c=el.cloneNode(true); c.querySelectorAll('img[data-logo]').forEach(i=>i.removeAttribute('src')); c.querySelectorAll('img.img-sel').forEach(i=>i.classList.remove('img-sel')); c.querySelectorAll('img.usr-img').forEach(i=>{ i.style.opacity=''; }); return c; }
 
-const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2433}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c3cfe3;padding:5px;vertical-align:top}th{background:#1f3a6e;color:#fff}h1{font-size:15pt;color:#14284f;text-align:center;margin:3pt 0;letter-spacing:1pt}h2{background:#e8eef8;color:#14284f;border-left:5pt solid #2f6bb3;font-size:12.5pt;padding:3pt 8pt;margin-top:14pt}h3{color:#14284f;font-size:12pt;font-weight:bold;border-left:4pt solid #f2b441;border-bottom:1pt solid #e3c56b;padding:1pt 0 2pt 8pt;margin-top:12pt}p,li,td{text-align:justify}.sch{font-size:9.5pt;font-weight:bold;letter-spacing:2pt;color:#2f6bb3;text-align:center}.sub{font-size:9pt;color:#5a6b8c;text-align:center}hr.kop-rule{border:0;border-top:3pt solid #1f3a6e;border-bottom:1pt solid #f2b441;height:2pt}.ar{font-family:"Traditional Arabic","Amiri","Arial",serif;mso-bidi-font-family:"Traditional Arabic";font-size:16pt;mso-bidi-font-size:16pt}.jv{font-family:"Javanese Text","Noto Sans Javanese",serif;mso-ascii-font-family:"Javanese Text";mso-hansi-font-family:"Javanese Text";mso-fareast-font-family:"Javanese Text";font-size:13pt}.mt{white-space:nowrap}table.pengalaman td,table.pengalaman th{padding:3pt 5pt;line-height:110%}';
+const DOC_CSS='body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2433}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c3cfe3;padding:5px;vertical-align:top}th{background:#1f3a6e;color:#fff}h1{font-size:15pt;color:#14284f;text-align:center;margin:3pt 0;letter-spacing:1pt}h2{background:#e8eef8;color:#14284f;border-left:5pt solid #2f6bb3;font-size:12.5pt;padding:3pt 8pt;margin-top:14pt}h3{color:#14284f;font-size:12pt;font-weight:bold;border-left:4pt solid #f2b441;border-bottom:1pt solid #e3c56b;padding:1pt 0 2pt 8pt;margin-top:12pt}p,li,td{text-align:justify}.sch{font-size:9.5pt;font-weight:bold;letter-spacing:2pt;color:#2f6bb3;text-align:center}.sub{font-size:9pt;color:#5a6b8c;text-align:center}hr.kop-rule{border:0;border-top:3pt solid #1f3a6e;border-bottom:1pt solid #f2b441;height:2pt}.ar{font-family:"Traditional Arabic","Amiri","Arial",serif;mso-bidi-font-family:"Traditional Arabic";font-size:16pt;mso-bidi-font-size:16pt}.jv{font-family:"Javanese Text","Noto Sans Javanese",serif;mso-ascii-font-family:"Javanese Text";mso-hansi-font-family:"Javanese Text";mso-fareast-font-family:"Javanese Text";font-size:13pt}.mt{white-space:nowrap}table.pengalaman td,table.pengalaman th{padding:3pt 5pt;line-height:110%}thead{display:table-header-group}tr{page-break-inside:avoid}';
 
 /* ---- pilih API key (key asli tetap di server, browser hanya mengirim nomor) ---- */
 let KEY_COUNT=null, KEY_SLOT='auto';
@@ -4191,7 +4213,7 @@ function protaTable(items){
     rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700">Jumlah JP Semester ${E(s)}</td><td ${cell}><b>${tot}</b></td></tr>`;
   });
   if(nSem>1) rows+=`<tr><td colspan="3" style="text-align:right;font-weight:700;background:#e8eef8">Jumlah JP Satu Tahun</td><td style="text-align:center;background:#e8eef8"><b>${all}</b></td></tr>`;
-  return `<table><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr>${rows}</table>`;
+  return `<table><thead><tr><th width="6%">No</th><th width="30%">Unit / Materi Pokok</th><th width="52%">Tujuan Pembelajaran</th><th width="12%">Alokasi Waktu (JP)</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function monthsFor(sem,y){
   const n=sem==='Ganjil'?['Jul','Agu','Sep','Okt','Nov','Des']:['Jan','Feb','Mar','Apr','Mei','Jun'];
@@ -4264,7 +4286,7 @@ function prosemTable(items,sem,W,jpw,y){
     ket=`<div style="font-size:9.5pt;margin-top:8px"><b>Keterangan minggu tidak efektif:</b></div><table style="width:100%;font-size:9.5pt;margin-top:3px"><tr><th style="width:5%">No</th><th style="width:30%">Minggu</th><th style="width:10%">Jumlah</th><th>Keterangan</th></tr>`
       +runs.map((r,ix)=>{ const wk=r.a?`${E(mn[r.bln])} · ${E(r.a)} – ${E(r.z)}`:E(mn[r.bln]); return `<tr><td style="text-align:center">${ix+1}</td><td>${wk}</td><td style="text-align:center">${r.n} minggu</td><td>${E(r.ket)}</td></tr>`; }).join('')+`</table>`;
   }
-  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup>${h1}${h2}${body}</table>${ket}`};
+  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>${ket}`};
 }
 function identRows(r,extra){
   /* identitas tanpa tabel: dua kolom, label berlebar tetap sehingga tanda ":" lurus antar baris (contoh: Penyusun   : Hanif) */
