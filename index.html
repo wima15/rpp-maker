@@ -4260,6 +4260,8 @@ function prosemTable(items,sem,W,jpw,y){
     else runs.push({start:ci,end:ci,n:1,ket:k,a:c.a,z:c.z,bln:c.bln});
   });
   const nr=its.length; let n=0, sn=0, body='';
+  /* label vertikal minggu tidak efektif diulang per kelompok ~3 baris (bukan satu sel setinggi seluruh tabel), supaya tabel bisa berpindah halaman dan labelnya tampil di tiap halaman */
+  const GRP={starts:[],spans:[],cover:[]}; { let a=0; while(a<nr){ let e=a+3; if(nr-e<3) e=nr; GRP.starts.push(a); GRP.spans.push(e-a); for(let q=a+1;q<e;q++) GRP.cover[q]=true; a=e; } }
   its.forEach((i,k)=>{
     const isU=i.kind==='unit'; let lab, no='';
     if(isU){ n++; no=n; lab=`<b>${E(i.title)}</b>`+i.tps.map(t=>`<div style="font-weight:400;font-size:8.5pt">${t.kode?E(t.kode)+' ':''}${E(t.text)}</div>`).join(''); }
@@ -4269,7 +4271,10 @@ function prosemTable(items,sem,W,jpw,y){
       const c=cols[ci];
       if(c.off){
         const r=runs.find(x=>x.start===ci);
-        if(r){ if(k===0) cells+=`<td data-vt="1" rowspan="${nr}" colspan="${r.n}" style="text-align:center;vertical-align:middle;padding:1px;background:${OFFBG}"><div class="vt" style="display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:230px;font-size:8pt;line-height:1.15;text-align:center">${E(r.ket)}</div></td>`; ci=r.end; }
+        if(r){ const gi=GRP.starts.indexOf(k);
+          if(gi>=0) cells+=`<td data-vt="1" rowspan="${GRP.spans[gi]}" colspan="${r.n}" style="text-align:center;vertical-align:middle;padding:1px;background:${OFFBG}"><div class="vt" style="display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:230px;font-size:8pt;line-height:1.15;text-align:center">${E(r.ket)}</div></td>`;
+          else if(!GRP.cover[k]) cells+=`<td colspan="${r.n}" style="padding:1px;background:${OFFBG}"></td>`;
+          ci=r.end; }
         continue;
       }
       const v=al.rows[k][effIdx[ci]]||0;
