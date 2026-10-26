@@ -2574,6 +2574,7 @@ async function askRaw(contents,maxTok){
       body:JSON.stringify({model:modelDipakai(),keySlot:KEY_SLOT==='auto'?undefined:Number(KEY_SLOT),contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:true})});
   }catch(e){ if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(); throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   usageKey(res.headers.get('x-key-used'));
+  if(res.headers.get('x-provider')==='groq') setStatus('Server Gemini sibuk, memakai server cadangan (Groq)…');
   if(res.ok && (res.headers.get('content-type')||'').includes('text/event-stream')) return await readStream(res);
   let data=null;
   try{ const raw=await res.text(); data=raw?JSON.parse(raw):null; }catch(e){ data=null; }
@@ -2594,6 +2595,7 @@ async function askRaw(contents,maxTok){
 
 /* ---- hasil panjang / terputus: simpan sebagian, lanjutkan (boleh dengan API key lain) ---- */
 const CONT_PROMPT='Lanjutkan dokumen di atas tepat dari titik terakhir. Jangan mengulang bagian yang sudah ditulis, jangan memberi kalimat pembuka atau penutup, dan pertahankan format yang sama. Teruskan dari karakter terakhir.';
+const AUTO_RETRY=0;   // 0 = langsung gagal bila server AI kewalahan (tanpa menunggu); isi 1-4 untuk mengulang otomatis
 const MAX_CONT=16, CHUNK_TOKENS=8192, MIN_CHUNK=1024;   // dokumen dikerjakan per potongan ~8 ribu token
 const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
 let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='', RECOMPOSE=null;   // RECOMPOSE = id projek yang sedang akan disusun ulang
@@ -2621,10 +2623,10 @@ async function ask(prompt,key){
       if(e.status===400 && THINK_CFG && thinkFix<2 && /think/i.test(e.message||'')){
         thinkFix++; THINK_CFG=THINK_CFG.thinkingLevel?{thinkingBudget:1024}:null; round--; continue;
       }
-      if([546,504,502,408].includes(e.status) && retry<4){   // server kewalahan: batasi berpikir, perkecil potongan, tunggu sebentar, coba lagi otomatis
+      if([546,504,502,408].includes(e.status) && retry<AUTO_RETRY){   // server kewalahan: batasi berpikir, perkecil potongan, tunggu sebentar, coba lagi otomatis
         retry++; chunk=Math.max(MIN_CHUNK,Math.floor(chunk/2)); round--;
         if(!THINK_CFG && thinkFix===0) THINK_CFG={thinkingLevel:'low'};
-        setStatus('Server AI kewalahan, mencoba lagi dengan potongan lebih kecil ('+chunk+' token), percobaan '+retry+'/4…');
+        setStatus('Server AI kewalahan, mencoba lagi dengan potongan lebih kecil ('+chunk+' token), percobaan '+retry+'/'+AUTO_RETRY+'…');
         await new Promise(res=>setTimeout(res,1500*retry*retry));
         continue;
       }
