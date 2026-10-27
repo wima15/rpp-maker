@@ -1400,14 +1400,14 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <div id="a_mlist"></div>
       <h3>Tambah model</h3>
       <div class="row">
-        <div><label for="a_mid">Nama model (ID dari Google AI Studio)</label><input id="a_mid" placeholder="contoh: gemini-3.8-flash" autocomplete="off" spellcheck="false"></div>
+        <div><label for="a_mid">Nama model (ID dari OpenRouter)</label><input id="a_mid" placeholder="contoh: google/gemini-2.5-flash" autocomplete="off" spellcheck="false"></div>
         <div><label for="a_mlabel">Nama tampilan (opsional)</label><input id="a_mlabel" placeholder="contoh: Flash (cepat)" maxlength="60"></div>
       </div>
       <div class="btns">
         <button type="button" class="ghost" id="a_muji">Uji model</button>
         <button type="button" id="a_madd">Tambah ke daftar</button>
       </div>
-      <p class="hint">Disarankan menekan <b>Uji model</b> dulu: server mencoba satu permintaan kecil untuk memastikan nama model benar dan kuota API key mencukupi. Hanya ID berawalan <b>gemini-</b> yang diterima.</p>
+      <p class="hint">Disarankan menekan <b>Uji model</b> dulu: server mencoba satu permintaan kecil untuk memastikan nama model benar dan kuota API key mencukupi. Gunakan ID OpenRouter berbentuk <b>penyedia/model</b>, mis. google/gemini-2.5-flash.</p>
       <div class="btns">
         <button type="button" id="a_msave">Simpan pengaturan model</button>
         <button type="button" class="ghost" id="a_mreset">Kembalikan daftar bawaan</button>
@@ -1448,15 +1448,15 @@ const DIMS = [
   "Kolaborasi","Kemandirian","Kesehatan","Komunikasi"
 ];
 const $ = id => document.getElementById(id);
-// Edge Function gemini-proxy di Supabase tujuan; GEMINI_API_KEY disimpan sebagai secret di sana.
+// Edge Function gemini-proxy di Supabase tujuan; OPENROUTER_API_KEY_1 (dst) disimpan sebagai secret di sana.
 const aiUrl = () => SB_DST.url.replace(/\/rest\/v1$/,'')+'/functions/v1/gemini-proxy';
 
 /* ===== MODEL AI: daftar & default diatur admin (pengaturan_rpm, kunci 'model_ai'); server memeriksa ulang di gemini-proxy ===== */
-const MODEL_RE=/^gemini-[a-z0-9.\-]{1,60}$/;
+const MODEL_RE=/^[a-z0-9][a-z0-9._\-]*\/[a-z0-9][a-z0-9._:\-]{0,80}$/;   /* ID OpenRouter: penyedia/model */
 /* Daftar bawaan = cadangan bila pengaturan admin belum ada / rusak. Harus sama dengan CFG_BAWAAN di gemini-proxy. */
-const MODEL_SEED={default:'gemini-3.8-flash',models:[
-  {id:'gemini-3.8-flash',label:'',aktif:true},{id:'gemini-3.8-pro',label:'',aktif:true},
-  {id:'gemini-flash-latest',label:'',aktif:true},{id:'gemini-pro-latest',label:'',aktif:true}]};
+const MODEL_SEED={default:'google/gemini-2.5-flash',models:[
+  {id:'google/gemini-2.5-flash',label:'',aktif:true},{id:'google/gemini-2.5-pro',label:'',aktif:true},
+  {id:'openai/gpt-oss-120b',label:'',aktif:true},{id:'openrouter/auto',label:'',aktif:true}]};
 /* null bila bentuknya salah atau default tidak termasuk model aktif */
 function modelClean(o){
   if(!o||!Array.isArray(o.models)) return null;
@@ -2581,14 +2581,14 @@ async function askRaw(contents,maxTok){
       body:JSON.stringify({model:modelDipakai(),keySlot:(KEY_SLOT==='auto'||isGroq(KEY_SLOT))?undefined:Number(KEY_SLOT),groqSlot:isGroq(KEY_SLOT)?Number(String(KEY_SLOT).slice(1)):undefined,contents:contents,generationConfig:Object.assign({temperature:0.7,maxOutputTokens:maxTok||16384},THINK_CFG?{thinkingConfig:THINK_CFG}:{}),stream:USE_STREAM})});
   }catch(e){ if(STOP_REQ||(e&&e.name==='AbortError')) throw stopErr(); throw new Error('Tidak bisa terhubung ke server AI. Periksa koneksi internet lalu coba lagi.'); }
   usageKey(res.headers.get('x-key-used'));
-  if(res.headers.get('x-provider')==='groq') setStatus('Server Gemini sibuk, memakai server cadangan (Groq)…');
+  if(res.headers.get('x-provider')==='groq') setStatus('Server AI sibuk, memakai server cadangan…');
   if(res.ok && (res.headers.get('content-type')||'').includes('text/event-stream')) return await readStream(res);
   let data=null;
   try{ const raw=await res.text(); data=raw?JSON.parse(raw):null; }catch(e){ data=null; }
   if(!res.ok){
     const m=(data&&((data.error&&data.error.message)||data.message||(typeof data.error==='string'?data.error:'')))||'';
     const E=msg=>Object.assign(new Error(msg),{status:res.status});
-    if(res.status===503) throw E('Server Gemini sedang sibuk (kode 503). Sudah dicoba model lain, tetap penuh. Tunggu sebentar lalu coba lagi, atau pilih model flash.'+(m?' Detail: '+m:''));
+    if(res.status===503) throw E('Server AI sedang sibuk (kode 503). Sudah dicoba model lain, tetap penuh. Tunggu sebentar lalu coba lagi, atau pilih model flash.'+(m?' Detail: '+m:''));
     if([546,504,502,408].includes(res.status)) throw E('Server AI kehabisan waktu atau sumber daya (kode '+res.status+'). Permintaan terlalu berat untuk satu kali proses. Coba lagi, pakai model "flash", atau kurangi jumlah pertemuan.'+(m?' Detail: '+m:''));
     if(res.status===401){ forceLogin('Sesi berakhir, silakan masuk lagi.'); throw E('Sesi login berakhir. Masuk lagi lalu coba kembali.'); }
     if(res.status===429) throw E('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi'+(KEY_SLOT!=='auto'?', atau pilih API KEY lain.':'.')+(m?' Detail: '+m:''));
@@ -3638,7 +3638,7 @@ $('a_mlist').addEventListener('click',async e=>{
 /* uji satu permintaan kecil lewat gemini-proxy (admin boleh menguji model yang belum ada di daftar) */
 async function amTest(id,btn){
   id=String(id||'').trim().toLowerCase();
-  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Harus berawalan "gemini-" dan hanya berisi huruf kecil, angka, titik, atau strip.',true); return false; }
+  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Gunakan ID OpenRouter berbentuk penyedia/model, mis. google/gemini-2.5-flash (huruf kecil).',true); return false; }
   const old=btn&&btn.textContent; if(btn){ btn.disabled=true; btn.textContent='Menguji…'; }
   msg('a_mmsg','Menguji '+id+'…');
   try{
@@ -3655,7 +3655,7 @@ $('a_muji').addEventListener('click',()=>amTest($('a_mid').value,$('a_muji')));
 $('a_madd').addEventListener('click',()=>{
   if(!AM) return;
   const id=$('a_mid').value.trim().toLowerCase(), label=$('a_mlabel').value.trim().slice(0,60);
-  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Harus berawalan "gemini-" dan hanya berisi huruf kecil, angka, titik, atau strip.',true); return; }
+  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Gunakan ID OpenRouter berbentuk penyedia/model, mis. google/gemini-2.5-flash (huruf kecil).',true); return; }
   if(AM.models.some(m=>m.id===id)){ msg('a_mmsg','Model '+id+' sudah ada di daftar.',true); return; }
   AM.models.push({id,label,aktif:true});
   $('a_mid').value=''; $('a_mlabel').value=''; amRender();
