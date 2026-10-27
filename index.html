@@ -2904,31 +2904,62 @@ Hindari penjelasan panjang; utamakan tugas yang bisa selesai cepat.`;
 - Kegiatan 3 (Merefleksi): 3–4 pertanyaan refleksi.
 - Penilaian: rubrik rinci dengan deskripsi tiap skor 1–4.`;
 }
+/* RPM -> Markdown terstruktur untuk LKPD: tabel tetap tabel, <br> tidak menempel, kop/tanda tangan dibuang */
+function rpmMdLkpd(){
+  const root=$('doc'); if(!root) return '';
+  const o=[];
+  const tx=n=>{ const c=n.cloneNode(true); c.querySelectorAll('br').forEach(b=>b.replaceWith(' // ')); return c.textContent.replace(/\s+/g,' ').trim(); };
+  const walk=nodes=>[...nodes].forEach(n=>{
+    if(n.nodeType!==1) return; const t=n.tagName;
+    if(n.classList.contains('sign')||n.classList.contains('pb')||t==='HR') return;
+    if(/^H[1-6]$/.test(t)) o.push('#'.repeat(+t[1])+' '+tx(n));
+    else if(t==='TABLE'){
+      if(n.classList.contains('kop')){ const hh=n.querySelector('h1'); if(hh) o.push('# '+tx(hh)); return; }
+      const rows=[...n.rows].map(r=>'| '+[...r.cells].map(c=>tx(c).replace(/\|/g,'/')).join(' | ')+' |');
+      if(rows.length){ rows.splice(1,0,'|'+' --- |'.repeat(n.rows[0].cells.length)); o.push(rows.join('\n')); }
+    }
+    else if(t==='UL'||t==='OL') o.push([...n.children].map((li,i)=>(t==='OL'?((+n.getAttribute('start')||1)+i)+'. ':'- ')+tx(li)).join('\n'));
+    else if(t==='DIV'&&n.querySelector('table,h1,h2,h3,ul,ol')) walk(n.children);
+    else { const x=tx(n); if(x) o.push(x); }
+  });
+  walk(root.children);
+  const md=o.join('\n\n');
+  return md.length>300?md:root.innerText;   // cadangan bila struktur tidak terbaca
+}
 function lkpdPrompt(){
-  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. Isi LKPD harus mengikuti urutan langkah pada bagian Pengalaman Belajar di RPM: kegiatan awal (pemantik), Memahami, Mengaplikasi, lalu Merefleksi. Ini lembar yang dibaca dan diisi siswa, jadi gunakan bahasa yang sesuai usia fase ${$('fase').value}.
+  return `Berdasarkan RPM berikut, susun LKPD (Lembar Kerja Peserta Didik) untuk SETIAP pertemuan. LKPD adalah turunan langsung dari RPM: isinya HARUS SAMA dengan RPM, hanya dikemas sebagai lembar kerja yang dibaca dan diisi siswa. Gunakan bahasa yang sesuai usia fase ${$('fase').value}.
+
+KESESUAIAN DENGAN RPM (WAJIB, periksa sebelum menulis tiap pertemuan):
+1. LKPD Pertemuan n memakai tabel Pengalaman Belajar Pertemuan n di RPM. Judul kegiatan, topik, dan konteks (kasus, contoh, benda, tempat, data) diambil dari RPM, bukan dikarang baru.
+2. Pemetaan kegiatan: baris \"Awal\" dan \"Inti – Memahami\" di RPM menjadi Kegiatan 1 (Memahami); \"Inti – Mengaplikasi\" menjadi Kegiatan 2 (Mengaplikasi); \"Inti – Merefleksi\" dan \"Penutup\" menjadi Kegiatan 3 (Merefleksi). Tugas siswa pada tiap kegiatan harus mengikuti langkah, urutan, model/metode, dan media yang tertulis di baris RPM tersebut. Jangan menambah kegiatan, metode, atau media yang tidak ada di RPM, dan jangan mengganti kegiatannya dengan tugas lain.
+3. Tujuan Belajar di LKPD adalah Tujuan Pembelajaran RPM untuk pertemuan itu, ditulis dengan bahasa siswa tanpa mengubah kata kerja operasional dan tingkat capaiannya.
+4. Hasil/produk yang diminta pada Kegiatan 2 sama dengan \"Hasil/Produk Siswa\" pada Asesmen Proses di RPM. Rubrik pada bagian Penilaian memakai kriteria dari rubrik asesmen di RPM (disederhanakan), bukan kriteria baru.
+5. Alat dan Bahan hanya yang tersirat dari RPM (sumber daya, lingkungan, pemanfaatan digital, langkah kegiatan). Waktu mengerjakan harus muat dalam durasi kegiatan di RPM.
+6. Bila RPM tidak memuat suatu detail, tulis berdasarkan topik RPM secara umum. Jangan mengarang data, kutipan, atau dokumen resmi.
+7. Pertemuan yang tidak punya tabel di RPM tidak dibuatkan LKPD, dan jumlah LKPD sama dengan jumlah pertemuan yang diminta.
 
 BAHASA LKPD: ${$('bahasa').value==='auto'
-  ? `Mata pelajaran ini adalah "${$('mapel').value}". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
+  ? `Mata pelajaran ini adalah \"${$('mapel').value}\". Jika itu mata pelajaran bahasa tertentu (misalnya Bahasa Inggris, Bahasa Arab, Bahasa Jawa, Bahasa Mandarin, Bahasa Jepang), seluruh isi LKPD WAJIB ditulis dalam bahasa tersebut. Jika bukan mata pelajaran bahasa tertentu, atau Bahasa Indonesia, gunakan Bahasa Indonesia.`
   : `Seluruh isi LKPD WAJIB ditulis dalam bahasa ${$('bahasa').value}.`}
-Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya "Tujuan Belajar" menjadi "Learning Objectives" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
+Berlaku untuk semua teks LKPD: judul, nama bagian (terjemahkan judul bagian di format di bawah, misalnya \"Tujuan Belajar\" menjadi \"Learning Objectives\" untuk bahasa Inggris), label identitas, petunjuk, bacaan, soal, pertanyaan refleksi, dan rubrik. Tulis dengan level bahasa yang sesuai fase. Khusus Fase A sampai C, petunjuk boleh diberi terjemahan Indonesia singkat dalam kurung. Bagian RPM di bawah tetap Bahasa Indonesia, hanya sumber isi.
 
 Format Markdown untuk tiap pertemuan:
-# LKPD PERTEMUAN n: judul kegiatan
-Tabel identitas 2 kolom dengan baris judul (misalnya "Komponen | Keterangan", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, dan Pertemuan ke-n (sudah terisi), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
+# LKPD PERTEMUAN n: judul kegiatan (sama dengan judul/topik pertemuan n di RPM)
+Tabel identitas 2 kolom dengan baris judul (misalnya \"Komponen | Keterangan\", sesuaikan bahasanya), berisi Mata Pelajaran, Topik, Fase/Kelas, dan Pertemuan ke-n (sudah terisi), lalu Nama/Kelompok, Kelas, Hari/Tanggal dengan sel isian kosong untuk siswa. Jangan menulis kop, nama sekolah di atas judul, atau logo; aplikasi menambahkannya otomatis.
 ## Tujuan Belajar (kalimat sederhana untuk siswa)
 ## Petunjuk Pengerjaan
 ## Alat dan Bahan (jika diperlukan)
-## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret)
+## Kegiatan 1: Memahami (sertakan bacaan singkat, data, atau pertanyaan pemantik yang konkret sesuai RPM)
 ## Kegiatan 2: Mengaplikasi (tugas langkah demi langkah sesuai kegiatan inti RPM)
 ## Kegiatan 3: Merefleksi (jumlah pertanyaan sesuai TINGKAT KEDALAMAN di bawah)
 ## Penilaian (tabel rubrik singkat dengan kolom Kriteria, Skor 1–4, Paraf Guru)
 
-Aturan: tugas harus spesifik pada topik, bukan perintah umum. Untuk tugas menggambar, sketsa, diagram, atau tempel gambar, buat tabel dengan baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang sel-selnya benar-benar kosong, tanpa teks, tanpa titik-titik, dan tanpa &nbsp;; aplikasi mengatur ukuran kotaknya. Pilihan jawaban yang dicentang ditulis dengan awalan "- [ ] ". Penomoran daftar harus berurutan dan tidak diulang dari 1 di tengah. Jika tugas meminta siswa menggambar, membuat sketsa, atau menempel sesuatu, sediakan tabel berisi baris judul kolom lalu SATU baris isi yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa garis titik); aplikasi menyesuaikan ukuran bingkainya. Pilihan ganda atau centang ditulis dengan awalan "- [ ] ". Beri nomor berurutan tanpa mengulang dari 1. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Jangan mengarang kutipan atau data resmi. Keluarkan hanya LKPD tanpa pembuka dan penutup.
+Aturan bentuk: tugas harus spesifik pada topik, bukan perintah umum. Jika tugas meminta siswa menggambar, membuat sketsa, diagram, atau menempel sesuatu, sediakan tabel berisi baris judul kolom (misalnya nama pose atau keterangan) lalu SATU baris isian yang seluruh selnya benar-benar kosong (tanpa teks, tanpa &nbsp;, tanpa titik-titik); aplikasi mengatur ukuran kotaknya. Pilihan ganda atau centang ditulis dengan awalan \"- [ ] \". Beri nomor berurutan tanpa mengulang dari 1 di tengah daftar. Tempat jawaban berupa tabel dengan sel kosong atau baris titik-titik. Keluarkan hanya LKPD tanpa pembuka dan penutup.
 
 ${lkpdUpaya()}${lkpdPilihan()}${NOTASI}
 
-RPM:
-${$('doc').innerText}`;
+RPM (sumber isi, ikuti persis):
+${rpmMdLkpd()}`;
 }
 
 $('lkpdbtn').addEventListener('click',async()=>{
