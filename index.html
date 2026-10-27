@@ -1088,6 +1088,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <span class="tlabel">Sunting dokumen</span>
       <div class="tbtns">
         <button type="button" class="ghost" id="editbtn" disabled>Edit</button>
+        <button type="button" class="ghost" id="revbtn" title="Minta AI menulis ulang satu bagian RPM atau satu pertemuan LKPD saja, sesuai instruksi Anda">Revisi bagian (AI)</button>
       </div>
       <div id="editextra" hidden>
         <div class="tbtns" style="margin-top:8px">
@@ -1126,6 +1127,21 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <div id="lk_pert" style="display:flex;flex-wrap:wrap;gap:6px 14px"></div>
       <div id="lk_msg" style="color:#b91c1c;font-size:12.5px;min-height:18px;margin-top:6px"></div>
       <div class="keybtns"><button type="button" class="ghost" id="lkcancel">Batal</button><button type="button" id="lkok">Lanjut</button></div>
+    </div>
+  </div>
+  <div class="keyov" id="revov" role="dialog" aria-modal="true" aria-labelledby="revttl">
+    <div class="keybox">
+      <h3 id="revttl">Revisi bagian dengan AI</h3>
+      <p>Pilih satu bagian, tulis perubahan yang diinginkan. Hanya bagian itu yang ditulis ulang; bagian lain tidak disentuh.</p>
+      <label for="rev_doc" style="font-size:13px;font-weight:600">Dokumen</label>
+      <select id="rev_doc" style="width:100%;margin:2px 0 8px"></select>
+      <label for="rev_sec" style="font-size:13px;font-weight:600">Bagian</label>
+      <select id="rev_sec" style="width:100%;margin:2px 0 8px"></select>
+      <label for="rev_ins" style="font-size:13px;font-weight:600">Instruksi revisi</label>
+      <textarea id="rev_ins" rows="4" style="width:100%;margin-top:2px" placeholder="contoh: tambahkan satu kegiatan diskusi kelompok 10 menit; ganti soal nomor 3 dengan soal HOTS"></textarea>
+      <div id="rev_msg" style="color:#b91c1c;font-size:12.5px;min-height:18px;margin-top:6px"></div>
+      <p style="font-size:12px;color:#64748b;margin:0">Catatan: gambar yang Anda sisipkan manual di bagian itu ikut terganti. Hasil bisa dibatalkan dengan tidak menekan Simpan lalu memuat ulang dari riwayat.</p>
+      <div class="keybtns"><button type="button" class="ghost" id="revcancel">Batal</button><button type="button" id="revok">Tulis ulang bagian</button></div>
     </div>
   </div>
   <div class="ovl" id="lovl"></div>
@@ -2927,6 +2943,109 @@ $('lkpdbtn').addEventListener('click',async()=>{
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
 });
 
+
+
+/* ================= REVISI BAGIAN DENGAN AI: RPM per bagian, LKPD per pertemuan ================= */
+const REV_PB='<div class="pb" contenteditable="false" style="page-break-before:always;break-before:page"></div>';
+function revSections(kind){
+  const root=$(kind==='lkpd'?'lkpd':'doc'); if(root.hidden||!root.textContent.trim()) return [];
+  const kids=[...root.children], out=[];
+  if(kind==='lkpd'){
+    kids.forEach((el,i)=>{
+      if(!(el.tagName==='TABLE'&&el.classList.contains('kop'))) return;
+      const nodes=[el]; for(let j=i+1;j<kids.length;j++){ const x=kids[j]; if(x.classList.contains('pb')||(x.tagName==='TABLE'&&x.classList.contains('kop'))) break; nodes.push(x); }
+      const hh=el.querySelector('h1'); out.push({label:(hh?hh.textContent:'LKPD').replace(/\s+/g,' ').trim(),nodes});
+    });
+  } else {
+    kids.forEach((el,i)=>{
+      if(!/^H[23]$/.test(el.tagName)) return;
+      const lv=+el.tagName[1], nodes=[el];
+      for(let j=i+1;j<kids.length;j++){ const x=kids[j];
+        if((/^H[123]$/.test(x.tagName)&&+x.tagName[1]<=lv)||x.classList.contains('sign')||(x.tagName==='TABLE'&&x.classList.contains('kop'))) break; nodes.push(x); }
+      out.push({label:(lv===3?'   ↳ ':'')+el.textContent.replace(/\s+/g,' ').trim(),nodes});
+    });
+  }
+  return out;
+}
+/* DOM -> Markdown ringkas, supaya AI melihat struktur tabel/daftar yang sama dengan yang dirender md() */
+function revMd(nodes){
+  const o=[], tx=n=>n.textContent.replace(/\s+/g,' ').trim();
+  nodes.forEach(n=>{
+    if(n.nodeType!==1) return; const t=n.tagName;
+    if(/^H[1-3]$/.test(t)) o.push('#'.repeat(+t[1])+' '+tx(n));
+    else if(t==='TABLE'){
+      if(n.classList.contains('kop')){ const hh=n.querySelector('h1'); if(hh) o.push('# '+tx(hh)); return; }
+      const rows=[...n.rows].map(r=>'| '+[...r.cells].map(c=>tx(c).replace(/\|/g,'/')).join(' | ')+' |');
+      if(rows.length){ rows.splice(1,0,'|'+' --- |'.repeat(n.rows[0].cells.length)); o.push(rows.join('\n')); }
+    }
+    else if(t==='UL'||t==='OL') o.push([...n.children].map((li,i)=>(t==='OL'?((+n.getAttribute('start')||1)+i)+'. ':'- ')+tx(li)).join('\n'));
+    else if(t==='HR'||(t==='DIV'&&(n.classList.contains('pb')||n.classList.contains('sign')))) return;
+    else { const x=tx(n); if(x) o.push(x); }
+  });
+  return o.join('\n\n');
+}
+let REV_LIST=[];
+function revFillSec(){
+  const kind=$('rev_doc').value; REV_LIST=revSections(kind);
+  $('rev_sec').innerHTML=REV_LIST.map((s,i)=>`<option value="${i}">${esc(s.label)}</option>`).join('');
+}
+function revPrompt(kind,sec,ins){
+  const all=revSections(kind).map(s=>s.label.trim()).join('\n'), cur=revMd(sec.nodes);
+  let ctx='';
+  if(kind==='lkpd'){
+    const n=(sec.label.match(/PERTEMUAN\s*(\d+)/i)||[])[1];
+    const p=n&&revSections('rpm').find(s=>new RegExp('Pertemuan\\s*'+n+'\\b','i').test(s.label));
+    if(p) ctx='\n\nKEGIATAN PERTEMUAN '+n+' DI RPM (acuan, jangan diubah):\n'+revMd(p.nodes);
+  }
+  return `Anda merevisi SATU bagian dari dokumen ${kind==='lkpd'?'LKPD (Lembar Kerja Peserta Didik)':'RPM (Rencana Pembelajaran Mendalam)'} untuk guru di Indonesia.
+Mata pelajaran: ${$('mapel').value}. Topik: ${$('topik').value}. Fase/kelas: ${$('fase').value}.
+
+DAFTAR BAGIAN DOKUMEN (hanya sebagai konteks):
+${all}
+
+BAGIAN YANG DIREVISI (Markdown saat ini):
+${cur}${ctx}
+
+INSTRUKSI REVISI DARI GURU:
+${ins}
+
+ATURAN: Tulis ulang HANYA bagian di atas secara lengkap dengan instruksi diterapkan. Mulai dari baris judul yang sama (tingkat # dan nomor/huruf bagian tetap). Pertahankan struktur, urutan, bahasa, dan bentuk tabel Markdown (kolom yang sama) kecuali instruksi meminta lain. Bagian yang tidak disinggung instruksi tetap dipertahankan isinya. Jangan menulis bagian lain, jangan mengarang data identitas atau nomor regulasi, tanpa kalimat pembuka atau penutup.`;
+}
+function revApply(kind,sec,text){
+  const root=$(kind==='lkpd'?'lkpd':'doc'), tmp=document.createElement('div');
+  tmp.innerHTML=md(text); styleDoc(tmp,kind==='lkpd'?'lkpd':'rpm');
+  const frag=document.createDocumentFragment(); [...tmp.childNodes].forEach(x=>frag.appendChild(x));
+  sec.nodes[0].before(frag); sec.nodes.forEach(x=>x.remove());
+  if(kind==='lkpd'){ root.querySelectorAll('.pb').forEach(x=>x.remove()); [...root.querySelectorAll('table.kop')].forEach((k,i)=>{ if(i>0) k.insertAdjacentHTML('beforebegin',REV_PB); }); }
+  setDirty(true);
+}
+$('revbtn').addEventListener('click',()=>{
+  const docs=[]; if(revSections('rpm').length) docs.push(['rpm','RPM']); if(revSections('lkpd').length) docs.push(['lkpd','LKPD (per pertemuan)']);
+  if(!docs.length){ setStatus('Belum ada RPM atau LKPD yang bisa direvisi. Susun dulu dokumennya.',true); return; }
+  if(editing) setEdit(false);
+  $('rev_doc').innerHTML=docs.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join(''); revFillSec();
+  $('rev_msg').textContent=''; $('revov').classList.add('on'); $('rev_ins').focus();
+});
+$('rev_doc').addEventListener('change',revFillSec);
+$('revcancel').addEventListener('click',()=>$('revov').classList.remove('on'));
+$('revok').addEventListener('click',async()=>{
+  const kind=$('rev_doc').value, ins=$('rev_ins').value.trim(), sec=REV_LIST[+$('rev_sec').value];
+  if(!sec){ $('rev_msg').textContent='Pilih bagian dulu.'; return; }
+  if(ins.length<5){ $('rev_msg').textContent='Tulis instruksi revisi (minimal beberapa kata).'; return; }
+  $('revov').classList.remove('on');
+  const b=$('revbtn'); b.disabled=true; setStatus('');
+  showLoader(['Menulis ulang bagian terpilih…','Menerapkan instruksi Anda…','Hampir selesai, mohon tunggu…']);
+  try{
+    const r=await askRaw([{role:'user',parts:[{text:revPrompt(kind,sec,ins)}]}],8192);
+    let t=r.text.replace(/^```(?:markdown)?\s*|\s*```$/g,'').trim();
+    if(r.finish==='MAX_TOKENS') throw new Error('Hasil terpotong karena bagian ini terlalu panjang. Pecah instruksi atau pilih bagian yang lebih kecil.');
+    if(!/^#{1,3}\s/.test(t)) throw new Error('Jawaban AI tidak diawali judul bagian. Coba ulangi.');
+    revApply(kind,sec,t); JOB_OK=true; $('rev_ins').value='';
+    setStatus('Bagian "'+sec.label.replace(/^\s*↳\s*/,'').trim()+'" sudah ditulis ulang. Periksa hasilnya, lalu tekan Simpan perubahan.');
+    notify(true,'Bagian berhasil direvisi. Tekan Simpan perubahan bila sudah sesuai.');
+  }catch(e){ setStatus(e.aborted?'Dihentikan. Dokumen tidak diubah.':'Revisi gagal: '+e.message+' Dokumen tidak diubah.',!e.aborted); if(!e.aborted) notify(false,'Revisi gagal: '+e.message); }
+  finally{ hideLoader(); b.disabled=false; }
+});
 
 /* ================= ASESMEN (diagnostik, formatif, sumatif) ================= */
 const ASES_JENIS=[
