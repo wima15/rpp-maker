@@ -19,15 +19,20 @@
 // =========================================================
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const numbered = Array.from({ length: 20 }, (_, i) => Deno.env.get(`OPENROUTER_API_KEY_${i + 1}`) ?? "");
+// Penyedia AI: isi AI_BASE_URL untuk memakai RelayRouter (atau gateway OpenAI-compatible lain),
+// mis. https://www.relayrouter.app/v1  (cek alamat persisnya di dokumentasi/console RelayRouter).
+// Kosong = tetap OpenRouter. Key dibaca dari RELAYROUTER_API_KEY_1.._20 lebih dulu, lalu OPENROUTER_API_KEY_*.
+const BASE = (Deno.env.get("AI_BASE_URL") ?? "").trim().replace(/\/+$/, "");
+const fromEnv = (pref: string) => Array.from({ length: 20 }, (_, i) => Deno.env.get(`${pref}_${i + 1}`) ?? "");
+const numbered = [...fromEnv("RELAYROUTER_API_KEY"), ...fromEnv("OPENROUTER_API_KEY")];
 const API_KEYS = [...new Set(
-  [...numbered, ...`${Deno.env.get("OPENROUTER_API_KEYS") ?? ""},${Deno.env.get("OPENROUTER_API_KEY") ?? ""}`.split(",")]
+  [...numbered, ...`${Deno.env.get("RELAYROUTER_API_KEYS") ?? ""},${Deno.env.get("RELAYROUTER_API_KEY") ?? ""},${Deno.env.get("OPENROUTER_API_KEYS") ?? ""},${Deno.env.get("OPENROUTER_API_KEY") ?? ""}`.split(",")]
     .map((k) => k.replace(/["'\s]/g, "")).filter(Boolean),
 )];
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
   .split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
 const REFERER = (Deno.env.get("OPENROUTER_REFERER") ?? "").trim();
-const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OR_URL = (BASE || "https://openrouter.ai/api/v1") + "/chat/completions";
 
 const MAX_BODY_BYTES = 300_000;
 const MAX_OUTPUT_TOKENS = 16384;
@@ -114,7 +119,7 @@ function sseKeGemini(src: ReadableStream<Uint8Array>) {
 }
 
 // ---- daftar model yang diizinkan ----
-const MODEL_RE = /^[a-z0-9][a-z0-9._\-]*\/[a-z0-9][a-z0-9._:\-]{0,80}$/;   // format OpenRouter: penyedia/model
+const MODEL_RE = /^(?:[a-z0-9][a-z0-9._\-]*\/)?[a-z0-9][a-z0-9._:\-]{0,80}$/;   // nama model: gpt-4.1-mini (OpenAI/RelayRouter) atau penyedia/model (OpenRouter)
 // Daftar bawaan: dipakai bila pengaturan admin belum ada / tidak valid. Harus sama dengan MODEL_SEED di index.html.
 const CFG_BAWAAN = {
   default: "google/gemini-2.5-flash",
@@ -214,7 +219,7 @@ Deno.serve(async (req: Request) => {
 
   const cfg = await muatCfgModel(sesi.apikey, sesi.tok);
   const model = (String(body.model ?? "").trim() || cfg.default).toLowerCase();
-  if (!MODEL_RE.test(model)) return gagal("Nama model tidak valid. Gunakan ID OpenRouter berbentuk penyedia/model, mis. google/gemini-2.5-flash.", 400, origin);
+  if (!MODEL_RE.test(model)) return gagal("Nama model tidak valid. Gunakan nama model persis seperti di penyedia, mis. gpt-4.1-mini (RelayRouter/OpenAI) atau google/gemini-2.5-flash (OpenRouter).", 400, origin);
   const ujiAdmin = body.uji === true && sesi.admin;
   if (!ujiAdmin && !cfg.ids.includes(model)) return gagal(`Model "${model.slice(0, 60)}" tidak tersedia. Pilih model dari daftar (default: ${cfg.default}) atau hubungi admin.`, 403, origin);
   if (!Array.isArray(body.contents) || !body.contents.length) return gagal("contents wajib diisi.", 400, origin);
@@ -234,15 +239,20 @@ Deno.serve(async (req: Request) => {
     model, messages, stream,
     max_tokens: Number.isFinite(mot) && mot > 0 ? Math.min(mot, MAX_OUTPUT_TOKENS) : MAX_OUTPUT_TOKENS,
   };
+  // Model penalaran OpenAI (o1/o3/o4, gpt-5): tidak menerima temperature & max_tokens, memakai max_completion_tokens + reasoning_effort
+  const penalaran = !!BASE && /^(?:openai\/)?(o\d|gpt-5)/.test(model);
+  if (penalaran) { payload.max_completion_tokens = payload.max_tokens; delete payload.max_tokens; }
   const temp = Number(gc.temperature);
-  if (gc.temperature !== undefined && Number.isFinite(temp)) payload.temperature = Math.min(Math.max(temp, 0), 2);
+  if (!penalaran && gc.temperature !== undefined && Number.isFinite(temp)) payload.temperature = Math.min(Math.max(temp, 0), 2);
   // tingkat berpikir: thinkingLevel (low/medium/high) atau thinkingBudget (token) -> parameter reasoning OpenRouter
   const th = gc.thinkingConfig as { thinkingLevel?: string; thinkingBudget?: number } | undefined;
-  if (th?.thinkingLevel && ["low", "medium", "high"].includes(th.thinkingLevel)) payload.reasoning = { effort: th.thinkingLevel };
+  if (BASE) {   // gateway gaya OpenAI: hanya reasoning_effort, dan hanya untuk model penalaran
+    if (penalaran) payload.reasoning_effort = ["low", "medium", "high"].includes(th?.thinkingLevel ?? "") ? th!.thinkingLevel : "low";
+  } else if (th?.thinkingLevel && ["low", "medium", "high"].includes(th.thinkingLevel)) payload.reasoning = { effort: th.thinkingLevel };
   else if (Number(th?.thinkingBudget) > 0) payload.reasoning = { max_tokens: Math.max(1024, Number(th!.thinkingBudget)) };
   // bila model utama sibuk/gagal, OpenRouter otomatis mencoba model lain yang diizinkan admin (flash dulu)
   const alt = cfg.ids.filter((m) => m !== model).sort((a, b) => Number(/flash/.test(b)) - Number(/flash/.test(a))).slice(0, 2);
-  if (!ujiAdmin && alt.length) payload.models = [model, ...alt];
+  if (!BASE && !ujiAdmin && alt.length) payload.models = [model, ...alt];
   if (stream) payload.stream_options = { include_usage: false };
   const bodyStr = JSON.stringify(payload);
 
@@ -258,7 +268,7 @@ Deno.serve(async (req: Request) => {
         body: bodyStr,
         signal: stream ? undefined : AbortSignal.timeout(Math.max(10_000, Math.min(sisa, BATAS_TOTAL_MS))),
       });
-      const hdr = { "x-provider": "openrouter", "x-key-used": String(i + 1), ...corsFor(origin) };
+      const hdr = { "x-provider": BASE ? "relayrouter" : "openrouter", "x-key-used": String(i + 1), ...corsFor(origin) };
       if (res.ok && stream && res.body) {
         return new Response(sseKeGemini(res.body), { status: 200, headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", ...hdr } });
       }

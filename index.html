@@ -1468,7 +1468,7 @@ const $ = id => document.getElementById(id);
 const aiUrl = () => SB_DST.url.replace(/\/rest\/v1$/,'')+'/functions/v1/gemini-proxy';
 
 /* ===== MODEL AI: daftar & default diatur admin (pengaturan_rpm, kunci 'model_ai'); server memeriksa ulang di gemini-proxy ===== */
-const MODEL_RE=/^[a-z0-9][a-z0-9._\-]*\/[a-z0-9][a-z0-9._:\-]{0,80}$/;   /* ID OpenRouter: penyedia/model */
+const MODEL_RE=/^(?:[a-z0-9][a-z0-9._\-]*\/)?[a-z0-9][a-z0-9._:\-]{0,80}$/;   /* nama model: gpt-4.1-mini atau penyedia/model */
 /* Daftar bawaan = cadangan bila pengaturan admin belum ada / rusak. Harus sama dengan CFG_BAWAAN di gemini-proxy. */
 const MODEL_SEED={default:'google/gemini-2.5-flash',models:[
   {id:'google/gemini-2.5-flash',label:'',aktif:true},{id:'google/gemini-2.5-pro',label:'',aktif:true},
@@ -3757,7 +3757,7 @@ $('a_mlist').addEventListener('click',async e=>{
 /* uji satu permintaan kecil lewat gemini-proxy (admin boleh menguji model yang belum ada di daftar) */
 async function amTest(id,btn){
   id=String(id||'').trim().toLowerCase();
-  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Gunakan ID OpenRouter berbentuk penyedia/model, mis. google/gemini-2.5-flash (huruf kecil).',true); return false; }
+  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Gunakan nama model persis seperti di penyedia, mis. gpt-4.1-mini atau google/gemini-2.5-flash (huruf kecil).',true); return false; }
   const old=btn&&btn.textContent; if(btn){ btn.disabled=true; btn.textContent='Menguji…'; }
   msg('a_mmsg','Menguji '+id+'…');
   try{
@@ -3774,7 +3774,7 @@ $('a_muji').addEventListener('click',()=>amTest($('a_mid').value,$('a_muji')));
 $('a_madd').addEventListener('click',()=>{
   if(!AM) return;
   const id=$('a_mid').value.trim().toLowerCase(), label=$('a_mlabel').value.trim().slice(0,60);
-  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Gunakan ID OpenRouter berbentuk penyedia/model, mis. google/gemini-2.5-flash (huruf kecil).',true); return; }
+  if(!MODEL_RE.test(id)){ msg('a_mmsg','Nama model tidak valid. Gunakan nama model persis seperti di penyedia, mis. gpt-4.1-mini atau google/gemini-2.5-flash (huruf kecil).',true); return; }
   if(AM.models.some(m=>m.id===id)){ msg('a_mmsg','Model '+id+' sudah ada di daftar.',true); return; }
   AM.models.push({id,label,aktif:true});
   $('a_mid').value=''; $('a_mlabel').value=''; amRender();
