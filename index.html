@@ -1005,6 +1005,9 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <option>Jepang</option><option>Jerman</option><option>Prancis</option>
     </select>
     <p class="hint">Otomatis: mapel Bahasa Inggris menghasilkan LKPD berbahasa Inggris, Bahasa Arab menghasilkan LKPD berbahasa Arab, dan seterusnya. Mapel lain memakai Bahasa Indonesia.</p>
+    <label for="rpm_detail">Tingkat kedalaman RPM</label>
+    <select id="rpm_detail"><option value="standar">Standar (ringkas, paling cepat)</option><option value="detail" selected>Detail (disarankan)</option><option value="sangat">Sangat detail (paling lengkap, lebih lama dan lebih mahal)</option></select>
+    <p class="hint">Makin detail, makin panjang hasilnya: langkah kegiatan lebih rinci, ada pertanyaan pemantik, contoh soal, dan rubrik. Kurangi jumlah pertemuan bila memilih Sangat detail.</p>
     <label for="catatan">Catatan tambahan</label>
     <textarea id="catatan" placeholder="mis. sekolah belum punya proyektor; gunakan konteks lingkungan pesisir"></textarea>
   </fieldset>
@@ -1559,6 +1562,13 @@ function pertInfo(){
   const mnt=parseInt($('menitjp').value)||45;
   return {n,arr,mnt,tot:arr.reduce((a,b)=>a+b,0)};
 }
+function rpmDetailAturan(){
+  const v=($('rpm_detail')||{}).value||'detail';
+  if(v==='standar') return '';
+  const dasar=`\n\nTINGKAT KEDALAMAN: DETAIL (WAJIB DIPENUHI, jangan diringkas):\n- Tujuan Pembelajaran: 3–5 butir, tiap butir memuat audiens, perilaku (kata kerja operasional), kondisi, dan tingkat capaian yang terukur.\n- Materi Pelajaran: uraikan konsep inti, istilah penting, dan contoh dalam poin-poin yang cukup rinci (bukan hanya judul).\n- Peserta Didik: jelaskan kebutuhan belajar dan rencana diferensiasi (konten, proses, produk) secara konkret.\n- Pengalaman Belajar: setiap tahap berisi 5–8 langkah konkret bernomor. Cantumkan contoh pertanyaan pemantik, aktivitas, media/sumber belajar, pembagian peran siswa, dan bentuk interaksi guru–siswa. Hindari kalimat umum seperti "guru menjelaskan materi".\n- Asesmen: tiap asesmen memuat contoh instrumen (daftar indikator, contoh pertanyaan, atau lembar observasi), dan rubrik memiliki 4–5 kriteria dengan deskripsi tiap level yang spesifik.\n- Tambahkan sub-bagian ### Pengayaan dan Remedial singkat di akhir bagian D bila belum ada.`;
+  if(v==='detail') return dasar;
+  return dasar+`\n- TAMBAHAN (SANGAT DETAIL): sertakan contoh ujaran/dialog guru singkat pada kegiatan kunci, antisipasi miskonsepsi atau kesulitan siswa beserta penanganannya, contoh soal asesmen akhir (minimal 5 soal) lengkap dengan kunci/pedoman penskoran, serta catatan manajemen kelas dan alternatif bila waktu atau sarana terbatas.`;
+}
 function buildPrompt(){
   const dims=[...document.querySelectorAll('#dims input:checked')].map(i=>i.value);
   return `Anda adalah pakar kurikulum dan pengembang pembelajaran di Indonesia. Susun dokumen RENCANA PEMBELAJARAN MENDALAM (RPM) yang lengkap, siap pakai, dan realistis untuk dilaksanakan guru, mengacu pada Kurikulum Merdeka terbaru dan pendekatan Pembelajaran Mendalam (deep learning) dari Kemendikdasmen: berkesadaran (mindful), bermakna (meaningful), dan menggembirakan (joyful), dengan 8 Dimensi Profil Lulusan (Keimanan dan Ketakwaan terhadap Tuhan YME, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi).
@@ -1603,7 +1613,7 @@ Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU ta
 Format tiap asesmen: daftar bullet berlabel tebal (**Teknik**, **Instrumen**, **Waktu Pelaksanaan**, **TP yang Diukur**, **Hasil/Produk Siswa**), satu bullet per label. Jika satu label berisi lebih dari satu butir (daftar pertemuan, daftar produk, soal bernomor), tulis butir-butirnya sebagai sub-daftar yang MENJOROK DUA SPASI tepat di bawah label tersebut, jangan sejajar dengan label, dan jangan menambah bullet untuk kalimat biasa.\nSertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
 Jangan membuat blok tanda tangan; aplikasi menambahkannya otomatis setelah bagian D.
 
-ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.${NOTASI}`;
+ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.${rpmDetailAturan()}${NOTASI}`;
 }
 
 // konverter Markdown sederhana
@@ -2694,7 +2704,7 @@ const CD={chain:Promise.resolve(),timer:null,partial:'',off:false,ok:false,rows:
 let ASK_CTX=null, PROJ=null;
 const newProj=()=>'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function projLabel(){ return [($('topik').value||'').trim(),($('mapel').value||'').trim()].filter(Boolean).join(' · ')||'(tanpa topik)'; }
-const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','menitjp','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan','lkpd_detail'];
+const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','menitjp','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan','lkpd_detail','rpm_detail'];
 function formSnap(){
   const o={}; FORM_IDS.forEach(i=>{ const e=$(i); if(e) o[i]=e.value; });
   o.dims=[...document.querySelectorAll('#dims input:checked')].map(x=>x.value);
