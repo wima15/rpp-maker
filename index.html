@@ -1217,6 +1217,18 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     </div>
     <p class="hint" id="atp_mgginfo">Minggu efektif diatur admin.</p>
     <p class="hint">Tulis berapa kali asesmen sumatif dilaksanakan dalam satu semester. AI menyisipkan sebanyak itu di dalam alur dan menyisihkan JP untuk tiap kali pelaksanaan.</p>
+    <div id="atp_sumwrap">
+      <label style="margin-top:10px">Bentuk asesmen sumatif</label>
+      <label class="inline" style="margin-top:0"><input type="radio" name="atp_sumform" value="ai" checked> AI menentukan sesuai jenis TP (disarankan)</label>
+      <label class="inline"><input type="radio" name="atp_sumform" value="same"> Semua sama</label>
+      <label class="inline"><input type="radio" name="atp_sumform" value="each"> Tentukan masing-masing</label>
+      <div id="atp_sumsame" hidden style="margin-top:6px">
+        <label for="atp_sumbentuk" style="margin-top:0">Bentuk untuk semua asesmen sumatif</label>
+        <select id="atp_sumbentuk"></select>
+      </div>
+      <div id="atp_sumeach" hidden style="margin-top:6px"></div>
+      <p class="hint" id="atp_sumhint">AI memilih bentuk tiap asesmen sumatif (tes tertulis, unjuk kerja, proyek, dan sebagainya) menurut jenis TP yang diujikan.</p>
+    </div>
   </fieldset>
   <fieldset>
     <legend>Capaian Pembelajaran</legend>
@@ -1225,6 +1237,22 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     <p class="hint" id="atp_cphint">Terisi otomatis untuk Bahasa Inggris Fase E. Untuk mapel lain, tempel CP resmi supaya ATP akurat.</p>
     <label for="atp_catatan">Catatan tambahan (opsional)</label>
     <textarea id="atp_catatan" rows="3" placeholder="mis. ikuti buku teks tertentu, tambah unit proyek, urutan tema; sumatif 1 tes tulis 2 JP, sumatif 2 unjuk kerja 6 JP"></textarea>
+  </fieldset>
+  <fieldset>
+    <legend>Materi yang diajarkan</legend>
+    <label class="inline" style="margin-top:0"><input type="radio" name="atp_materimode" value="ai" checked> AI menentukan materi dari CP</label>
+    <label class="inline"><input type="radio" name="atp_materimode" value="guru"> Saya tulis sendiri materinya</label>
+    <div id="atp_materibox" hidden>
+      <label for="atp_materi" id="atp_materilbl" style="margin-top:8px">Daftar materi (urut, satu baris satu materi/unit)</label>
+      <textarea id="atp_materi" rows="7" placeholder="Contoh:&#10;Perkenalan diri dan lingkungan sekitar | 6 JP&#10;Teks deskriptif | 9 JP&#10;Teks prosedur&#10;Semester Genap&#10;Teks narasi&#10;Teks eksposisi"></textarea>
+      <div id="atp_materi12box" hidden>
+        <label for="atp_materi12" style="margin-top:8px">Daftar materi Kelas XII (urut, satu baris satu materi/unit)</label>
+        <textarea id="atp_materi12" rows="7" placeholder="Materi khusus Kelas XII, terpisah dari Kelas XI. Contoh:&#10;Teks eksposisi | 9 JP&#10;Teks argumentatif&#10;Semester Genap&#10;Presentasi proyek"></textarea>
+      </div>
+      <label class="inline"><input type="checkbox" id="atp_materilengkap" checked> Lengkapi dengan unit tambahan bila ada bagian CP yang belum tercakup materi di atas</label>
+      <p class="hint">Setiap baris menjadi satu unit sesuai urutan yang Anda tulis. JP di belakang tanda | bersifat opsional (bila kosong, AI membagi JP). Boleh menyisipkan baris penanda "Semester Ganjil" / "Semester Genap". Untuk Fase F, materi Kelas XI dan Kelas XII ditulis di dua kotak terpisah. AI tetap menurunkan Tujuan Pembelajaran dari CP dan memetakan tiap materi ke elemen CP.</p>
+    </div>
+    <p class="hint" id="atp_materihint">AI memecah CP menjadi unit dan materi yang berurutan dari mudah ke kompleks.</p>
   </fieldset>
   <fieldset>
     <legend>Cara menyusun</legend>
@@ -1590,7 +1618,7 @@ DATA DARI GURU:
 - Semester/Tahun ajaran: ${$('semester').value} / ${$('tahun').value}
 - Topik/materi: ${$('topik').value}
 - Capaian Pembelajaran: ${$('cp').value.trim() || '(tidak diisi; rujuk CP resmi yang sesuai mapel dan fase, dan sebutkan elemennya)'}
-${(()=>{ const pi=pertInfo(); return pi?`- Jumlah pertemuan: ${pi.n} (satu pertemuan = satu minggu). Total ${pi.tot} JP; 1 JP = ${pi.mnt} menit. Alokasi tiap pertemuan: ${pi.arr.map((j,i)=>`Pertemuan ${i+1} = ${j} JP (${j*pi.mnt} menit)`).join('; ')}. WAJIB: durasi tiap pertemuan TIDAK sama; kolom Waktu pada tabel Pertemuan n harus berjumlah tepat sesuai menit pertemuan itu (${pi.arr.map((j,i)=>`P${i+1} ${j*pi.mnt} menit`).join(', ')}), dan banyaknya kegiatan menyesuaikan durasi (pertemuan lebih pendek = kegiatan lebih ringkas). Baris Alokasi Waktu pada tabel identitas ditulis PERSIS: ${pi.n} pertemuan (${pi.tot} JP × ${pi.mnt} menit)`:`- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}`; })()}
+${(()=>{ const pi=pertInfo(); return pi?`- Jumlah pertemuan: ${pi.n} (satu pertemuan = satu minggu). Total ${pi.tot} JP; 1 JP = ${pi.mnt} menit. Alokasi tiap pertemuan: ${pi.arr.map((j,i)=>`Pertemuan ${i+1} = ${j} JP (${j*pi.mnt} menit)`).join('; ')}. WAJIB: durasi tiap pertemuan TIDAK sama; kolom Waktu pada tabel Pertemuan n harus berjumlah tepat sesuai menit pertemuan itu (${pi.arr.map((j,i)=>`P${i+1} ${j*pi.mnt} menit`).join(', ')}), dan banyaknya kegiatan menyesuaikan durasi (pertemuan lebih pendek = kegiatan lebih ringkas). Baris Alokasi Waktu pada tabel identitas ditulis PERSIS: ${pi.n} pertemuan (${pi.tot} JP × ${pi.mnt} menit). Bila ada asesmen sumatif/tes tertulis (ulangan harian), laksanakan UTUH dalam SATU pertemuan saja, jangan dipecah ke dua pertemuan atau dua minggu; taruh di pertemuan yang JP-nya cukup untuk durasi tes (sisa waktu pertemuan itu dipakai pembelajaran atau pembahasan hasil)`:`- Jumlah pertemuan: ${$('pertemuan').value}; durasi per pertemuan: ${$('waktu').value}`; })()}
 - Karakteristik siswa: ${$('siswa').value.trim() || '(tidak diisi; buat asumsi umum dan nyatakan asumsinya)'}
 - Dimensi Profil Lulusan yang diinginkan: ${dims.length ? dims.join(', ') : '(pilih 2–3 yang paling relevan)'}
 - Praktik pedagogis: ${$('pedagogi').value || '(pilih yang paling cocok dan beri alasan singkat)'}
@@ -1618,7 +1646,7 @@ Bagi per pertemuan (### Pertemuan 1, dst). Setiap pertemuan WAJIB berupa SATU ta
 ### Asesmen Awal (diagnostik)
 ### Asesmen Proses (formatif)
 ### Asesmen Akhir (sumatif)
-Format tiap asesmen: daftar bullet berlabel tebal (**Teknik**, **Instrumen**, **Waktu Pelaksanaan**, **TP yang Diukur**, **Hasil/Produk Siswa**), satu bullet per label. Jika satu label berisi lebih dari satu butir (daftar pertemuan, daftar produk, soal bernomor), tulis butir-butirnya sebagai sub-daftar yang MENJOROK DUA SPASI tepat di bawah label tersebut, jangan sejajar dengan label, dan jangan menambah bullet untuk kalimat biasa.\nSertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan.
+Format tiap asesmen: daftar bullet berlabel tebal (**Teknik**, **Instrumen**, **Waktu Pelaksanaan**, **TP yang Diukur**, **Hasil/Produk Siswa**), satu bullet per label. Jika satu label berisi lebih dari satu butir (daftar pertemuan, daftar produk, soal bernomor), tulis butir-butirnya sebagai sub-daftar yang MENJOROK DUA SPASI tepat di bawah label tersebut, jangan sejajar dengan label, dan jangan menambah bullet untuk kalimat biasa.\nSertakan satu tabel rubrik dengan kriteria dan 4 level capaian, serta kaitkan ke dimensi profil lulusan. Tes tertulis (tes tulis, ulangan harian, kuis) dijadwalkan UTUH dalam satu pertemuan: pada Waktu Pelaksanaan sebut satu pertemuan saja, jangan tersebar ke beberapa pertemuan atau minggu.
 Jangan membuat blok tanda tangan; aplikasi menambahkannya otomatis setelah bagian D.
 
 ATURAN: Gunakan Bahasa Indonesia baku. Tujuan pembelajaran memakai kata kerja operasional dan dapat diukur. Kegiatan harus sesuai fase dan sumber daya yang disebutkan. Jangan mengarang nomor regulasi, nama dokumen resmi, atau kutipan. Keluarkan hanya dokumen RPM, tanpa pembuka atau penutup.${rpmDetailAturan()}${NOTASI}`;
@@ -4301,6 +4329,7 @@ const CPHINT0=$('atp_cphint').textContent;
 const dualOn=()=>faseKode()==='F'&&!!$('atp_dual')&&$('atp_dual').checked;
 function dualUI(){
   const f=faseKode()==='F'; $('atpdualbox').hidden=!f; $('atpjp12box').hidden=!(f&&$('atp_dual').checked);
+  try{ materiUI(); }catch(e){}
   try{ if(!atpBusy) $('atpgen').textContent=atpGenLabel(); }catch(e){}   // sebelum modul selesai dimuat, variabel ini belum ada
 }
 function cpHint(){
@@ -4355,15 +4384,76 @@ window.atpMggRefresh=mggInfo;
 $('atp_cakupan').addEventListener('change',mggInfo);
 mggInfo();
 
+/* ---- pilihan guru: materi (AI dari CP / ditulis guru) dan bentuk asesmen sumatif (AI / semua sama / masing-masing) ---- */
+const SUM_BENTUK=['Tes tertulis','Tes lisan','Unjuk kerja / praktik','Proyek','Produk','Portofolio','Gabungan tes tertulis dan unjuk kerja'];
+const atpSumN=()=>Math.max(0,Math.min(10,isNaN(parseInt(v('atp_sum')))?2:parseInt(v('atp_sum'))));
+const radioVal=(nm,def)=>{ const r=document.querySelector('input[name="'+nm+'"]:checked'); return r?r.value:def; };
+const sumFormMode=()=>radioVal('atp_sumform','ai');
+const materiMode=()=>radioVal('atp_materimode','ai');
+/* Fase F: materi Kelas XI dan XII ditulis terpisah; kelas yang sedang disusun menentukan kotak yang dipakai */
+const materiF=()=>faseKode()==='F';
+const materiTeks=()=>{ if(!materiF()) return v('atp_materi'); return atpKelas().n===12?v('atp_materi12'):v('atp_materi'); };
+const SUMSEL={};   // pilihan per asesmen: "Ganjil|1" -> bentuk
+const bentukOpts=sel=>SUM_BENTUK.map(b=>'<option'+(b===sel?' selected':'')+'>'+b+'</option>').join('');
+$('atp_sumbentuk').innerHTML=bentukOpts('Tes tertulis');
+function sumUI(){
+  const m=sumFormMode(), n=atpSumN(), plan=mggPlan();
+  $('atp_sumwrap').hidden=(n===0);
+  $('atp_sumsame').hidden=(m!=='same'); $('atp_sumeach').hidden=(m!=='each');
+  $('atp_sumhint').textContent=m==='same'
+    ?'Semua '+(n*plan.sems.length)+' asesmen sumatif memakai bentuk yang sama. AI menyesuaikan JP menurut bentuknya dan merumuskan TP yang dapat diukur dengan bentuk itu.'
+    :m==='each'
+    ?'Pilih bentuk untuk tiap asesmen sumatif, misalnya Sumatif 1 tes tertulis, Sumatif 2 proyek. AI mengikuti pilihan ini persis dan menyesuaikan JP menurut bentuknya.'
+    :'AI memilih bentuk tiap asesmen sumatif (tes tertulis, unjuk kerja, proyek, dan sebagainya) menurut jenis TP yang diujikan.';
+  if(m!=='each') return;
+  $('atp_sumeach').innerHTML=plan.sems.map(x=>{
+    let h='<div style="margin:0 0 10px"><b>Semester '+x[0]+'</b><div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-top:4px">';
+    for(let i=1;i<=n;i++){ const k=x[0]+'|'+i; h+='<span>Sumatif '+i+'</span><select data-sumk="'+k+'">'+bentukOpts(SUMSEL[k]||'Tes tertulis')+'</select>'; }
+    return h+'</div></div>';
+  }).join('');
+}
+$('atp_sumeach').addEventListener('change',e=>{ const k=e.target.getAttribute&&e.target.getAttribute('data-sumk'); if(k) SUMSEL[k]=e.target.value; });
+document.querySelectorAll('input[name="atp_sumform"]').forEach(r=>r.addEventListener('change',sumUI));
+['atp_sum'].forEach(id=>{ $(id).addEventListener('input',sumUI); $(id).addEventListener('change',sumUI); });
+$('atp_cakupan').addEventListener('change',sumUI);
+/* daftar bentuk yang ditetapkan guru: null bila AI yang menentukan; selain itu [{sem, bentuk:[...]}] */
+function sumBentukPlan(){
+  const m=sumFormMode(), n=atpSumN(); if(m==='ai'||n===0) return null;
+  return mggPlan().sems.map(x=>({sem:x[0],bentuk:Array.from({length:n},(_,i)=>m==='same'?$('atp_sumbentuk').value:(SUMSEL[x[0]+'|'+(i+1)]||'Tes tertulis'))}));
+}
+function sumBentukTxt(){
+  const pl=sumBentukPlan(); if(!pl) return '';
+  const daftar=pl.map(p=>'Semester '+p.sem+': '+p.bentuk.map((b,i)=>'Asesmen Sumatif '+(i+1)+' = '+b).join('; ')).join('. ');
+  return ' BENTUK ASESMEN SUMATIF SUDAH DITETAPKAN GURU DAN WAJIB DIPAKAI PERSIS (mengesampingkan anjuran "pilih bentuk yang sesuai jenis TP" di atas; urutan Sumatif 1, 2, dst. mengikuti urutan di dalam semester): '+daftar+'. Tulis bentuk itu di kolom Asesmen pada baris asesmen sumatif yang bersangkutan, jangan menggantinya dengan bentuk lain. Tentukan JP menurut bentuknya (aturan JP di atas tetap berlaku). Rumuskan TP dan tentukan cakupan tiap asesmen sumatif agar TP yang diujikan memang dapat diukur dengan bentuk tersebut (mis. proyek, produk, unjuk kerja, atau portofolio mencakup TP keterampilan/penerapan; tes tertulis atau lisan mencakup TP pengetahuan/pemahaman), dan tetap menjaga cakupan antar-asesmen berurutan tanpa celah.';
+}
+function materiBlok(){
+  const mt=materiTeks(); if(materiMode()!=='guru'||!mt) return '';
+  const leng=$('atp_materilengkap').checked;
+  return '\nMATERI YANG DIAJARKAN (DITETAPKAN GURU, WAJIB DIPAKAI):\n<<<MATERI\n'+mt+'\nMATERI>>>\nATURAN MATERI GURU: (1) Setiap baris materi menjadi satu unit, dengan urutan persis seperti daftar guru; judul unit mengikuti tulisan guru (boleh dirapikan redaksinya, jangan diganti maknanya). Jumlah unit mengikuti daftar ini, abaikan batas "6–10 unit". (2) Teks sesudah tanda "|" adalah JP usulan guru (opsional); pakai sebagai acuan dan sesuaikan seperlunya agar total JP tetap tepat; bila JP tidak ditulis, bagi JP secara wajar menurut luas materi. (3) Baris penanda semester ("Semester Ganjil", "Semester Genap") menentukan letak materi di bawahnya; bila tidak ada penanda, bagi daftar berurutan ke semester menurut proporsi JP.'+(isFaseF2()?' Daftar ini KHUSUS Kelas '+atpKelas().rom+' (guru menulis materi Kelas XI dan XII secara terpisah): semua materi di atas adalah milik Kelas '+atpKelas().rom+', jangan memindahkannya ke kelas lain dan jangan menambah materi kelas lain.':'')+' (4) Tujuan Pembelajaran tetap diturunkan dari CP: petakan tiap materi ke elemen CP yang sesuai dan tulis kata kerja operasional sesuai CP, jangan hanya mengulang judul materi. (5) '+(leng?'Bila setelah dipetakan masih ada bagian CP yang belum tercakup materi guru, tambahkan unit pelengkap secukupnya (judul diberi keterangan "(tambahan dari CP)") dan sebutkan dalam paragraf ringkasan bagian A.':'JANGAN menambah, menghapus, atau menggabung unit di luar daftar guru. Bila ada bagian CP yang belum tercakup, tuliskan pada tabel Analisis CP dengan keterangan "belum tercakup materi guru" dan sebut dalam paragraf ringkasan bagian A.')+'\n';
+}
+function materiUI(){
+  const g=materiMode()==='guru', f=materiF();
+  $('atp_materibox').hidden=!g;
+  $('atp_materi12box').hidden=!(g&&f);
+  $('atp_materilbl').textContent=f?'Daftar materi Kelas XI (urut, satu baris satu materi/unit)':'Daftar materi (urut, satu baris satu materi/unit)';
+  $('atp_materihint').hidden=g;
+}
+document.querySelectorAll('input[name="atp_materimode"]').forEach(r=>r.addEventListener('change',materiUI));
+['atp_fase','atp_mapel'].forEach(id=>{ $(id).addEventListener('input',materiUI); $(id).addEventListener('change',materiUI); });
+sumUI(); materiUI();
+
 /* ---- prompt ---- */
 /* data & aturan dipakai bersama oleh mode Sekaligus dan mode Bertahap */
+function sumMinggu(jp){
+  return ' ATURAN MINGGU ASESMEN SUMATIF (WAJIB): satu asesmen sumatif TIDAK BOLEH terbelah ke dua minggu, terutama tes tertulis. JP per minggu = '+jp+'. Hitung JP kumulatif sejak awal semester; sebelum menulis baris sumatif, sisa JP pada minggu berjalan = '+jp+' dikurangi (kumulatif JP sebelum sumatif mod '+jp+'), dan bila hasil mod 0 maka sumatif mulai tepat di awal minggu. Sisa itu harus MENCUKUPI JP sumatif; bila tidak, ubah JP unit-unit sebelumnya (tambah atau kurangi 1–2 JP, total semester tetap) sampai muat. Contoh '+jp+' JP per minggu: kumulatif 18 JP lalu sumatif 3 JP berarti sisa minggu itu hanya 2 JP sehingga terbelah, jadi ubah kumulatif menjadi 17 JP (sisa 3) atau 20 JP (awal minggu baru). Tes tertulis/objektif/uraian wajib berdurasi tidak lebih dari '+jp+' JP agar selesai dalam satu minggu, dan dilaksanakan satu kali duduk. Sumatif praktik/proyek yang lebih panjang dari satu minggu dimulai di awal minggu dan memakai minggu utuh berurutan. Setelah selesai menyusun, periksa ulang satu per satu posisi tiap sumatif terhadap aturan ini.';
+}
 function atpCtx(){
   const jp=parseInt(v('atp_jp'))||3, plan=mggPlan(), setahun=plan.setahun, sem=plan.sems.length, tot=jp*plan.total;
   const sumN=Math.max(0,Math.min(10,isNaN(parseInt(v('atp_sum')))?2:parseInt(v('atp_sum'))));
   const mggTxt=plan.sems.map(x=>'semester '+x[0]+' '+x[1]+' minggu efektif ('+(jp*x[1])+' JP)').join(', ');
-  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor \"Asesmen Sumatif 1\" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). TENTUKAN JP SETIAP ASESMEN SUMATIF MENURUT BENTUK ASESMENNYA, bukan seragam: (a) tes tertulis atau tes objektif/uraian = 2 JP (3 JP bila mencakup banyak unit atau memuat soal uraian/HOTS); (b) tes lisan, wawancara, atau observasi = 2–4 JP; (c) unjuk kerja, praktik, atau demonstrasi = 4–8 JP (praktik kejuruan SMK yang kompleks boleh lebih panjang), karena tiap peserta didik atau kelompok perlu waktu tampil, dinilai, dan umpan balik; (d) produk, proyek, atau portofolio = 4–10 JP termasuk pengerjaan di kelas, presentasi, dan refleksi; (e) bila gabungan beberapa bentuk (mis. tes tulis + unjuk kerja), jumlahkan JP tiap bentuknya. Makin banyak unit/TP yang dicakup dan makin kompleks bentuknya, makin besar JP-nya; pilih bentuk yang sesuai jenis TP (TP keterampilan diujikan dengan unjuk kerja/produk, TP pengetahuan dengan tes). Tulis JP yang pasti (satu angka) pada setiap baris asesmen sumatif, dan sebutkan bentuknya di kolom Asesmen. Usahakan seluruh asesmen sumatif satu semester tidak melebihi sekitar seperempat JP semester. Hitung JP semua asesmen sumatif lebih dulu, lalu bagi sisa JP ke unit-unit sehingga total JP tetap tepat. Bila Catatan guru menyebut bentuk atau durasi asesmen sumatif, ikuti catatan itu. WAJIB: setiap asesmen sumatif menyebut CAKUPAN dengan jelas: unit mana saja (nomor dan judul), materi atau jenis teks mana saja, dan kode TP mana saja yang diujikan (contoh: Mencakup Unit 1–2; TP 1.1–2.3; materi: ...), serta bentuk atau teknik asesmennya (tes tulis, unjuk kerja, proyek, portofolio, dan sebagainya). Cakupan antar-asesmen harus berurutan tanpa celah, dan setiap unit harus masuk ke cakupan minimal satu asesmen sumatif.'):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
+  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor \"Asesmen Sumatif 1\" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). TENTUKAN JP SETIAP ASESMEN SUMATIF MENURUT BENTUK ASESMENNYA, bukan seragam: (a) tes tertulis atau tes objektif/uraian = 2 JP (3 JP bila mencakup banyak unit atau memuat soal uraian/HOTS); (b) tes lisan, wawancara, atau observasi = 2–4 JP; (c) unjuk kerja, praktik, atau demonstrasi = 4–8 JP (praktik kejuruan SMK yang kompleks boleh lebih panjang), karena tiap peserta didik atau kelompok perlu waktu tampil, dinilai, dan umpan balik; (d) produk, proyek, atau portofolio = 4–10 JP termasuk pengerjaan di kelas, presentasi, dan refleksi; (e) bila gabungan beberapa bentuk (mis. tes tulis + unjuk kerja), jumlahkan JP tiap bentuknya. Makin banyak unit/TP yang dicakup dan makin kompleks bentuknya, makin besar JP-nya; pilih bentuk yang sesuai jenis TP (TP keterampilan diujikan dengan unjuk kerja/produk, TP pengetahuan dengan tes). Tulis JP yang pasti (satu angka) pada setiap baris asesmen sumatif, dan sebutkan bentuknya di kolom Asesmen. Usahakan seluruh asesmen sumatif satu semester tidak melebihi sekitar seperempat JP semester. Hitung JP semua asesmen sumatif lebih dulu, lalu bagi sisa JP ke unit-unit sehingga total JP tetap tepat. Bila Catatan guru menyebut bentuk atau durasi asesmen sumatif, ikuti catatan itu. WAJIB: setiap asesmen sumatif menyebut CAKUPAN dengan jelas: unit mana saja (nomor dan judul), materi atau jenis teks mana saja, dan kode TP mana saja yang diujikan (contoh: Mencakup Unit 1–2; TP 1.1–2.3; materi: ...), serta bentuk atau teknik asesmennya (tes tulis, unjuk kerja, proyek, portofolio, dan sebagainya). Cakupan antar-asesmen harus berurutan tanpa celah, dan setiap unit harus masuk ke cakupan minimal satu asesmen sumatif.'+sumMinggu(jp)):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
   const cp=v('atp_cp')||'(kosong: gunakan CP resmi terbaru untuk mapel dan fase ini sesuai Keputusan Kepala BSKAP Nomor 046/H/KR/2025; bila ragu atas bunyi CP, tulis ringkasan yang setia dan beri catatan agar guru mencocokkan dengan dokumen resmi)';
-  return {jp,plan,setahun,sem,tot,sumN,mggTxt,sumTxt,cp};
+  return {jp,plan,setahun,sem,tot,sumN,mggTxt,sumTxt:sumTxt+(sumN>0?sumBentukTxt():''),cp};
 }
 function faseFBlok(){
   if(!isFaseF2()) return '';
@@ -4380,9 +4470,9 @@ function faseFBlok(){
   return `\nKELAS DAN PEMBAGIAN CP FASE F (WAJIB DIPATUHI):\nATP ini disusun HANYA untuk KELAS ${k.rom} (Fase F). CP Fase F berlaku untuk dua tahun (Kelas XI dan XII) dan bunyinya tidak menyebut kelas, sehingga TP yang Anda tulis HARUS hanya milik Kelas ${k.rom}. ${peran}\n${deteksi}\nJelaskan pembagian CP Kelas XI dan XII ini singkat pada paragraf ringkasan bagian A, dan tulis \"Kelas ${k.rom}\" pada identitas. Bila Catatan guru menyebut pembagian materi, ikuti catatan itu.${lanjut}`;
 }
 function atpData(c){
-  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')}${isFaseF2()?' (ATP khusus Kelas '+atpKelas().rom+')':''} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}${faseFBlok()}`;
+  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')}${isFaseF2()?' (ATP khusus Kelas '+atpKelas().rom+')':''} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}${materiBlok()}${faseFBlok()}`;
 }
-const atpAturan=()=>`ATURAN:\n1. Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.\n6. ANALISIS CP: baca CP kalimat demi kalimat. Setiap elemen atau sub-elemen dan setiap kompetensi dalam bunyi CP harus terwakili oleh minimal satu TP; jangan ada bagian CP yang terlewat dan jangan menambah kompetensi di luar CP.\n7. Tulis bunyi CP per elemen SELENGKAPNYA seperti aslinya (jangan diringkas dan jangan diparafrase berlebihan).\n8. ASESMEN SUMATIF (bila ada): tiap baris asesmen sumatif WAJIB menyebut unit, materi, dan kode TP yang dicakup, serta bentuk asesmennya; jangan menulis baris asesmen yang hanya berjudul "Asesmen Sumatif" tanpa cakupan.\n9. Tulis selengkap dan serinci mungkin: jangan meringkas, jangan memakai "dan seterusnya", dan jangan menyisakan kolom kosong.${isFaseF2()?'\n10. KHUSUS FASE F KELAS '+atpKelas().rom+': semua unit dan TP hanya untuk Kelas '+atpKelas().rom+'. Pada aturan 6, "tidak boleh ada bagian CP yang terlewat" berlaku untuk bagian CP yang menjadi cakupan Kelas '+atpKelas().rom+'; bagian CP kelas lain tidak dibuatkan TP. Aturan 7 tetap berlaku: bunyi CP Fase F ditulis utuh di bagian A. Pada tabel Analisis CP tambahkan kolom "Cakupan Kelas" (isi XI, XII, atau XI–XII) sehingga terlihat bagian CP mana yang dikerjakan di kelas ini dan mana yang ditunda ke kelas lain. Kode TP dan nomor unit dimulai dari 1 untuk kelas ini.':''}`;
+const atpAturan=()=>`ATURAN:\n1. ${(materiMode()==='guru'&&v('atp_materi'))?'Susun unit menurut daftar MATERI YANG DIAJARKAN dari guru (lihat bagian data), bukan memecah CP sendiri; urutan dan judul unit mengikuti daftar itu.':'Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.'}\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.\n6. ANALISIS CP: baca CP kalimat demi kalimat. Setiap elemen atau sub-elemen dan setiap kompetensi dalam bunyi CP harus terwakili oleh minimal satu TP; jangan ada bagian CP yang terlewat dan jangan menambah kompetensi di luar CP.\n7. Tulis bunyi CP per elemen SELENGKAPNYA seperti aslinya (jangan diringkas dan jangan diparafrase berlebihan).\n8. ASESMEN SUMATIF (bila ada): tiap baris asesmen sumatif WAJIB menyebut unit, materi, dan kode TP yang dicakup, serta bentuk asesmennya; jangan menulis baris asesmen yang hanya berjudul "Asesmen Sumatif" tanpa cakupan.\n9. Tulis selengkap dan serinci mungkin: jangan meringkas, jangan memakai "dan seterusnya", dan jangan menyisakan kolom kosong. 10. JP DAN MINGGU: JP mengalir berurutan sepanjang minggu efektif dan satu minggu bisa memuat lebih dari satu baris. Asesmen sumatif TIDAK memakai satu minggu penuh: bila JP per minggu lebih besar dari JP asesmen (mis. 5 JP per minggu dan sumatif tes tertulis 2 JP), sisa JP minggu itu (3 JP) dipakai untuk pembelajaran (KBM) unit di minggu yang sama. Jadi jangan membuat JP unit seolah-olah berhenti di batas minggu dan jangan menyisakan JP yang tidak terpakai; yang wajib tepat hanyalah jumlah seluruh JP unit ditambah JP sumatif sama dengan total JP semester. Namun satu asesmen sumatif TIDAK BOLEH terbelah ke dua minggu: atur JP unit sebelumnya agar sumatif muat di sisa minggu atau mulai di awal minggu baru (sisa minggu tidak boleh dibiarkan kosong, isi dengan KBM unit berikutnya).${isFaseF2()?'\n11. KHUSUS FASE F KELAS '+atpKelas().rom+': semua unit dan TP hanya untuk Kelas '+atpKelas().rom+'. Pada aturan 6, "tidak boleh ada bagian CP yang terlewat" berlaku untuk bagian CP yang menjadi cakupan Kelas '+atpKelas().rom+'; bagian CP kelas lain tidak dibuatkan TP. Aturan 7 tetap berlaku: bunyi CP Fase F ditulis utuh di bagian A. Pada tabel Analisis CP tambahkan kolom "Cakupan Kelas" (isi XI, XII, atau XI–XII) sehingga terlihat bagian CP mana yang dikerjakan di kelas ini dan mana yang ditunda ke kelas lain. Kode TP dan nomor unit dimulai dari 1 untuk kelas ini.':''}`;
 
 /* ---- prompt mode Sekaligus ---- */
 function buildAtp(){
@@ -4441,7 +4531,7 @@ try{ if(localStorage.getItem('atp_mode')==='all') document.querySelector('input[
 document.querySelectorAll('input[name="atp_mode"]').forEach(r=>r.addEventListener('change',()=>{ try{ localStorage.setItem('atp_mode',atpMode()); }catch(e){} if(!atpBusy) $('atpgen').textContent=atpGenLabel(); }));
 $('atpgen').textContent=atpGenLabel();
 /* isian yang menentukan isi ATP; bila berubah di tengah langkah, hasil langkah berikutnya tidak akan cocok */
-const atpSig=()=>JSON.stringify([v('atp_mapel'),v('atp_fase'),$('atp_cakupan').value,v('atp_tahun'),v('atp_jp'),v('atp_sum'),v('atp_cp'),mggPlan().total]);
+const atpSig=()=>JSON.stringify([v('atp_mapel'),v('atp_fase'),$('atp_cakupan').value,v('atp_tahun'),v('atp_jp'),v('atp_sum'),v('atp_cp'),mggPlan().total,materiMode(),materiMode()==='guru'?v('atp_materi')+'¦'+v('atp_materi12'):'',$('atp_materilengkap').checked,JSON.stringify(sumBentukPlan())]);
 const ATP_LOAD=[
   ['Langkah 1 dari 3: menyusun kerangka ATP…','Membaca CP dan memecahnya menjadi unit…','Menghitung alokasi JP per unit…','Hampir selesai, mohon tunggu…'],
   ['Langkah 2 dari 3: merumuskan tujuan pembelajaran…','Menyusun TP setiap unit sesuai kerangka…','Mengaitkan dimensi profil dan asesmen…','Hampir selesai, mohon tunggu…'],
@@ -4464,6 +4554,10 @@ async function atpGenerate(){
   push();
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
   if(DUAL_RUN) return;
+  if(materiMode()==='guru'){
+    if(dualOn()){ if(!v('atp_materi')||!v('atp_materi12')){ setStatus('Fase F dua file: isi daftar materi Kelas XI dan Kelas XII (dua kotak terpisah), atau pilih "AI menentukan materi dari CP".',true); return; } }
+    else if(!materiTeks()){ setStatus('Daftar materi belum diisi'+(materiF()?' untuk Kelas '+atpKelas().rom:'')+'. Isi daftar materi atau pilih "AI menentukan materi dari CP".',true); return; }
+  }
   if(dualOn()){ await atpDualRun(); return; }
   DUAL=null; dualTabsUI();
   if(atpMode()==='step'){ atpFlow='step'; atpStep=0; atpParts=['','','']; atpStepsUI(); await atpDo(1); return; }
@@ -4835,22 +4929,34 @@ function prosemCols(sem,W){
   [0,1,2,3,4,5].forEach(i=>{ for(let k=0;k<b+(i<r?1:0);k++) out.push({bln:i,off:false,ket:'',a:'',z:''}); });
   return out;
 }
-/* sebaran JP per minggu efektif untuk tiap baris. Unit memakai minggu sendiri dengan pembagian distJP (mis. 26 JP = 6-6-6-4-4),
-   asesmen sumatif mengisi sisa JP minggu unit sebelumnya dulu, sisanya baru minggu baru. */
+/* sebaran JP per minggu efektif untuk tiap baris. JP mengalir berurutan sepanjang minggu efektif, sehingga satu minggu boleh memuat
+   akhir sebuah unit, asesmen sumatif, dan awal unit berikutnya.
+   ATURAN PINTAR: asesmen sumatif (terutama tes tertulis) TIDAK BOLEH terbelah di dua minggu. Bila sisa JP minggu berjalan tidak cukup
+   untuk seluruh JP sumatif, sumatif digeser ke awal minggu berikutnya dan sisa JP minggu itu diisi oleh unit sesudahnya (JP unit
+   dimajukan, bukan dibiarkan menganggur). Sumatif yang lebih panjang dari satu minggu (praktik/proyek) selalu dimulai di awal minggu. */
 function prosemAlloc(its,W,jpw){
-  const rows=its.map(()=>Array(W).fill(0)), free=Array(W).fill(0); let w=0, last=[];
+  jpw=Math.max(1,Math.round(+jpw||1));
+  const rows=its.map(()=>Array(W).fill(0)), left=its.map(i=>Math.max(0,Math.round(+i.jp||0)));
+  let w=0, used=0, idle=0; const idleWk=[];
+  const put=(k,t)=>{ rows[k][Math.min(W-1,w)]+=t; left[k]-=t; used+=t; };
+  const nextWk=()=>{ w++; used=0; };
   its.forEach((it,k)=>{
-    let left=it.jp; if(!(left>0)) return;
-    if(it.kind!=='unit'){
-      [...last].reverse().forEach(x=>{ if(left<=0) return; const t=Math.min(left,free[x]); if(t>0){ rows[k][x]+=t; free[x]-=t; left-=t; } });
+    if(it.kind==='sum'&&left[k]>0&&used>0&&left[k]>jpw-used){
+      let g=jpw-used;   // sisa minggu ini tidak muat untuk sumatif: isi dengan unit berikutnya, lalu mulai sumatif di awal minggu baru
+      for(let j=k+1;j<its.length&&g>0;j++){
+        if(its[j].kind==='sum') break;
+        if(left[j]<=0) continue;
+        const t=Math.min(g,left[j]); put(j,t); g-=t;
+      }
+      if(g>0){ idle+=g; idleWk.push(w+1); }
+      nextWk();
     }
-    if(left>0){
-      const used=[];
-      distJP(left,jpw).forEach(j=>{ const x=Math.min(W-1,w); rows[k][x]+=j; free[x]=w<W?Math.max(0,jpw-j):0; used.push(x); w++; });
-      last=used;
+    while(left[k]>0){
+      const t=Math.min(left[k],jpw-used); put(k,t);
+      if(used>=jpw) nextWk();
     }
   });
-  return {rows,weeks:w};
+  return {rows,weeks:w+(used>0?1:0),idle,idleWk};
 }
 function prosemTable(items,sem,W,jpw,y){
   const its=items.filter(i=>i.sem===sem), cols=prosemCols(sem,W), N=cols.length, mn=monthsFor(sem,y);
@@ -4905,7 +5011,7 @@ function prosemTable(items,sem,W,jpw,y){
     ket=`<div style="font-size:9.5pt;margin-top:8px"><b>Keterangan minggu tidak efektif:</b></div><table style="width:100%;font-size:9.5pt;margin-top:3px"><tr><th style="width:5%">No</th><th style="width:30%">Minggu</th><th style="width:10%">Jumlah</th><th>Keterangan</th></tr>`
       +runs.map((r,ix)=>{ const wk=r.a?`${E(mn[r.bln])} · ${E(r.a)} – ${E(r.z)}`:E(mn[r.bln]); return `<tr><td style="text-align:center">${ix+1}</td><td>${wk}</td><td style="text-align:center">${r.n} minggu</td><td>${E(r.ket)}</td></tr>`; }).join('')+`</table>`;
   }
-  return {over,total,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>${ket}`};
+  return {over,total,idle:al.idle,idleWk:al.idleWk,html:`<table class="prosem" style="table-layout:fixed;width:100%"><colgroup>${col}</colgroup><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>${ket}`};
 }
 function identRows(r,extra){
   /* identitas tanpa tabel: dua kolom, label berlebar tetap sehingga tanda ":" lurus antar baris (contoh: Penyusun   : Hanif) */
@@ -4970,6 +5076,7 @@ async function generate(){
       if(!items.some(i=>i.sem===s)) return;
       const p=prosemTable(items,s,Wk[s],jpw,y);
       if(p.over) warn.push(`Semester ${s}: total ${p.total} JP membutuhkan lebih dari ${Wk[s]} minggu efektif (${jpw} JP/minggu), sisa JP ditumpuk di minggu terakhir.`);
+      if(p.idle>0) warn.push(`Semester ${s}: ${p.idle} JP di minggu ke-${p.idleWk.join(', ')} tidak terpakai karena asesmen sumatif tidak boleh terbelah antar minggu dan tidak ada unit sesudahnya untuk mengisi sisa minggu itu. Ubah JP unit sebelumnya di ATP bila ingin merapatkan.`);
       d.appendChild(makeSec('p'+s,'PROGRAM SEMESTER (PROSEM)',r,['Semester',semLabel(s)],'Semester '+s,p.html,
         `Minggu efektif Semester ${E(s)}: ${Wk[s]} minggu (diatur admin; kolom abu-abu = tidak efektif, alasannya tertulis di dalam kolom), ${jpw} JP per minggu. Angka pada kolom minggu = JP yang dipakai pada minggu tersebut. Sebaran minggu per bulan mengikuti kalender minggu efektif yang diatur admin; dapat disesuaikan lewat tombol Edit.`));
     });
