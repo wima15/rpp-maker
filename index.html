@@ -4419,12 +4419,36 @@ $('atp_fase').innerHTML=$('fase').innerHTML; $('atp_fase').value='Fase E / Kelas
 const v=id=>$(id).value.trim();
 const faseKode=()=>(v('atp_fase').match(/Fase\s+([A-F])/)||[])[1]||'';
 
+/* ---- Fase F: satu CP untuk dua tahun (Kelas XI dan XII). ATP dibuat per kelas, jadi CP harus dibagi ---- */
+const ROM={10:'X',11:'XI',12:'XII'};
+function atpKelas(){ const m=v('atp_fase').match(/Kelas\s+(\d+)/i), n=m?parseInt(m[1]):0; return {n,rom:ROM[n]||'',fase:faseKode()}; }
+const isFaseF2=()=>{ const k=atpKelas(); return k.fase==='F'&&(k.n===11||k.n===12); };
+/* Bila teks CP sudah memuat penanda kelas di awal baris ("Kelas XI", "Kelas 12", "Fase F Kelas XI", "XII:"), ambil bagian kelas yang dipilih saja */
+function splitCpKelas(txt,n){
+  const lines=String(txt||'').split(/\r?\n/), marks=[];
+  const re=/^[\s>*#\u2022\-\u2013(]*(?:Fase\s+F\s*[,\-\u2013\/(]*\s*)?Kelas\s*(XII|XI|12|11)\b|^[\s>*#\u2022\-\u2013(]*(XII|XI)\s*[:)\-\u2013]/i;
+  lines.forEach((ln,i)=>{ const m=ln.match(re); if(m){ const t=(m[1]||m[2]).toUpperCase(); marks.push({i,k:(t==='XII'||t==='12')?12:11}); } });
+  if(!marks.some(m=>m.k===11)||!marks.some(m=>m.k===12)) return null;
+  const pick=k=>marks.map((m,j)=>m.k===k?lines.slice(m.i,marks[j+1]?marks[j+1].i:lines.length).join('\n').trim():'').filter(Boolean).join('\n');
+  return {umum:lines.slice(0,marks[0].i).join('\n').trim(), xi:pick(11), xii:pick(12)};
+}
+const CPHINT0=$('atp_cphint').textContent;
+function cpHint(){
+  const h=$('atp_cphint'); if(!h) return;
+  if(!isFaseF2()){ h.textContent=CPHINT0; return; }
+  const k=atpKelas(), sp=splitCpKelas(v('atp_cp'),k.n);
+  h.textContent=sp
+    ?'Fase F · Kelas '+k.rom+': penanda kelas ditemukan di teks CP. ATP ini hanya memakai bagian Kelas '+k.rom+'.'
+    :'Fase F · Kelas '+k.rom+': CP Fase F berlaku untuk Kelas XI dan XII. ATP ini hanya memuat bagian Kelas '+k.rom+'; AI membagi CP secara bertahap (XI = dasar dan penguatan, XII = lanjutan dan capaian akhir fase). Agar tepat, beri penanda "Kelas XI" dan "Kelas XII" di awal baris pada teks CP, atau tulis pembagian materi di Catatan tambahan.';
+}
 function autoCP(){
   const k=v('atp_mapel').toLowerCase()+'|'+faseKode(), cp=CP_DEF[k], box=$('atp_cp');
   if(cp&&(!box.value.trim()||box.value===lastAuto)){ box.value=cp; lastAuto=cp; }
   else if(!cp&&box.value===lastAuto&&lastAuto){ box.value=''; lastAuto=''; }
+  cpHint();
 }
 ['atp_mapel','atp_fase'].forEach(id=>{ $(id).addEventListener('input',autoCP); $(id).addEventListener('change',autoCP); });
+$('atp_cp').addEventListener('input',cpHint);
 
 /* ---- sinkron identitas dengan formulir RPM (satu sumber data guru/sekolah/tanda tangan) ---- */
 function pull(){
@@ -4468,10 +4492,21 @@ function atpCtx(){
   const cp=v('atp_cp')||'(kosong: gunakan CP resmi terbaru untuk mapel dan fase ini sesuai Keputusan Kepala BSKAP Nomor 046/H/KR/2025; bila ragu atas bunyi CP, tulis ringkasan yang setia dan beri catatan agar guru mencocokkan dengan dokumen resmi)';
   return {jp,plan,setahun,sem,tot,sumN,mggTxt,sumTxt,cp};
 }
-function atpData(c){
-  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}`;
+function faseFBlok(){
+  if(!isFaseF2()) return '';
+  const k=atpKelas(), lain=k.n===11?'XII':'XI', sp=splitCpKelas(v('atp_cp'),k.n);
+  const peran=k.n===11
+    ?'Kelas XI adalah TAHUN PERTAMA Fase F: isi dengan bagian CP yang bersifat dasar, prasyarat, pengenalan, dan penguatan. Kompetensi tingkat lanjut, penerapan mandiri, dan capaian puncak akhir fase ditinggalkan untuk Kelas XII.'
+    :'Kelas XII adalah TAHUN KEDUA dan TERAKHIR Fase F: isi dengan bagian CP yang bersifat lanjutan, tingkat lanjut, penerapan mandiri atau proyek, dan pencapaian CP akhir fase. Anggap peserta didik sudah menuntaskan bagian dasar di Kelas XI; jangan mengulang materi dasar Kelas XI kecuali sebagai penguatan singkat.';
+  const deteksi=sp
+    ?`Teks CP di atas SUDAH memuat penanda kelas. Gunakan hanya bagian Kelas ${k.rom} sebagai cakupan TP; bagian Kelas ${lain} jangan dijadikan TP.\n${sp.umum?'Bagian umum (berlaku untuk kedua kelas):\n'+sp.umum+'\n':''}BAGIAN KELAS ${k.rom}:\n${k.n===11?sp.xi:sp.xii}\nBAGIAN KELAS ${lain} (di luar cakupan ATP ini):\n${k.n===11?sp.xii:sp.xi}`
+    :`Teks CP tidak menandai kelas, jadi Anda yang membaginya: bagi CP Fase F menjadi bagian Kelas XI dan bagian Kelas XII secara masuk akal, berurutan dari dasar ke lanjut, dan seimbang. Satu elemen CP boleh dibagi dua dengan kedalaman berbeda. Gabungan Kelas XI dan XII harus mencakup seluruh CP Fase F tanpa ada yang terlewat dan tanpa tumpang tindih.`;
+  return `\nKELAS DAN PEMBAGIAN CP FASE F (WAJIB DIPATUHI):\nATP ini disusun HANYA untuk KELAS ${k.rom} (Fase F). CP Fase F berlaku untuk dua tahun (Kelas XI dan XII) dan bunyinya tidak menyebut kelas, sehingga TP yang Anda tulis HARUS hanya milik Kelas ${k.rom}. ${peran}\n${deteksi}\nJelaskan pembagian CP Kelas XI dan XII ini singkat pada paragraf ringkasan bagian A, dan tulis \"Kelas ${k.rom}\" pada identitas. Bila Catatan guru menyebut pembagian materi, ikuti catatan itu.`;
 }
-const atpAturan=()=>`ATURAN:\n1. Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.\n6. ANALISIS CP: baca CP kalimat demi kalimat. Setiap elemen atau sub-elemen dan setiap kompetensi dalam bunyi CP harus terwakili oleh minimal satu TP; jangan ada bagian CP yang terlewat dan jangan menambah kompetensi di luar CP.\n7. Tulis bunyi CP per elemen SELENGKAPNYA seperti aslinya (jangan diringkas dan jangan diparafrase berlebihan).\n8. ASESMEN SUMATIF (bila ada): tiap baris asesmen sumatif WAJIB menyebut unit, materi, dan kode TP yang dicakup, serta bentuk asesmennya; jangan menulis baris asesmen yang hanya berjudul "Asesmen Sumatif" tanpa cakupan.\n9. Tulis selengkap dan serinci mungkin: jangan meringkas, jangan memakai "dan seterusnya", dan jangan menyisakan kolom kosong.`;
+function atpData(c){
+  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')}${isFaseF2()?' (ATP khusus Kelas '+atpKelas().rom+')':''} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}${faseFBlok()}`;
+}
+const atpAturan=()=>`ATURAN:\n1. Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.\n6. ANALISIS CP: baca CP kalimat demi kalimat. Setiap elemen atau sub-elemen dan setiap kompetensi dalam bunyi CP harus terwakili oleh minimal satu TP; jangan ada bagian CP yang terlewat dan jangan menambah kompetensi di luar CP.\n7. Tulis bunyi CP per elemen SELENGKAPNYA seperti aslinya (jangan diringkas dan jangan diparafrase berlebihan).\n8. ASESMEN SUMATIF (bila ada): tiap baris asesmen sumatif WAJIB menyebut unit, materi, dan kode TP yang dicakup, serta bentuk asesmennya; jangan menulis baris asesmen yang hanya berjudul "Asesmen Sumatif" tanpa cakupan.\n9. Tulis selengkap dan serinci mungkin: jangan meringkas, jangan memakai "dan seterusnya", dan jangan menyisakan kolom kosong.${isFaseF2()?'\n10. KHUSUS FASE F KELAS '+atpKelas().rom+': semua unit dan TP hanya untuk Kelas '+atpKelas().rom+'. Pada aturan 6, "tidak boleh ada bagian CP yang terlewat" berlaku untuk bagian CP yang menjadi cakupan Kelas '+atpKelas().rom+'; bagian CP kelas lain tidak dibuatkan TP. Aturan 7 tetap berlaku: bunyi CP Fase F ditulis utuh di bagian A. Pada tabel Analisis CP tambahkan kolom "Cakupan Kelas" (isi XI, XII, atau XI–XII) sehingga terlihat bagian CP mana yang dikerjakan di kelas ini dan mana yang ditunda ke kelas lain. Kode TP dan nomor unit dimulai dari 1 untuk kelas ini.':''}`;
 
 /* ---- prompt mode Sekaligus ---- */
 function buildAtp(){
