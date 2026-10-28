@@ -129,6 +129,20 @@ header p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px;line-height
   transition:all .15s ease;
 }
 .sb-link.sb-sub{margin-left:20px;width:calc(100% - 20px);font-size:.94em}
+.sn{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:7px;border-radius:50%;background:var(--accent-light);color:var(--accent);font:700 .78em/1 inherit;font-style:normal}
+.sb-link[aria-current="page"] .sn{background:rgba(255,255,255,.25);color:inherit}
+.sb-grp{margin:10px 6px 2px;font-size:.72em;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
+body[data-sb="collapsed"] .sb-grp{display:none}
+.wfbar{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;align-items:stretch}
+.wfstep{flex:1 1 190px;display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.wfstep:hover{border-color:var(--accent)}
+.wfstep .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--accent-light);color:var(--accent);flex:none}
+.wfstep b{display:block;font-size:.95em}
+.wfstep small{opacity:.7;font-size:.8em;line-height:1.3;display:block}
+.wfstep[aria-current="step"]{border-color:var(--accent);background:var(--accent-light)}
+.wfstep[aria-current="step"] .n{background:var(--accent);color:var(--accent-ink)}
+.wfnext{margin-left:auto;align-self:center;white-space:nowrap}
+
 .sb-link svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sb-link:hover{background:var(--accent-light);color:var(--accent)}
 .sb-link[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow: 0 2px 4px rgba(13,148,136,.2)}
@@ -521,7 +535,7 @@ hr.kop-rule{border:0;height:2px;margin:10px 0 16px;border-top:3px solid #1e3a8a;
 
 @media print{
   body{background:#fff}
-  header,form,.toolbar,.status,.sidebar,#sb_show,.resov,.ovl,.loader{display:none!important}
+  header,form,.toolbar,.status,.sidebar,.wfbar,#sb_show,.resov,.ovl,.loader{display:none!important}
   main,main.view-saved,.view-saved{display:block;padding:0!important;margin:0!important}
   .panel{border:0;padding:0;box-shadow:none}
   #doc,#lkpd,#asesmen,#lampiran,#atpdoc,#ppdoc{border:0;padding:0;box-shadow:none;margin-top:0}
@@ -847,9 +861,10 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     <button type="button" class="sb-ctl" id="sb_collapse" title="Ciutkan menu" aria-label="Ciutkan menu" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
     <button type="button" class="sb-ctl" id="sb_hide" title="Sembunyikan menu" aria-label="Sembunyikan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
   </div>
+  <div class="sb-grp">Alur kerja</div>
   <button type="button" class="sb-link" id="nav-atp" data-view="atp" aria-current="page" title="Buat ATP">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h6"/><path d="m16 15 2 2 4-4"/></svg>
-    <span class="lbl">Buat ATP</span>
+    <span class="lbl"><i class="sn">1</i>Buat ATP</span>
   </button>
   <button type="button" class="sb-link sb-sub" id="nav-atpsaved" data-view="atpsaved" title="ATP Tersimpan">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 14h6"/><path d="M9 4v5"/></svg>
@@ -857,11 +872,11 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
   </button>
   <button type="button" class="sb-link" id="nav-prota" data-view="prota" title="Prota &amp; Prosem">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4z"/><path d="M4 10h16"/><path d="M9 3v4"/><path d="M15 3v4"/><path d="M8 14h2"/><path d="M14 14h2"/></svg>
-    <span class="lbl">Prota &amp; Prosem</span>
+    <span class="lbl"><i class="sn">2</i>Prota &amp; Prosem</span>
   </button>
   <button type="button" class="sb-link" id="nav-make" data-view="make" title="Buat RPP">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-    <span class="lbl">Buat RPP</span>
+    <span class="lbl"><i class="sn">3</i>Buat RPP</span>
   </button>
   <button type="button" class="sb-link sb-sub" id="nav-saved" data-view="saved" title="RPP Tersimpan">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16"/><path d="M9 14h6"/></svg>
@@ -876,6 +891,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
 </aside>
 <button type="button" id="sb_show" title="Tampilkan menu" aria-label="Tampilkan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
 <div class="content">
+<nav class="wfbar" id="wfbar" aria-label="Alur kerja"></nav>
 
 <main id="view-make" hidden>
 <form class="panel" id="f" autocomplete="off">
@@ -3471,7 +3487,19 @@ function canLeave(){ return !(editing&&dirty)||confirm('Ada perubahan yang belum
 function showList(){
   $('savedviewer').hidden=true; $('histbox').hidden=false; loadHistGuru();
 }
+const WF=[
+  {k:'atp',views:['atp','atpsaved'],t:'Buat ATP',d:'Susun alur tujuan pembelajaran, lalu simpan'},
+  {k:'prota',views:['prota'],t:'Prota & Prosem',d:'Pilih ATP tersimpan, sebaran JP per minggu'},
+  {k:'make',views:['make','saved'],t:'Buat RPP',d:'Ambil unit dari ATP: RPM, LKPD, Asesmen, Lampiran'}];
+function wfRender(v){
+  const bar=$('wfbar'); if(!bar) return;
+  const i=WF.findIndex(x=>x.views.includes(v)), nx=WF[i+1];
+  bar.innerHTML=WF.map((x,j)=>`<button type="button" class="wfstep" data-wf="${x.k}"${j===i?' aria-current="step"':''}><span class="n">${j+1}</span><span><b>${x.t}</b><small>${x.d}</small></span></button>`).join('')
+    +(nx?`<button type="button" class="ghost wfnext" data-wf="${nx.k}">Lanjut: ${nx.t} →</button>`:'');
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-wf]'); if(b) showView(b.dataset.wf); });
 function showView(v){
+  wfRender(v);
   ['make','saved','atp','atpsaved','prota'].forEach(n=>{ const m=$('view-'+n), b=$('nav-'+n); if(m) m.hidden=n!==v; if(b) b.setAttribute('aria-current',n===v?'page':'false'); });
   if(v==='saved') showList();
   else if(v==='make'){ mountPanel(false); $('savedviewer').hidden=true; }
@@ -5289,6 +5317,7 @@ $('atp_histlist').addEventListener('click',e=>{
   let n=0; const t=setInterval(()=>{ n++; if(!$('view-atp').hidden&&!doc.hidden&&doc.querySelector('h3')){ clearInterval(t); openPicker(); } else if(n>25) clearInterval(t); },200);
 });
 })();
+wfRender('atp');
 </script>
 </body>
 </html>
