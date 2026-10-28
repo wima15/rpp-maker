@@ -184,6 +184,9 @@ img.usr-img.img-sel{outline:2px solid var(--accent);outline-offset:2px}
 #imgbar input[type=range]{width:90px}
 #imgdrop{position:fixed;z-index:61;width:3px;background:var(--accent);border-radius:2px;pointer-events:none;display:none}
 #atpsteps{margin:4px 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.dualtabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.dualtabs button.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600}
+@media print{.dualtabs{display:none!important}}
 .stepbar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
 .stepbar span{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--muted)}
 .stepbar span.cur{border-color:var(--accent);color:var(--accent)}
@@ -1106,11 +1109,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
   </div>
   <div class="resume" id="resume" hidden role="alert">
     <p id="resume_msg"></p>
-    <div class="resume-act"><button type="button" id="resume_go">Lanjutkan dengan API key lain</button><button type="button" class="ghost" id="resume_drop">Buang draft</button></div>
-  </div>
-  <div class="resume" id="cloudraft" hidden role="status">
-    <p><b id="cloudraft_ttl"></b></p>
-    <div id="cloudraft_list"></div>
+    <div class="resume-act"><button type="button" id="resume_go">Lanjutkan dengan API key lain</button><button type="button" class="ghost" id="resume_drop">Buang hasil sebagian</button></div>
   </div>
   <div class="status" id="status"></div>
   <div class="keyov" id="keyov" role="dialog" aria-modal="true" aria-labelledby="keyttl">
@@ -1197,6 +1196,10 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <div><label for="atp_mapel">Mata pelajaran</label><input id="atp_mapel" required list="mapellist" placeholder="mis. Bahasa Inggris"></div>
       <div><label for="atp_fase">Fase / kelas</label><select id="atp_fase"></select></div>
     </div>
+    <div id="atpdualbox" hidden>
+      <label class="inline" style="margin-top:0"><input type="checkbox" id="atp_dual" checked> Fase F: susun Kelas XI dan Kelas XII sekaligus (dua file)</label>
+      <p class="hint">Kelas XI dikerjakan dulu, lalu Kelas XII melanjutkannya (tidak mengulang materi XI). Hasilnya dua ATP terpisah, masing-masing bisa diunduh, dicetak, dan disimpan.</p>
+    </div>
     <div class="row">
       <div><label for="atp_cakupan">Cakupan</label><select id="atp_cakupan"><option value="Satu tahun (Ganjil dan Genap)">Satu tahun</option><option>Ganjil</option><option>Genap</option></select></div>
       <div><label for="atp_tahun">Tahun ajaran</label><input id="atp_tahun" value="2026/2027"></div>
@@ -1208,6 +1211,10 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
       <div><label for="atp_jp">JP per minggu</label><input id="atp_jp" type="number" min="1" max="20" value="3"></div>
       <div><label for="atp_sum">Asesmen sumatif per semester (kali)</label><input id="atp_sum" type="number" min="0" max="10" value="2"></div>
     </div>
+    <div id="atpjp12box" hidden>
+      <label for="atp_jp12">JP per minggu Kelas XII (kosongkan bila sama dengan Kelas XI)</label>
+      <input id="atp_jp12" type="number" min="1" max="20" placeholder="sama dengan Kelas XI">
+    </div>
     <p class="hint" id="atp_mgginfo">Minggu efektif diatur admin.</p>
     <p class="hint">Tulis berapa kali asesmen sumatif dilaksanakan dalam satu semester. AI menyisipkan sebanyak itu di dalam alur dan menyisihkan JP untuk tiap kali pelaksanaan.</p>
   </fieldset>
@@ -1217,7 +1224,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     <textarea id="atp_cp" rows="8" placeholder="Tempel CP fase ini dari SK BSKAP 046/H/KR/2025. Bila dikosongkan, AI memakai CP resmi sesuai mapel dan fase."></textarea>
     <p class="hint" id="atp_cphint">Terisi otomatis untuk Bahasa Inggris Fase E. Untuk mapel lain, tempel CP resmi supaya ATP akurat.</p>
     <label for="atp_catatan">Catatan tambahan (opsional)</label>
-    <textarea id="atp_catatan" rows="3" placeholder="mis. ikuti buku teks tertentu, tambah unit proyek, urutan tema"></textarea>
+    <textarea id="atp_catatan" rows="3" placeholder="mis. ikuti buku teks tertentu, tambah unit proyek, urutan tema; sumatif 1 tes tulis 2 JP, sumatif 2 unjuk kerja 6 JP"></textarea>
   </fieldset>
   <fieldset>
     <legend>Cara menyusun</legend>
@@ -1254,6 +1261,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     </div>
   </div>
   <div class="status" id="atpstatus"></div>
+  <div class="dualtabs" id="atpdualtabs" hidden></div>
   <div id="atpsteps" hidden>
     <div class="stepbar"><span></span><span></span><span></span></div>
     <p class="hint" id="atpstepmsg"></p>
@@ -1948,18 +1956,17 @@ async function generate(opt){
     resetAses(); resetLamp();
     setEdit(false); setDirty(false);
     if(!RESUMED) curId=null;
-    cloudClear(); JOB_OK=true;
+    JOB_OK=true;
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     notify(true,'RPM berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'RPM selesai.');
   }catch(e){
-    setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.':'Gagal: '+e.message,!e.aborted);
+    setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk masih ada di layar; bisa dilanjutkan selama halaman ini belum ditutup.':'Gagal: '+e.message,!e.aborted);
     if(!e.aborted) notify(false,'RPM gagal disusun: '+e.message);
     if(e.partial){
       const doc=$('doc'); doc.innerHTML=md(e.partial); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
       lastText=e.partial; ['copy','savedb','editbtn'].forEach(id=>$(id).disabled=false);
-      if(readCfgForm().auto&&!e.aborted) saveDb(true,'Draft RPM (belum selesai) tersimpan.');
     }
     showResume('RPM',e);
   }finally{
@@ -2190,16 +2197,15 @@ function showLoader(msgs){
 function hideLoader(){
   const nm=(LIVE&&JOBNAME[LIVE.kind])||'Proses';
   if(document.hidden) setTab(JOB_OK?'✅ '+nm+' selesai':(STOP_REQ?'⏸ '+nm+' dihentikan':'⚠ '+nm+' terhenti')); else resetTab();
-  clearInterval(loadTimer); clearTimeout(_liveTimer); _liveTimer=null; clearTimeout(CD.timer); CD.timer=null; ASK_CTX=null;
+  clearInterval(loadTimer); clearTimeout(_liveTimer); _liveTimer=null; ASK_CTX=null;
   if(LIVE&&LIVE.el) LIVE.el.classList.remove('streaming');
   LIVE=null; liveInfo='';
   $('loader').classList.remove('on','live'); $('lovl').classList.remove('on','clear');
-  CD.chain.then(()=>cloudCheck());
 }
 
 /* ---- tulis langsung: teks dari AI tampil di dokumen selagi diterima ---- */
 let LIVE=null, LIVE_BASE='', _liveTimer=null, _liveFull='';
-/* ---- tombol Hentikan: batalkan permintaan yang sedang berjalan; teks yang sudah masuk tetap disimpan sebagai draf ---- */
+/* ---- tombol Hentikan: batalkan permintaan yang sedang berjalan; teks yang sudah masuk tetap ada di layar (hanya di memori halaman) ---- */
 let ABORT=null, STOP_REQ=false, JOB_OK=false;
 /* ---- progres di judul tab: guru bisa pindah tab dan tetap tahu sampai mana prosesnya ---- */
 const TITLE_BASE=document.title, JOBNAME={rpm:'RPM',lkpd:'LKPD',ases:'Asesmen',lamp:'Lampiran'};
@@ -2212,7 +2218,7 @@ $('stopbtn').addEventListener('click',()=>{
   STOP_REQ=true; const b=$('stopbtn'); b.disabled=true; b.textContent='Menghentikan…';
   try{ if(ABORT) ABORT.abort(); }catch(e){}
 });
-function liveSet(el,pre,kind,label){ LIVE={el:el,pre:pre||'',kind:kind||'',label:label||'',on:false}; LIVE_BASE=''; _liveFull=''; CD.ok=false; }
+function liveSet(el,pre,kind,label){ LIVE={el:el,pre:pre||'',kind:kind||'',label:label||'',on:false}; LIVE_BASE=''; _liveFull=''; }
 function liveHeading(t){
   const m=t.match(/^(?:#{1,4}[ \t]+.+?|\*\*[^*\n]{3,80}\*\*)[ \t]*$/gm);
   return m?m[m.length-1].replace(/^#+[ \t]*|\*\*/g,'').trim():'';
@@ -2251,7 +2257,6 @@ function liveFlush(){
   }
   const nm=LIVE.label||JOBNAME[LIVE.kind]||'';
   setTab(pr?'✍ '+(LIVE.kind==='rpm'?'Menulis…':nm+'…')+' '+pr+' pertemuan':'✍ Menulis '+nm+'… '+chars+' karakter');
-  if(CD.ok) info+=' · draf tersimpan online'; else if(CD.off) info+=' · draf online belum aktif';
   liveInfo=info;
 }
 
@@ -2557,7 +2562,7 @@ async function pickKey(aksi,keep){
       try{ localStorage.setItem('rpm_keyslot',KEY_SLOT); }catch(e){}
       usageLog(aksi); LAST_AKSI=aksi;
       if(RESUMING){ RESUMED=true; RESUMING=false; } else { RESUMED=false; DONE={}; draftClear(); if((aksi==='RPM'&&!keep)||!PROJ){ const prev=PROJ; PROJ=newProj(); if(!prev&&!curId){ pageCopy('rpm:baru','rpm:'+PROJ); pageSet('rpm:baru',null); } } }
-      hideResume(); hideCloudDraft();
+      hideResume();
       done(true);
     };
     $('keycancel').onclick=()=>{ RESUMING=false; done(false); };
@@ -2582,7 +2587,7 @@ async function readStream(res){
       buf+=dec.decode(r.value,{stream:true});
       const parts=buf.split(/\r?\n\r?\n/); buf=parts.pop(); parts.forEach(eat);
       setStatus('Menerima hasil… '+text.length.toLocaleString('id-ID')+' karakter');
-      liveUpdate(text); cloudTick(text);
+      liveUpdate(text);
     }
     buf+=dec.decode(); if(buf.trim()) eat(buf);
   }catch(e){
@@ -2594,8 +2599,8 @@ async function readStream(res){
   return {text:text,finish:fin};
 }
 /* proses berpikir model memakan waktu & sumber daya server. Baru dibatasi SETELAH server kewalahan (kode 546 dst), supaya jalur normal tidak berubah. */
-/* HEMAT & CEPAT: false = tanpa streaming. Tidak ada gambar-ulang dokumen 5x/detik dan tidak ada simpan draf tiap 8 detik ke Supabase. Ubah ke true hanya bila ingin tulis langsung. */
-const USE_STREAM=false;
+/* true = teks tampil langsung saat ditulis (streaming). Tidak ada penyimpanan draf ke Supabase; dokumen digambar ulang paling sering 5x/detik di browser. false = tampil setelah selesai. */
+const USE_STREAM=true;
 const THINK_DEFAULT='low';   // tingkat berpikir Gemini sejak awal: 'low' mempercepat jawaban pertama (hindari batas waktu fungsi); '' = bawaan model
 let THINK_CFG=THINK_DEFAULT?{thinkingLevel:THINK_DEFAULT}:null;
 async function askRaw(contents,maxTok){
@@ -2634,11 +2639,10 @@ const AUTO_RETRY=1;   // 0 = langsung gagal bila server AI kewalahan (tanpa menu
 const MAX_CONT=24, CHUNK_TOKENS=4096, MIN_CHUNK=1024;   // potongan 4 ribu token: satu potongan selesai jauh di bawah batas 150 detik fungsi (tanpa streaming)   // dokumen dikerjakan per potongan ~8 ribu token
 const AKSI_BTN={RPM:'gen',LKPD:'lkpdbtn',Asesmen:'asesbtn',Lampiran:'lampbtn'};
 let DRAFT=null, DONE={}, RESUMING=false, RESUMED=false, LAST_AKSI='', RECOMPOSE=null;   // RECOMPOSE = id projek yang sedang akan disusun ulang
-function draftSave(key,prompt,text){
-  DRAFT={key,prompt,text,proj:PROJ}; cloudPush(key,prompt,text);
-  try{ localStorage.setItem('rpm_draft',JSON.stringify({key,prompt,text,t:Date.now()})); }catch(e){}
-}
-function draftClear(){ DRAFT=null; try{ localStorage.removeItem('rpm_draft'); }catch(e){} }
+/* Hanya di memori halaman ini (untuk melanjutkan potongan teks / ganti API key). Tidak ada yang disimpan ke Supabase atau browser. */
+function draftSave(key,prompt,text){ DRAFT={key,prompt,text,proj:PROJ}; }
+function draftClear(){ DRAFT=null; }
+try{ localStorage.removeItem('rpm_draft'); }catch(e){}   // bersihkan sisa draf lama di browser
 async function ask(prompt,key){
   key=key||LAST_AKSI||'x';
   if(DONE[key]!=null) return DONE[key];            // bagian yang sudah jadi tidak diminta ulang
@@ -2677,16 +2681,15 @@ async function ask(prompt,key){
     draftSave(key,base,acc);                       // terpotong karena panjang: lanjut otomatis
     if(round===MAX_CONT){ const e=new Error('Hasil terlalu panjang dan masih terpotong setelah '+(MAX_CONT+1)+' potongan.'); e.partial=acc; throw e; }
   }
-  clearTimeout(_liveTimer); _liveTimer=null; clearTimeout(CD.timer); CD.timer=null;      // hasil akhir dirender oleh pemanggil
+  clearTimeout(_liveTimer); _liveTimer=null;      // hasil akhir dirender oleh pemanggil
   acc=acc.replace(/^```(?:markdown)?\s*|\s*```$/g,'');
   DONE[key]=acc; if(DRAFT&&DRAFT.key===key) draftClear();
-  if(key.indexOf(':')>0) cloudPush(key,base,acc);   // pekerjaan bertahap (asesmen): catat bagian yang sudah jadi
   return acc;
 }
 function showResume(aksi,e){
   if(e&&e.aborted&&!e.partial&&!Object.keys(DONE).length) return;   // dihentikan sebelum ada teks: tidak ada yang bisa dilanjutkan
   const n=(e&&e.partial)?e.partial.length:0, extra=Object.keys(DONE).length;
-  $('resume_msg').textContent='Proses '+aksi+(e&&e.aborted?' dihentikan. ':' terhenti: '+((e&&e.message)||'')+' ')+(n?`Hasil sebagian (${n.toLocaleString('id-ID')} karakter) sudah ditampilkan dan disimpan. `:(extra?'Bagian yang sudah jadi disimpan. ':''))+'Pilih API key lain, lalu lanjutkan dari titik terakhir.';
+  $('resume_msg').textContent='Proses '+aksi+(e&&e.aborted?' dihentikan. ':' terhenti: '+((e&&e.message)||'')+' ')+(n?`Hasil sebagian (${n.toLocaleString('id-ID')} karakter) sudah ditampilkan di layar. `:(extra?'Bagian yang sudah jadi tetap ada di layar. ':''))+'Pilih API key lain, lalu lanjutkan dari titik terakhir.';
   $('resume').dataset.aksi=aksi; $('resume').dataset.mapel=normMapel($('mapel').value); $('resume').dataset.proj=PROJ||''; $('resume').dataset.on='1'; $('resume').hidden=false;
 }
 function hideResume(){ const r=$('resume'); if(r){ r.hidden=true; delete r.dataset.on; } }
@@ -2696,166 +2699,28 @@ $('resume_go').addEventListener('click',()=>{
   const aksi=$('resume').dataset.aksi; RESUMING=true;
   if(aksi==='RPM') generate(); else $(AKSI_BTN[aksi]).click();
 });
-$('resume_drop').addEventListener('click',()=>{ DONE={}; draftClear(); cloudClear(); hideResume(); CD.rows=CD.rows.filter(x=>x.project_id!==PROJ); cloudRender(); setStatus('Draft dibuang.'); });
+$('resume_drop').addEventListener('click',()=>{ DONE={}; draftClear(); hideResume(); setStatus('Hasil sebagian dibuang.'); });
 
-/* ================= DRAF DI DATABASE: per guru, per projek, bisa dilanjutkan di perangkat lain ================= */
-/* Projek = satu RPM beserta LKPD, asesmen, dan lampirannya. Tiap projek punya satu draf (kunci: nama_guru + project_id). */
-const CD={chain:Promise.resolve(),timer:null,partial:'',off:false,ok:false,rows:[]};
+/* Projek = satu RPM beserta LKPD, asesmen, dan lampirannya (kunci halaman/kertas). Draf tidak lagi disimpan ke database. */
 let ASK_CTX=null, PROJ=null;
 const newProj=()=>'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-function projLabel(){ return [($('topik').value||'').trim(),($('mapel').value||'').trim()].filter(Boolean).join(' · ')||'(tanpa topik)'; }
-const FORM_IDS=['model','guru','kepsek','sekolah','tempat','tglrpp','mapel','fase','semester','tahun','topik','cp','jpmgg','menitjp','jptotal','pertemuan','jpbagi','waktu','siswa','pedagogi','bahasa','catatan','lkpd_detail','rpm_detail'];
-function formSnap(){
-  const o={}; FORM_IDS.forEach(i=>{ const e=$(i); if(e) o[i]=e.value; });
-  o.dims=[...document.querySelectorAll('#dims input:checked')].map(x=>x.value);
-  return o;
-}
-function formApply(o){
-  if(o.guru!=null){ $('guru').value=o.guru; onGuru(); }          // onGuru mengisi mapel bawaan; mapel dari draf dipasang sesudahnya
-  FORM_IDS.forEach(i=>{ const e=$(i); if(!e||o[i]==null||i==='guru') return; if(e.type==='hidden'&&e.value&&i!=='jptotal'&&i!=='jpbagi') return; e.value=o[i]; });
-  document.querySelectorAll('#dims input').forEach(x=>{ x.checked=(o.dims||[]).includes(x.value); });
-  fixModelSel();
-  syncAtpBox();
-}
-function deviceName(){
-  const u=navigator.userAgent||'';
-  const os=/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone/iPad':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':/Linux/i.test(u)?'Linux':'perangkat lain';
-  const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Firefox\//.test(u)?'Firefox':/Safari\//.test(u)?'Safari':'';
-  return os+(br?' · '+br:'');
-}
-/* simpan (upsert per guru + projek). Berurutan lewat CD.chain supaya hapus tidak terlangkahi simpan. */
-function cloudPush(key,base,text){
-  const g=($('guru').value||'').trim(); if(!g||CD.off||!text) return;
-  CD_CACHE=null;
-  if(!PROJ) PROJ=newProj();
-  const snap=formSnap(); snap.hasil_id=key==='RPM'?null:(curId||null);   // draf RPM = RPP baru; draf lain menempel ke RPP yang sudah tersimpan
-  const row={nama_guru:g,project_id:PROJ,project_nama:projLabel(),aksi:key.split(':')[0],draft_key:key,prompt:base,teks:text,panjang:text.length,done:DONE,form:snap,
-    rpm_markdown:key==='RPM'?null:(lastText||null),model:modelDipakai(),perangkat:deviceName(),updated_at:new Date().toISOString()};
-  CD.chain=CD.chain
-    .then(()=>sb(SB_DST,'/rpm_draft?on_conflict=nama_guru,project_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:row}))
-    .then(()=>{ CD.ok=true; })
-    .catch(e=>{ CD.ok=false; if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; });
-}
-/* hapus satu draf (tanpa menyentuh proses lain yang sedang jalan) */
-function cloudDelete(g,pid){
-  g=(g||'').trim(); if(!g||!pid||CD.off) return;
-  CD_CACHE=null;
-  CD.chain=CD.chain.then(()=>sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&project_id=eq.'+encodeURIComponent(pid),{method:'DELETE',headers:{Prefer:'return=minimal'}})).catch(()=>{});
-}
-/* proses projek ini selesai atau drafnya dibuang */
-function cloudClear(){ clearTimeout(CD.timer); CD.timer=null; CD.ok=false; cloudDelete($('guru').value,PROJ); }
-/* selama teks mengalir: simpan tiap ±8 detik, jadi bila HP mati atau tab tertutup, hasil terakhir tetap ada */
-function cloudTick(partial){
-  if(!ASK_CTX||CD.off) return;
-  CD.partial=LIVE_BASE+partial;
-  if(CD.timer) return;
-  CD.timer=setTimeout(()=>{ CD.timer=null; if(ASK_CTX) cloudPush(ASK_CTX.key,ASK_CTX.base,CD.partial); },8000);
-}
-function hideCloudDraft(){ const b=$('cloudraft'); if(b) b.hidden=true; }
-function cloudRender(){
-  const box=$('cloudraft'), list=$('cloudraft_list'), rows=CD.rows;
-  if(!rows.length){ box.hidden=true; list.innerHTML=''; return; }
-  const mp=($('mapel').value||'').trim(), utk=mp?' untuk '+mp:'';
-  const own=!!PROJ&&rows.every(r=>r.project_id===PROJ);
-  if(own) $('cloudraft_ttl').textContent='Projek ini punya draf belum selesai di database. Lanjutkan dari titik terakhir, atau buang untuk menyusun dari awal.';
-  else $('cloudraft_ttl').textContent=rows.length===1?'Ada 1 draf belum selesai'+utk+' di database':'Ada '+rows.length+' draf belum selesai'+utk+' di database (satu untuk tiap projek)';
-  list.innerHTML=rows.map((r,i)=>`<div class="cd-item"><p>${esc('Draf '+r.aksi+' · '+(r.project_nama||'(tanpa topik)'))}<br><small>${esc((r.panjang||0).toLocaleString('id-ID')+' karakter · '+new Date(r.updated_at).toLocaleString('id-ID')+(r.perangkat?' · '+r.perangkat:''))}</small></p><div class="resume-act"><button type="button" data-go="${i}">Lanjutkan</button><button type="button" class="ghost" data-del="${i}">Buang</button></div></div>`).join('');
-  box.hidden=false;
-}
-/* draf hanya ditawarkan di mapel-nya sendiri; mapel di form masih kosong = tampilkan semua */
 const normMapel=v=>(v||'').toString().trim().toLowerCase().replace(/\s+/g,' ');
-function draftMapel(r){
-  const m=r.form&&r.form.mapel; if(m) return normMapel(m);
-  const pn=(r.project_nama||'').split(' · '); return pn.length>1?normMapel(pn[pn.length-1]):'';   // draf lama tanpa snapshot form: ambil dari label projek
-}
-function draftMapelOk(r){
-  const cur=normMapel($('mapel').value); if(!cur) return true;
-  const dm=draftMapel(r); return !dm||dm===cur;
-}
-function draftTopikOk(r){
-  const cur=normMapel($('topik').value); if(!cur) return true;
-  const t=normMapel(r.form&&r.form.topik); return !t||t.includes(cur)||cur.includes(t);
-}
-const CD_COLS='id,nama_guru,project_id,project_nama,aksi,draft_key,perangkat,panjang,updated_at,form';
-/* draf milik projek yang sedang terbuka (satu guru + satu projek = paling banyak satu draf) */
-async function projectDraftRows(){
-  const g=($('guru').value||'').trim(); if(!PROJ||g.length<3||CD.off) return [];
-  try{
-    const rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&project_id=eq.'+encodeURIComponent(PROJ)+'&select='+CD_COLS+'&limit=5');
-    return (rows||[]).filter(r=>r.panjang>0);
-  }catch(e){ if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; return []; }
-}
-/* dipanggil saat Susun ulang: bila projek ini punya draf, langsung tampilkan supaya guru bisa lanjut. true = ada draf, penyusunan baru ditahan */
-async function offerProjectDraft(){
+/* hasil sebagian yang masih ada di layar: tawarkan melanjutkan dengan API key lain. true = ada, penyusunan baru ditahan */
+function offerProjectDraft(){
   if(!PROJ) return false;
   const aksi=DRAFT&&DRAFT.proj===PROJ&&DRAFT.text?DRAFT.key.split(':')[0]:'';
-  if(aksi&&(aksi==='RPM'||AKSI_BTN[aksi])){            // draf terbaru masih ada di layar ini
+  if(aksi&&(aksi==='RPM'||AKSI_BTN[aksi])){
     const r=$('resume');
-    $('resume_msg').textContent='Projek ini punya draf '+aksi+' yang belum selesai ('+DRAFT.text.length.toLocaleString('id-ID')+' karakter). Pilih API key, lalu lanjutkan dari titik terakhir. Untuk menyusun dari awal, tekan Buang draft lalu Susun ulang.';
+    $('resume_msg').textContent='Projek ini punya hasil '+aksi+' yang belum selesai ('+DRAFT.text.length.toLocaleString('id-ID')+' karakter). Pilih API key, lalu lanjutkan dari titik terakhir. Untuk menyusun dari awal, tekan Buang hasil sebagian lalu Susun ulang.';
     r.dataset.aksi=aksi; r.dataset.mapel=normMapel($('mapel').value); r.dataset.proj=PROJ; r.dataset.on='1'; r.hidden=false;
-    hideCloudDraft(); r.scrollIntoView({behavior:'smooth',block:'center'});
-    setStatus('Ada draf belum selesai di projek ini. Silakan lanjutkan atau buang.');
+    r.scrollIntoView({behavior:'smooth',block:'center'});
+    setStatus('Ada hasil belum selesai di projek ini. Silakan lanjutkan atau buang.');
     return true;
   }
-  const rows=await projectDraftRows(); if(!rows.length) return false;
-  hideResume(); CD.rows=rows; cloudRender();
-  $('cloudraft').scrollIntoView({behavior:'smooth',block:'center'});
-  setStatus('Ada draf belum selesai di projek ini. Silakan lanjutkan atau buang.');
-  return true;
+  return false;
 }
-let CD_CACHE=null;   // {g,t,rows}: daftar draf per guru; filter mapel/topik dikerjakan lokal, jadi mengetik tidak memicu request
-async function cloudCheck(){
-  const g=($('guru').value||'').trim();
-  if(g.length<3||CD.off){ CD.rows=[]; cloudRender(); return; }
-  if($('loader').classList.contains('on')) return;
-  try{
-    let rows;
-    if(CD_CACHE&&CD_CACHE.g===g&&Date.now()-CD_CACHE.t<120000) rows=CD_CACHE.rows;
-    else{ rows=await sb(SB_DST,'/rpm_draft?nama_guru=eq.'+encodeURIComponent(g)+'&select='+CD_COLS+'&order=updated_at.desc&limit=50'); CD_CACHE={g,t:Date.now(),rows:rows||[]}; }
-    rows=(rows||[]).filter(r=>PROJ?r.project_id===PROJ:(draftMapelOk(r)&&draftTopikOk(r))).filter(r=>r.panjang>0&&!(DRAFT&&r.project_id===PROJ&&DRAFT.key===r.draft_key&&DRAFT.text.length>=r.panjang));   // draf yang sudah ada di layar ini tidak perlu ditawarkan
-    CD.rows=rows; cloudRender();
-  }catch(e){ if(/relation|does not exist|schema cache|404|42P01|project_id/i.test((e.message||'')+(e.code||''))) CD.off=true; CD.rows=[]; cloudRender(); }
-}
-let _cdT=null; const cdSoon=()=>{ clearTimeout(_cdT); _cdT=setTimeout(cloudCheck,2000); };
-$('guru').addEventListener('input',cdSoon); $('guru').addEventListener('change',cdSoon);
-setTimeout(cloudCheck,1500);
-$('mapel').addEventListener('input',()=>{ cdSoon(); syncResume(); }); $('mapel').addEventListener('change',()=>{ cdSoon(); syncResume(); });
-$('mapelchips').addEventListener('click',()=>{ cdSoon(); syncResume(); });
-$('topik').addEventListener('input',cdSoon);
-function restoreRpm(text){
-  lastText=text; const doc=$('doc'); doc.innerHTML=md(text)+signHTML(); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true;
-  ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
-}
-function cloudResume(r){
-  if(r.aksi!=='RPM'&&!r.rpm_markdown){ setStatus('Draf '+r.aksi+' ini membutuhkan RPM-nya, tetapi RPM tidak ikut tersimpan. Susun RPM terlebih dahulu.',true); return; }
-  formApply(r.form||{});
-  if(r.aksi!=='RPM') restoreRpm(r.rpm_markdown);
-  PROJ=r.project_id||newProj();
-  curId=(r.form&&r.form.hasil_id)||null;   // jangan mewarisi RPP tersimpan milik projek lain di layar (akan tertimpa saat simpan)
-  DONE=r.done||{}; DRAFT={key:r.draft_key,prompt:r.prompt,text:r.teks,proj:PROJ};
-  CD.rows=CD.rows.filter(x=>x.id!==r.id); cloudRender(); hideResume(); RESUMING=true;
-  if(r.aksi==='RPM') generate(); else if(AKSI_BTN[r.aksi]) $(AKSI_BTN[r.aksi]).click(); else RESUMING=false;
-}
-$('cloudraft_list').addEventListener('click',async e=>{
-  const go=e.target.closest('button[data-go]'), del=e.target.closest('button[data-del]');
-  if(del){
-    const r=CD.rows[+del.dataset.del]; if(!r) return;
-    if(!confirm('Buang draf "'+(r.project_nama||r.aksi)+'"? Teks yang sudah ditulis akan hilang.')) return;
-    cloudDelete(r.nama_guru,r.project_id); CD.rows.splice(+del.dataset.del,1); cloudRender(); setStatus('Draf dibuang.');
-    return;
-  }
-  if(go){
-    if($('loader').classList.contains('on')){ setStatus('Tunggu proses yang sedang berjalan selesai atau hentikan dahulu.',true); return; }
-    const r0=CD.rows[+go.dataset.go]; if(!r0) return;
-    if(!canLeave()) return;
-    if(!$('doc').hidden&&curId==null&&r0.project_id!==PROJ&&!confirm('RPM yang sedang tampil belum tersimpan di database dan akan diganti oleh draf ini. Lanjutkan?')) return;
-    go.disabled=true; go.textContent='Memuat…';
-    let r=null; try{ const x=await sb(SB_DST,'/rpm_draft?id=eq.'+encodeURIComponent(r0.id)+'&select=*&limit=1'); r=x&&x[0]; }catch(err){ r=null; }
-    go.disabled=false; go.textContent='Lanjutkan';
-    if(!r){ setStatus('Draf tidak bisa dimuat. Coba lagi.',true); return; }
-    cloudResume(r);
-  }
-});
+$('mapel').addEventListener('input',syncResume); $('mapel').addEventListener('change',syncResume);
+$('mapelchips').addEventListener('click',syncResume);
 
 let LK_SEL=null;   // {pert:[1,2..],n} pilihan terakhir; dipakai juga saat melanjutkan draf
 function lkSelAll(){ const n=Math.max(1,Math.min(12,parseInt($('pertemuan').value)||1)); return {pert:Array.from({length:n},(_,i)=>i+1)}; }
@@ -2973,12 +2838,12 @@ $('lkpdbtn').addEventListener('click',async()=>{
     const t=await ask(lkpdPrompt(),'LKPD');
     const el=$('lkpd'); el.innerHTML=md(t); styleDoc(el,'lkpd'); el.hidden=false;
     $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false;
-    cloudClear(); JOB_OK=true;
+    JOB_OK=true;
     setStatus('LKPD selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     notify(true,'LKPD berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'LKPD selesai.');
-  }catch(e){ setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.':'Gagal: '+e.message,!e.aborted); if(!e.aborted) notify(false,'LKPD gagal disusun: '+e.message);
+  }catch(e){ setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk masih ada di layar; bisa dilanjutkan selama halaman ini belum ditutup.':'Gagal: '+e.message,!e.aborted); if(!e.aborted) notify(false,'LKPD gagal disusun: '+e.message);
     if(e.partial){ const el=$('lkpd'); el.innerHTML=md(e.partial); styleDoc(el,'lkpd'); el.hidden=false; }
     showResume('LKPD',e); }
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat LKPD'; }
@@ -3165,7 +3030,7 @@ $('asesbtn').addEventListener('click',async()=>{
       out+=(out?'\n\n':'')+t; n++;
       showAses(md(out));
     }
-    cloudClear(); JOB_OK=true;
+    JOB_OK=true;
     setStatus('Asesmen diagnostik, formatif, dan sumatif selesai. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     notify(true,'Asesmen diagnostik, formatif, dan sumatif berhasil disusun. Tekan Edit bila ingin menyunting sebelum mengunduh atau mencetak.');
     $('asesmen').scrollIntoView({behavior:'smooth',block:'start'});
@@ -3173,7 +3038,7 @@ $('asesbtn').addEventListener('click',async()=>{
   }catch(e){
     if(e.partial) showAses(md(out+(out?'\n\n':'')+e.partial));
     showResume('Asesmen',e);
-    if(e.aborted) setStatus('Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.'); else setStatus((n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.',true);
+    if(e.aborted) setStatus('Dihentikan. Teks yang sudah masuk masih ada di layar; bisa dilanjutkan selama halaman ini belum ditutup.'); else setStatus((n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.',true);
     if(!e.aborted) notify(false,(n?`Asesmen ${ASES_JENIS.slice(0,n).map(x=>x.k).join(' dan ')} sudah jadi, tetapi `:'')+'gagal menyusun asesmen '+ASES_JENIS[n].k+': '+e.message+' Tekan Buat Asesmen untuk mencoba lagi.');
   }finally{ hideLoader(); b.disabled=false; b.textContent='Buat Asesmen'; }
 });
@@ -3254,12 +3119,12 @@ $('lampbtn').addEventListener('click',async()=>{
     liveSet($('lampiran'),'','lamp');
     const t=await ask(lampPrompt(),'Lampiran');
     const el=showLamp(md(t));
-    cloudClear(); JOB_OK=true;
+    JOB_OK=true;
     setStatus('Lampiran selesai. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru. Tekan Edit untuk menyunting.');
     notify(true,'Lampiran berhasil disusun. Periksa kembali daftar pustaka (judul, penulis, tahun) sebelum dicetak, karena AI bisa keliru.');
     el.scrollIntoView({behavior:'smooth',block:'start'});
     if(readCfgForm().auto) saveDb(true,'Lampiran selesai.');
-  }catch(e){ setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk disimpan sebagai draf, bisa dilanjutkan kapan saja.':'Gagal: '+e.message,!e.aborted); if(!e.aborted) notify(false,'Lampiran gagal disusun: '+e.message);
+  }catch(e){ setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk masih ada di layar; bisa dilanjutkan selama halaman ini belum ditutup.':'Gagal: '+e.message,!e.aborted); if(!e.aborted) notify(false,'Lampiran gagal disusun: '+e.message);
     if(e.partial) showLamp(md(e.partial));
     showResume('Lampiran',e); }
   finally{ hideLoader(); b.disabled=false; b.textContent='Buat Lampiran'; }
@@ -3626,7 +3491,7 @@ function closeProject(){
   }
   setEdit(false); setDirty(false);
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
-  $('empty').hidden=false; lastText=''; curId=null; PROJ=null; RECOMPOSE=null; pageSet('rpm:baru',null); hideResume(); cdSoon();
+  $('empty').hidden=false; lastText=''; curId=null; PROJ=null; RECOMPOSE=null; pageSet('rpm:baru',null); hideResume();
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
   $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('menitjp').value='45'; $('jptotal').value=''; $('jpbagi').value=''; syncAtpBox(); $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
@@ -3698,7 +3563,7 @@ $('histlist').addEventListener('click',async e=>{
     if(r.asesmen_html){ showAses(r.asesmen_html); } else resetAses();
     if(r.lampiran_html){ showLamp(r.lampiran_html); } else resetLamp();
     ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn'].forEach(id=>$(id).disabled=false);
-    curId=r.id; PROJ='h'+r.id; RECOMPOSE=null; hideResume(); hideCloudDraft(); cdSoon(); setEdit(false); setDirty(false); openViewer(r.topik);
+    curId=r.id; PROJ='h'+r.id; RECOMPOSE=null; hideResume(); setEdit(false); setDirty(false); openViewer(r.topik);
     setStatus('Data dibuka dari database (mode baca). Tekan Edit untuk menyunting; perubahan disimpan dengan tombol Simpan ke database.');
     doc.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){ setStatus('Gagal membuka data: '+err.message,true); }
@@ -4433,10 +4298,17 @@ function splitCpKelas(txt,n){
   return {umum:lines.slice(0,marks[0].i).join('\n').trim(), xi:pick(11), xii:pick(12)};
 }
 const CPHINT0=$('atp_cphint').textContent;
+const dualOn=()=>faseKode()==='F'&&!!$('atp_dual')&&$('atp_dual').checked;
+function dualUI(){
+  const f=faseKode()==='F'; $('atpdualbox').hidden=!f; $('atpjp12box').hidden=!(f&&$('atp_dual').checked);
+  try{ if(!atpBusy) $('atpgen').textContent=atpGenLabel(); }catch(e){}   // sebelum modul selesai dimuat, variabel ini belum ada
+}
 function cpHint(){
   const h=$('atp_cphint'); if(!h) return;
+  dualUI();
   if(!isFaseF2()){ h.textContent=CPHINT0; return; }
   const k=atpKelas(), sp=splitCpKelas(v('atp_cp'),k.n);
+  if(dualOn()){ h.textContent='Fase F, dua file: ATP Kelas XI dan Kelas XII disusun berurutan dari satu CP.'+(sp?' Penanda kelas ditemukan di teks CP, jadi bagian tiap kelas diambil dari situ.':' CP dibagi otomatis oleh AI (XI = dasar dan penguatan, XII = lanjutan dan capaian akhir fase). Agar tepat, beri penanda "Kelas XI" dan "Kelas XII" di awal baris pada teks CP, atau tulis pembagian materi di Catatan tambahan.'); return; }
   h.textContent=sp
     ?'Fase F · Kelas '+k.rom+': penanda kelas ditemukan di teks CP. ATP ini hanya memakai bagian Kelas '+k.rom+'.'
     :'Fase F · Kelas '+k.rom+': CP Fase F berlaku untuk Kelas XI dan XII. ATP ini hanya memuat bagian Kelas '+k.rom+'; AI membagi CP secara bertahap (XI = dasar dan penguatan, XII = lanjutan dan capaian akhir fase). Agar tepat, beri penanda "Kelas XI" dan "Kelas XII" di awal baris pada teks CP, atau tulis pembagian materi di Catatan tambahan.';
@@ -4449,6 +4321,7 @@ function autoCP(){
 }
 ['atp_mapel','atp_fase'].forEach(id=>{ $(id).addEventListener('input',autoCP); $(id).addEventListener('change',autoCP); });
 $('atp_cp').addEventListener('input',cpHint);
+$('atp_dual').addEventListener('change',cpHint);
 
 /* ---- sinkron identitas dengan formulir RPM (satu sumber data guru/sekolah/tanda tangan) ---- */
 function pull(){
@@ -4469,7 +4342,7 @@ function onAtpGuru(){
 }
 $('atp_guru').addEventListener('change',onAtpGuru);
 $('atp_guru').addEventListener('input',()=>{ const n=v('atp_guru').toLowerCase(); if(GURUS.some(g=>g.nama.toLowerCase()===n)) onAtpGuru(); });
-window.atpEnter=function(){ pull(); mggInfo(); loadMinggu(); };
+window.atpEnter=function(){ pull(); mggInfo(); loadMinggu(); cpHint(); };
 function mggPlan(){
   const c=$('atp_cakupan').value, setahun=/Satu tahun/.test(c), g=(window.MGG||{}).ganjil||18, n=(window.MGG||{}).genap||18;
   const sems=setahun?[['Ganjil',g],['Genap',n]]:[[c,/Genap/.test(c)?n:g]];
@@ -4488,7 +4361,7 @@ function atpCtx(){
   const jp=parseInt(v('atp_jp'))||3, plan=mggPlan(), setahun=plan.setahun, sem=plan.sems.length, tot=jp*plan.total;
   const sumN=Math.max(0,Math.min(10,isNaN(parseInt(v('atp_sum')))?2:parseInt(v('atp_sum'))));
   const mggTxt=plan.sems.map(x=>'semester '+x[0]+' '+x[1]+' minggu efektif ('+(jp*x[1])+' JP)').join(', ');
-  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor \"Asesmen Sumatif 1\" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). Beri tiap pelaksanaan alokasi JP yang wajar (umumnya 1–2 JP). WAJIB: setiap asesmen sumatif menyebut CAKUPAN dengan jelas: unit mana saja (nomor dan judul), materi atau jenis teks mana saja, dan kode TP mana saja yang diujikan (contoh: Mencakup Unit 1–2; TP 1.1–2.3; materi: ...), serta bentuk atau teknik asesmennya (tes tulis, unjuk kerja, proyek, portofolio, dan sebagainya). Cakupan antar-asesmen harus berurutan tanpa celah, dan setiap unit harus masuk ke cakupan minimal satu asesmen sumatif.'):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
+  const sumTxt=sumN>0?('Asesmen sumatif dilaksanakan '+sumN+' kali per semester ('+(sumN*sem)+' kali untuk cakupan ini). Tulis tepat '+sumN+' baris asesmen sumatif di setiap semester, bernomor \"Asesmen Sumatif 1\" dst., disisipkan setelah unit yang cakupannya diujikan (yang terakhir di akhir semester). TENTUKAN JP SETIAP ASESMEN SUMATIF MENURUT BENTUK ASESMENNYA, bukan seragam: (a) tes tertulis atau tes objektif/uraian = 2 JP (3 JP bila mencakup banyak unit atau memuat soal uraian/HOTS); (b) tes lisan, wawancara, atau observasi = 2–4 JP; (c) unjuk kerja, praktik, atau demonstrasi = 4–8 JP (praktik kejuruan SMK yang kompleks boleh lebih panjang), karena tiap peserta didik atau kelompok perlu waktu tampil, dinilai, dan umpan balik; (d) produk, proyek, atau portofolio = 4–10 JP termasuk pengerjaan di kelas, presentasi, dan refleksi; (e) bila gabungan beberapa bentuk (mis. tes tulis + unjuk kerja), jumlahkan JP tiap bentuknya. Makin banyak unit/TP yang dicakup dan makin kompleks bentuknya, makin besar JP-nya; pilih bentuk yang sesuai jenis TP (TP keterampilan diujikan dengan unjuk kerja/produk, TP pengetahuan dengan tes). Tulis JP yang pasti (satu angka) pada setiap baris asesmen sumatif, dan sebutkan bentuknya di kolom Asesmen. Usahakan seluruh asesmen sumatif satu semester tidak melebihi sekitar seperempat JP semester. Hitung JP semua asesmen sumatif lebih dulu, lalu bagi sisa JP ke unit-unit sehingga total JP tetap tepat. Bila Catatan guru menyebut bentuk atau durasi asesmen sumatif, ikuti catatan itu. WAJIB: setiap asesmen sumatif menyebut CAKUPAN dengan jelas: unit mana saja (nomor dan judul), materi atau jenis teks mana saja, dan kode TP mana saja yang diujikan (contoh: Mencakup Unit 1–2; TP 1.1–2.3; materi: ...), serta bentuk atau teknik asesmennya (tes tulis, unjuk kerja, proyek, portofolio, dan sebagainya). Cakupan antar-asesmen harus berurutan tanpa celah, dan setiap unit harus masuk ke cakupan minimal satu asesmen sumatif.'):'Tidak ada baris asesmen sumatif tersendiri; asesmen dilakukan terintegrasi dalam unit.';
   const cp=v('atp_cp')||'(kosong: gunakan CP resmi terbaru untuk mapel dan fase ini sesuai Keputusan Kepala BSKAP Nomor 046/H/KR/2025; bila ragu atas bunyi CP, tulis ringkasan yang setia dan beri catatan agar guru mencocokkan dengan dokumen resmi)';
   return {jp,plan,setahun,sem,tot,sumN,mggTxt,sumTxt,cp};
 }
@@ -4498,10 +4371,13 @@ function faseFBlok(){
   const peran=k.n===11
     ?'Kelas XI adalah TAHUN PERTAMA Fase F: isi dengan bagian CP yang bersifat dasar, prasyarat, pengenalan, dan penguatan. Kompetensi tingkat lanjut, penerapan mandiri, dan capaian puncak akhir fase ditinggalkan untuk Kelas XII.'
     :'Kelas XII adalah TAHUN KEDUA dan TERAKHIR Fase F: isi dengan bagian CP yang bersifat lanjutan, tingkat lanjut, penerapan mandiri atau proyek, dan pencapaian CP akhir fase. Anggap peserta didik sudah menuntaskan bagian dasar di Kelas XI; jangan mengulang materi dasar Kelas XI kecuali sebagai penguatan singkat.';
-  const deteksi=sp
+  const ref=(k.n===12&&window.ATP_REF_XI)?String(window.ATP_REF_XI).slice(0,45000):'';
+  const deteksi0=sp
     ?`Teks CP di atas SUDAH memuat penanda kelas. Gunakan hanya bagian Kelas ${k.rom} sebagai cakupan TP; bagian Kelas ${lain} jangan dijadikan TP.\n${sp.umum?'Bagian umum (berlaku untuk kedua kelas):\n'+sp.umum+'\n':''}BAGIAN KELAS ${k.rom}:\n${k.n===11?sp.xi:sp.xii}\nBAGIAN KELAS ${lain} (di luar cakupan ATP ini):\n${k.n===11?sp.xii:sp.xi}`
     :`Teks CP tidak menandai kelas, jadi Anda yang membaginya: bagi CP Fase F menjadi bagian Kelas XI dan bagian Kelas XII secara masuk akal, berurutan dari dasar ke lanjut, dan seimbang. Satu elemen CP boleh dibagi dua dengan kedalaman berbeda. Gabungan Kelas XI dan XII harus mencakup seluruh CP Fase F tanpa ada yang terlewat dan tanpa tumpang tindih.`;
-  return `\nKELAS DAN PEMBAGIAN CP FASE F (WAJIB DIPATUHI):\nATP ini disusun HANYA untuk KELAS ${k.rom} (Fase F). CP Fase F berlaku untuk dua tahun (Kelas XI dan XII) dan bunyinya tidak menyebut kelas, sehingga TP yang Anda tulis HARUS hanya milik Kelas ${k.rom}. ${peran}\n${deteksi}\nJelaskan pembagian CP Kelas XI dan XII ini singkat pada paragraf ringkasan bagian A, dan tulis \"Kelas ${k.rom}\" pada identitas. Bila Catatan guru menyebut pembagian materi, ikuti catatan itu.`;
+  const deteksi=(ref&&!sp)?'Pembagian CP sudah ditetapkan pada ATP Kelas XI di bawah ini (lihat tabel Analisis CP dan kolom Cakupan Kelas). Kelas XII mengerjakan SEMUA bagian CP yang ditunda atau belum tercakup di Kelas XI, lalu menuntaskan CP akhir Fase F.':deteksi0;
+  const lanjut=ref?`\nATP KELAS XI YANG SUDAH TERSUSUN (acuan, JANGAN ditulis ulang):\n<<<ATP_XI\n${ref}\nATP_XI>>>\nATURAN LANJUTAN KELAS XII: jangan mengulang TP dan materi yang sudah ada di ATP Kelas XI (boleh penguatan singkat); naikkan kedalaman, kompleksitas, dan kemandirian; kode TP dan nomor unit Kelas XII mulai dari 1; pada akhir Kelas XII seluruh CP Fase F harus sudah tuntas.`:(window.ATP_DUAL_XI?'\nCATATAN: ATP Kelas XII akan disusun terpisah SETELAH ini dan melanjutkan ATP Kelas XI. Karena itu tulis pembagian CP dengan tegas pada tabel Analisis CP (kolom Cakupan Kelas), dan jangan menghabiskan seluruh CP di Kelas XI.':'');
+  return `\nKELAS DAN PEMBAGIAN CP FASE F (WAJIB DIPATUHI):\nATP ini disusun HANYA untuk KELAS ${k.rom} (Fase F). CP Fase F berlaku untuk dua tahun (Kelas XI dan XII) dan bunyinya tidak menyebut kelas, sehingga TP yang Anda tulis HARUS hanya milik Kelas ${k.rom}. ${peran}\n${deteksi}\nJelaskan pembagian CP Kelas XI dan XII ini singkat pada paragraf ringkasan bagian A, dan tulis \"Kelas ${k.rom}\" pada identitas. Bila Catatan guru menyebut pembagian materi, ikuti catatan itu.${lanjut}`;
 }
 function atpData(c){
   return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')}${isFaseF2()?' (ATP khusus Kelas '+atpKelas().rom+')':''} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}${faseFBlok()}`;
@@ -4560,7 +4436,7 @@ $('atpedit').addEventListener('click',()=>setEditAtp(!atpEdit));
 /* ---- cara menyusun: Bertahap (3 langkah) atau Sekaligus ---- */
 let atpStep=0, atpFlow='', atpParts=['','',''], atpSnap='', atpBusy=false;   // atpStep = jumlah langkah bertahap yang sudah selesai
 const atpMode=()=>{ const r=document.querySelector('input[name="atp_mode"]:checked'); return r&&r.value==='all'?'all':'step'; };
-const atpGenLabel=()=>atpMode()==='step'?'Susun ATP — langkah 1 dari 3':'Susun ATP — sekaligus';
+const atpGenLabel=()=>dualOn()?'Susun ATP Kelas XI dan XII (dua file)':(atpMode()==='step'?'Susun ATP — langkah 1 dari 3':'Susun ATP — sekaligus');
 try{ if(localStorage.getItem('atp_mode')==='all') document.querySelector('input[name="atp_mode"][value="all"]').checked=true; }catch(e){}
 document.querySelectorAll('input[name="atp_mode"]').forEach(r=>r.addEventListener('change',()=>{ try{ localStorage.setItem('atp_mode',atpMode()); }catch(e){} if(!atpBusy) $('atpgen').textContent=atpGenLabel(); }));
 $('atpgen').textContent=atpGenLabel();
@@ -4587,13 +4463,88 @@ async function atpGenerate(){
   if(!v('atp_guru')||!v('atp_mapel')){ setStatus('Nama guru dan mata pelajaran wajib diisi.',true); return; }
   push();
   if(!$('kepsek').value.trim()||!$('sekolah').value.trim()){ setStatus('Nama kepala sekolah dan satuan pendidikan belum diatur admin. Minta admin mengisinya di Portal Admin.',true); return; }
+  if(DUAL_RUN) return;
+  if(dualOn()){ await atpDualRun(); return; }
+  DUAL=null; dualTabsUI();
   if(atpMode()==='step'){ atpFlow='step'; atpStep=0; atpParts=['','','']; atpStepsUI(); await atpDo(1); return; }
   await atpAll();
 }
 
-/* mode Sekaligus: satu proses untuk seluruh dokumen */
-async function atpAll(){
+
+/* ===== Fase F: dua file sekaligus (Kelas XI lalu Kelas XII) ===== */
+let DUAL=null, DUAL_RUN=false;
+window.ATP_REF_XI=''; window.ATP_DUAL_XI=false;
+function dualTabsUI(){
+  const box=$('atpdualtabs'); if(!DUAL){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false;
+  box.innerHTML=[11,12].map((n,i)=>{
+    const d=DUAL.docs[i], st=d?'':(DUAL.busy===n?' (sedang disusun…)':' (menunggu)');
+    return `<button type="button" class="ghost${d&&DUAL.cur===i?' on':''}" data-dtab="${i}"${d?'':' disabled'}>ATP Kelas ${ROM[n]}${st}</button>`;
+  }).join('')+(DUAL.docs.length===2?'<button type="button" id="atpdualword">Unduh dua file Word</button>':'');
+}
+function dualKeep(){ if(!DUAL||DUAL.cur<0||atpBusy) return; const d=DUAL.docs[DUAL.cur]; if(d){ d.html=$('atpdoc').innerHTML; d.id=atpId; d.text=atpText; } }
+function dualShow(i){
+  if(!DUAL||!DUAL.docs[i]||atpBusy) return;
+  if(window.ATPEDIT) setEditAtp(false);
+  dualKeep(); const d=DUAL.docs[i]; DUAL.cur=i;
+  atpText=d.text; atpId=d.id; atpTok=d.tok; $('atp_fase').value=d.fase; $('atp_jp').value=d.jp;
+  const doc=$('atpdoc'); doc.innerHTML=d.html; doc.hidden=false; $('atpempty').hidden=true;
+  btn.forEach(id=>$(id).disabled=false); $('atpsave').textContent='Simpan ke database';
+  dualTabsUI(); cpHint();
+}
+$('atpdualtabs').addEventListener('click',async e=>{
+  const t=e.target.closest('button[data-dtab]');
+  if(t){ dualShow(+t.dataset.dtab); return; }
+  if(e.target.id==='atpdualword'&&DUAL&&DUAL.docs.length===2&&!atpBusy){
+    const from=DUAL.cur;
+    for(let i=0;i<2;i++){ dualShow(i); $('atpword').click(); await new Promise(r=>setTimeout(r,900)); }
+    dualShow(from<0?0:from);
+    setStatus('Dua file Word diunduh: Kelas XI dan Kelas XII. Bila browser hanya mengunduh satu, izinkan unduhan ganda lalu tekan lagi.');
+  }
+});
+async function atpDualRun(){
+  if(atpBusy) return;
   if(!(await pickKey('ATP'))) return;
+  const jp0=$('atp_jp').value, jp12=($('atp_jp12').value||'').trim(), mode=atpMode(), fase0=$('atp_fase').value;
+  DUAL={docs:[],cur:-1,busy:11}; DUAL_RUN=true; let ok=true;
+  try{
+    for(let i=0;i<2&&ok;i++){
+      const n=i?12:11; DUAL.busy=n; dualTabsUI();
+      $('atp_fase').value='Fase F / Kelas '+n; $('atp_jp').value=(n===12&&jp12)?jp12:jp0;
+      window.ATP_REF_XI=n===12?(DUAL.docs[0]?DUAL.docs[0].text:''):''; window.ATP_DUAL_XI=(n===11);
+      DONE={}; draftClear(); atpId=null; atpTok='t'+Date.now().toString(36)+'k'+n; atpText='';
+      push();
+      if(n===12) setStatus('Kelas XI selesai. Menyusun ATP Kelas XII…');
+      if(mode==='step'){
+        atpFlow='step'; atpStep=0; atpParts=['','','']; atpStepsUI();
+        for(let st=1;st<=3&&ok;st++) ok=await atpDo(st,{keyOk:true});
+      }else ok=await atpAll({keyOk:true});
+      if(!ok) break;
+      if(readCfgForm().auto) await atpSave(true);
+      DUAL.docs.push({n,text:atpText,html:$('atpdoc').innerHTML,id:atpId,fase:$('atp_fase').value,jp:$('atp_jp').value,tok:atpTok});
+    }
+  }finally{
+    DUAL_RUN=false; window.ATP_REF_XI=''; window.ATP_DUAL_XI=false;
+    atpFlow='all'; atpStepsUI();
+    if(!DUAL){ $('atp_fase').value=fase0; $('atp_jp').value=jp0; return; }   // dikosongkan pengguna di tengah proses
+    DUAL.busy=0;
+    if(DUAL.docs.length===2){
+      dualShow(0);
+      setStatus('Selesai: dua ATP siap, Kelas XI dan Kelas XII. Pilih tab untuk melihat, mengunduh, mencetak, atau menyimpan masing-masing.');
+      notify(true,'ATP Kelas XI dan Kelas XII berhasil disusun.');
+    }else{
+      $('atp_fase').value=fase0; $('atp_jp').value=jp0;
+      if(!DUAL.docs.length){ DUAL=null; }
+      else setStatus('ATP Kelas XI selesai (tab di atas), tetapi Kelas XII belum selesai. Tekan Susun ATP lagi untuk mengulang, atau pakai Kelas XI dulu.',true);
+      dualTabsUI();
+    }
+  }
+}
+
+/* mode Sekaligus: satu proses untuk seluruh dokumen */
+async function atpAll(opt){
+  if(!(opt&&opt.keyOk)&&!(await pickKey('ATP'))) return false;
+  let ok=false;
   atpFlow='all'; atpStep=3; atpStepsUI();
   try{ localStorage.setItem('rpm_model',modelDipakai()); }catch(e){}
   atpBusy=true; ['atpgen','atpregen'].forEach(id=>$(id).disabled=true); $('atpgen').textContent='Menyusun…'; setStatus('');
@@ -4605,12 +4556,14 @@ async function atpAll(){
     setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
     $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
-    if(readCfgForm().auto) atpSave(true);
+    ok=true;
+    if(!DUAL_RUN&&readCfgForm().auto) atpSave(true);
   }catch(e){
     setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk tetap ditampilkan.':'Gagal: '+e.message,!e.aborted);
     if(!e.aborted) notify(false,'ATP gagal disusun: '+e.message);
     const part=e.partial||e.text; if(part){ atpText=part; render(part); }
   }finally{ hideLoader(); atpBusy=false; $('atpgen').disabled=false; $('atpregen').disabled=!atpText; $('atpgen').textContent=atpGenLabel(); }
+  return ok;
 }
 
 /* mode Bertahap: kerjakan langkah n (1-3). opt.keyOk = API key sudah dipilih (dipakai saat menjalankan sisa langkah berurutan). */
@@ -4643,7 +4596,7 @@ async function atpDo(n,opt){
       setStatus('Selesai. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
       notify(true,'ATP berhasil disusun. Tekan Edit bila ingin menyunting teks sebelum mengunduh.');
       $('atpdoc').scrollIntoView({behavior:'smooth',block:'start'});
-      if(readCfgForm().auto) atpSave(true);
+      if(!DUAL_RUN&&readCfgForm().auto) atpSave(true);
     }
   }catch(e){
     setStatus(e.aborted?'Dihentikan. Teks yang sudah masuk tetap ditampilkan.':'Gagal: '+e.message,!e.aborted);
@@ -4671,14 +4624,14 @@ $('atpregen').addEventListener('click',atpGenerate);
 $('atpcopy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText($('atpdoc').innerText); setStatus('Teks disalin.'); }catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); } });
 $('atpclear').addEventListener('click',()=>{
   if(!confirm('Kosongkan ATP di layar? ATP yang sudah tersimpan di database tidak terhapus.')) return;
-  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; atpTok='t'+Date.now().toString(36); setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus(''); atpFlow=''; atpStep=0; atpParts=['','','']; atpStepsUI();
+  $('atpdoc').innerHTML=''; $('atpdoc').hidden=true; $('atpempty').hidden=false; atpText=''; atpId=null; atpTok='t'+Date.now().toString(36); setEditAtp(false); btn.forEach(id=>$(id).disabled=true); setStatus(''); atpFlow=''; atpStep=0; atpParts=['','','']; atpStepsUI(); DUAL=null; dualTabsUI();
 });
 
 /* ---- cetak & Word: lanskap karena tabel ATP lebar ---- */
 const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
 $('atpprint').addEventListener('click',()=>{
     if(_titleAsli===null) _titleAsli=document.title;
-  document.title=['ATP',v('atp_mapel'),v('atp_guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
+  document.title=['ATP',v('atp_mapel'),atpKelas().rom?'Kelas_'+atpKelas().rom:'',v('atp_guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
   window.print();
 });
 window.addEventListener('afterprint',()=>{ const st=$('atppage'); if(st) st.remove(); });
@@ -4686,7 +4639,7 @@ $('atpword').addEventListener('click',()=>{
   const css=DOC_CSS+wordPage();
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${css}</style></head><body><div class="Section1">${docForWord($('atpdoc'))}</div></body></html>`;
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
-  a.download='ATP_'+(bersih(v('atp_mapel'))||'mapel').slice(0,60)+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  a.download='ATP_'+(bersih(v('atp_mapel'))||'mapel').slice(0,60)+(isFaseF2()?'_Kelas_'+atpKelas().rom:'')+'.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
 
 /* ---- simpan ke database (tabel atp_hasil) ---- */
@@ -4743,7 +4696,7 @@ $('atp_histlist').addEventListener('click',async e=>{
     if(d){ if(!confirm('Hapus ATP ini dari database?')) return; await sb(SB_DST,`/atp_hasil?id=eq.${d.dataset.del}`,{method:'DELETE'}); if(atpId==d.dataset.del) atpId=null; histList(); }
     else if(o){
       const r=(await sb(SB_DST,`/atp_hasil?id=eq.${o.dataset.open}&select=*`))[0]; if(!r) return;
-      showView('atp'); atpId=r.id; atpText=r.atp_markdown||''; atpFlow='all'; atpStep=3; atpStepsUI();
+      showView('atp'); DUAL=null; dualTabsUI(); atpId=r.id; atpText=r.atp_markdown||''; atpFlow='all'; atpStep=3; atpStepsUI();
       $('atp_guru').value=r.nama_guru||''; $('atp_mapel').value=r.mata_pelajaran||''; if(r.fase) $('atp_fase').value=r.fase;
       if(r.semester) $('atp_cakupan').value=r.semester; $('atp_tahun').value=r.tahun_ajaran||''; if(r.model) $('atp_model').value=r.model; fixModelSel();
       const doc=$('atpdoc'); doc.innerHTML=r.atp_html||md(atpText); fillLogos(doc);
