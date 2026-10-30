@@ -121,29 +121,40 @@ Deno.serve(async (req: Request) => {
     const isAdmin = ROLES_ADMIN.includes(role) || ADMIN_EMAILS.includes(email);
 
     // 3. akun cermin di Auth project ini
+    //    Dicari lewat rapor_id (ID akun E-Rapor, tidak berubah walau email diganti), baru lewat email.
     const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
     const meta = { nama_guru: nama, is_admin: isAdmin, rapor_id: raporId, role };
-    let uid = "";
-    const baru = await db.auth.admin.createUser({ email, password, email_confirm: true, app_metadata: meta });
-    if (baru.data?.user?.id) {
-      uid = baru.data.user.id;
-    } else {
-      // sudah ada: cari lewat email, samakan sandi dan metadata
-      for (let page = 1; page <= 20 && !uid; page++) {
-        const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
-        if (error) return gagal("Auth: " + error.message, 502, origin);
-        const u = data.users.find((x) => (x.email ?? "").toLowerCase() === email);
-        if (u) uid = u.id;
-        if (data.users.length < 1000) break;
+    // deno-lint-ignore no-explicit-any
+    const kandidat: any[] = [];
+    for (let page = 1; page <= 20; page++) {
+      const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) return gagal("Auth: " + error.message, 502, origin);
+      for (const u of data.users) {
+        if ((u.email ?? "").toLowerCase() === email || u.app_metadata?.rapor_id === raporId) kandidat.push(u);
       }
-      if (!uid) return gagal("Gagal membuat akun: " + (baru.error?.message ?? "tidak diketahui"), 500, origin);
-      const up = await db.auth.admin.updateUserById(uid, { password, email_confirm: true, app_metadata: meta });
+      if (data.users.length < 1000) break;
+    }
+    const cocokEmail = kandidat.find((u) => (u.email ?? "").toLowerCase() === email);
+    const terbaru = [...kandidat].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+    const utama = cocokEmail ?? terbaru;
+    let uid = "";
+    if (utama) {
+      uid = utama.id;
+      // email baru di E-Rapor: akun cermin yang sama ikut diganti emailnya
+      const up = await db.auth.admin.updateUserById(uid, { email, password, email_confirm: true, app_metadata: meta });
       if (up.error) return gagal("Gagal memperbarui akun: " + up.error.message, 500, origin);
+    } else {
+      const baru = await db.auth.admin.createUser({ email, password, email_confirm: true, app_metadata: meta });
+      if (!baru.data?.user?.id) return gagal("Gagal membuat akun: " + (baru.error?.message ?? "tidak diketahui"), 500, origin);
+      uid = baru.data.user.id;
     }
 
-    // 4. tautkan ke guru_rpm dan klaim data lama
+    // 4. tautkan ke guru_rpm, pindahkan data dari akun cermin lama (email lama), klaim data tanpa pemilik
     let diklaim = 0;
     try {
+      for (const u of kandidat) {
+        if (u.id !== uid) await db.rpc("pindah_data_guru", { p_dari: u.id, p_ke: uid });
+      }
       const { data: rows } = await db.from("guru_rpm").select("id,nama,user_id").limit(5000);
       const hit = (rows ?? []).find((r: { nama: string }) => nkey(r.nama) === nkey(nama));
       if (hit && hit.user_id !== uid) await db.from("guru_rpm").update({ user_id: uid }).eq("id", hit.id);
