@@ -710,7 +710,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
 #loginov .lglogo img{height:64px;width:auto}
 #loginov h2{margin:4px 0 2px;text-align:center;font-size:19px}
 #loginov p.lgsub{margin:0 0 10px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5}
-#loginov button.lgbtn{width:100%;margin-top:16px}
+#loginov a.lgbtn{display:block;width:100%;box-sizing:border-box;margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--accent,#0d9488);color:#fff;font-weight:600;text-align:center;text-decoration:none}#loginov a.lgbtn[hidden]{display:none}
 #loginov .lgerr{min-height:18px;margin:10px 0 0;color:var(--danger);font-size:13px;text-align:center}
 .whoami{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .whoami b{color:var(--ink);font-weight:600}
@@ -763,19 +763,17 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
 </style>
 </head>
 <body>
-<script>try{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.refresh_token)document.documentElement.setAttribute('data-auth','1');}catch(e){}</script>
-<div id="loginov" role="dialog" aria-label="Masuk">
-  <form class="lgbox" id="lgform" autocomplete="on">
+<script>try{var __m=(location.hash||'').match(/[#&]sso=([^&]+)/);
+if(__m){window.__SSO=decodeURIComponent(__m[1]);var __f=(location.hash||'').match(/[#&]from=([^&]+)/);if(__f){var __u=decodeURIComponent(__f[1]);if(/^https:\/\/[^\s]+$/.test(__u))localStorage.setItem('rpm_pdp_url',__u);}history.replaceState(null,'',location.pathname+location.search);}
+else{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.refresh_token)document.documentElement.setAttribute('data-auth','1');}}catch(e){}</script>
+<div id="loginov" role="dialog" aria-label="Menghubungkan">
+  <div class="lgbox" id="lgform">
     <div class="lglogo"><img src="assets/logo-sekolah.png" alt="" onerror="this.style.display='none'"></div>
-    <h2>Masuk</h2>
-    <p class="lgsub">Gunakan email dan kata sandi akun E-Rapor Anda.</p>
-    <label for="lgemail">Email</label>
-    <input id="lgemail" type="email" autocomplete="username" required placeholder="nama@email.com">
-    <label for="lgpw">Kata sandi</label>
-    <input id="lgpw" type="password" autocomplete="current-password" required>
-    <button type="submit" class="lgbtn" id="lgbtn">Masuk</button>
+    <h2>RPP Maker</h2>
+    <p class="lgsub" id="lgsub">Menghubungkan ke akun PDP…</p>
     <p class="lgerr" id="lgerr" role="alert" aria-live="polite"></p>
-  </form>
+    <a class="lgbtn" id="lgbtn" href="#" hidden>Buka PDP</a>
+  </div>
 </div>
 <div id="intro" role="dialog" aria-label="Pembuka" aria-live="polite">
   <canvas id="introbg" aria-hidden="true"></canvas>
@@ -850,7 +848,7 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
     </div>
   </div>
   <div class="hdr-right">
-    <span class="whoami" id="whoami" hidden><span>Masuk sebagai <b id="whonama"></b></span><button type="button" class="ghost sm" id="logoutbtn">Keluar</button></span>
+    <span class="whoami" id="whoami" hidden><a class="ghost sm" id="kembalipdp" href="#" style="text-decoration:none">&larr; Menu Utama PDP</a><span>Masuk sebagai <b id="whonama"></b></span></span>
     <button type="button" class="ghost" id="admopen" hidden>Portal Admin</button>
   </div>
 </header>
@@ -2665,7 +2663,7 @@ async function askRaw(contents,maxTok){
     const E=msg=>Object.assign(new Error(msg),{status:res.status});
     if(res.status===503) throw E('Server AI sedang sibuk (kode 503). Sudah dicoba model lain, tetap penuh. Tunggu sebentar lalu coba lagi, atau pilih model flash.'+(m?' Detail: '+m:''));
     if([546,504,502,408].includes(res.status)) throw E('Server AI kehabisan waktu atau sumber daya (kode '+res.status+'). Permintaan terlalu berat untuk satu kali proses. Coba lagi, pakai model "flash", atau kurangi jumlah pertemuan.'+(m?' Detail: '+m:''));
-    if(res.status===401){ forceLogin('Sesi berakhir, silakan masuk lagi.'); throw E('Sesi login berakhir. Masuk lagi lalu coba kembali.'); }
+    if(res.status===401){ forceLogin('Sesi berakhir. Buka kembali dari PDP.'); throw E('Sesi berakhir. Buka kembali RPP Maker dari PDP lalu coba lagi.'); }
     if(res.status===429) throw E('Kuota AI sedang penuh (kode 429). Tunggu beberapa saat lalu coba lagi'+(KEY_SLOT!=='auto'?', atau pilih API KEY lain.':'.')+(m?' Detail: '+m:''));
     throw E(m||('HTTP '+res.status));
   }
@@ -3190,7 +3188,8 @@ const SB_DEF={tOut:'rpm_hasil',auto:true};
    untuk mendapat sesi. Semua permintaan data membawa token sesi; RLS di database membatasi data per akun. */
 const AUTH_KEY='rpm_auth', authBase=()=>SB_DST.url.replace(/\/rest\/v1$/,'');
 let SESS=null, REFRESHING=null;
-try{ SESS=JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){ SESS=null; }
+const SSO_TOKEN=window.__SSO||null; window.__SSO=null;
+try{ SESS=SSO_TOKEN?null:JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){ SESS=null; }
 function sessSave(){ try{ if(SESS) localStorage.setItem(AUTH_KEY,JSON.stringify(SESS)); else localStorage.removeItem(AUTH_KEY); }catch(e){} }
 function applyTokens(d){
   const am=(d.user&&d.user.app_metadata)||{};
@@ -3213,7 +3212,7 @@ function sessRefresh(){
 }
 async function authToken(){
   if(!SESS) return null;
-  if(SESS.expires_at-Date.now()<60000){ const r=await sessRefresh(); if(r===false){ forceLogin('Sesi berakhir, silakan masuk lagi.'); return null; } }
+  if(SESS.expires_at-Date.now()<60000){ const r=await sessRefresh(); if(r===false){ forceLogin('Sesi berakhir. Buka kembali dari PDP.'); return null; } }
   return (SESS&&SESS.access_token)||null;
 }
 async function authH(extra){
@@ -3224,47 +3223,39 @@ async function authH(extra){
 function clearLocalUserData(){
   try{ localStorage.removeItem('rpm_draft'); Object.keys(localStorage).filter(k=>k.indexOf('rpm_pg:')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
 }
+let PDP_URL=''; try{ PDP_URL=localStorage.getItem('rpm_pdp_url')||''; }catch(e){}   // diisi otomatis saat dibuka dari PDP
+function tampilBukaPdp(msg){
+  const sub=document.getElementById('lgsub'), er=document.getElementById('lgerr'), b=document.getElementById('lgbtn');
+  if(sub) sub.textContent='RPP Maker dibuka dari menu Aplikasi di PDP, agar masuk otomatis.';
+  if(er) er.textContent=msg||'';
+  if(b){ if(PDP_URL){ b.href=PDP_URL; b.hidden=false; } else { b.hidden=true; } }
+}
 function forceLogin(msg){
   SESS=null; sessSave(); document.documentElement.removeAttribute('data-auth');
-  const e=document.getElementById('lgerr'); if(e) e.textContent=msg||'';
-  const b=document.getElementById('lgbtn'); if(b){ b.disabled=false; b.textContent='Masuk'; }
+  tampilBukaPdp(msg||'Sesi berakhir. Buka kembali dari PDP.');
 }
-async function doLogin(email,password){
-  const base=authBase();
+async function ssoMasuk(token){
   let r, d={};
   try{
-    r=await fetch(base+'/functions/v1/login-guru',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify({email,password})});
+    r=await fetch(authBase()+'/functions/v1/login-sso',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_DST.key},body:JSON.stringify({token})});
     d=await r.json().catch(()=>({}));
-  }catch(e){ throw new Error('Tidak bisa menghubungi fungsi login-guru. Kemungkinan: fungsi belum di-deploy, "Verify JWT" pada fungsi itu masih menyala, atau koneksi internet bermasalah. Hubungi admin.'); }
-  if(r.status===401&&!d.error&&(d.msg||d.message)) throw new Error('Fungsi login-guru menolak permintaan ('+(d.msg||d.message)+'). Matikan "Verify JWT" pada fungsi itu.');
-  if(r.status===404) throw new Error('Edge Function login-guru belum di-deploy di Supabase.');
-  if(!r.ok||!d.ok) throw new Error((d&&(typeof d.error==='string'?d.error:(d.error&&d.error.message)))||('Gagal masuk (HTTP '+r.status+').'));
-  let t, td={};
-  try{
-    t=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB_DST.key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-    td=await t.json().catch(()=>({}));
-  }catch(e){ throw new Error('Akun terverifikasi, tetapi tidak bisa membuat sesi di Auth Supabase. Periksa koneksi internet lalu coba lagi.'); }
-  if(!t.ok) throw new Error(td.error_description||td.msg||td.message||'Gagal membuat sesi login.');
-  SESS=null; applyTokens(td); SESS.nama=d.nama||SESS.nama; SESS.is_admin=!!d.is_admin; sessSave();
+  }catch(e){ throw new Error('Tidak bisa menghubungi server. Periksa koneksi internet lalu coba lagi.'); }
+  if(r.status===404) throw new Error('Edge Function login-sso belum di-deploy di Supabase.');
+  if(r.status===401&&!d.error&&(d.msg||d.message)) throw new Error('Fungsi login-sso menolak permintaan ('+(d.msg||d.message)+'). Matikan "Verify JWT" pada fungsi itu.');
+  if(!r.ok||!d.ok||!d.access_token) throw new Error((d&&(typeof d.error==='string'?d.error:(d.error&&d.error.message)))||('Gagal masuk (HTTP '+r.status+').'));
+  SESS=null; applyTokens({access_token:d.access_token,refresh_token:d.refresh_token,expires_in:d.expires_in,user:d.user});
+  SESS.nama=d.nama||SESS.nama; SESS.is_admin=!!d.is_admin; sessSave();
   try{ const prev=localStorage.getItem('rpm_uid'); if(prev&&prev!==SESS.uid) clearLocalUserData(); localStorage.setItem('rpm_uid',SESS.uid); }catch(e){}
 }
-document.getElementById('lgform').addEventListener('submit',async ev=>{
-  ev.preventDefault();
-  const b=document.getElementById('lgbtn'), er=document.getElementById('lgerr');
-  er.textContent=''; b.disabled=true; b.textContent='Memeriksa…';
-  try{ await doLogin(document.getElementById('lgemail').value.trim(),document.getElementById('lgpw').value); location.reload(); }
-  catch(e){ er.textContent=e.message||String(e); b.disabled=false; b.textContent='Masuk'; }
-});
-document.getElementById('logoutbtn').addEventListener('click',async ()=>{
-  if(!confirm('Keluar dari akun ini?')) return;
-  try{ if(SESS&&SESS.access_token) await fetch(authBase()+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_DST.key,Authorization:'Bearer '+SESS.access_token}}); }catch(e){}
-  cfgCacheClear(); clearLocalUserData(); SESS=null; sessSave(); location.reload();
-});
+if(SSO_TOKEN){
+  ssoMasuk(SSO_TOKEN).then(()=>location.reload()).catch(e=>{ SESS=null; sessSave(); tampilBukaPdp(e.message||String(e)); });
+}
 if(SESS&&SESS.refresh_token){
   document.getElementById('whonama').textContent=SESS.nama||SESS.email||'';
   document.getElementById('whoami').hidden=false;
   document.getElementById('admopen').hidden=!SESS.is_admin;
-}else{ document.documentElement.removeAttribute('data-auth'); }
+  { const kp=document.getElementById('kembalipdp'); if(PDP_URL) kp.href=PDP_URL; else kp.hidden=true; }
+}else{ document.documentElement.removeAttribute('data-auth'); if(!SSO_TOKEN) tampilBukaPdp(''); }
 
 /* ---- cache bacaan yang jarang berubah (pengaturan admin, daftar guru): hemat egress & request Supabase ---- */
 const CFG_TTL=10*60*1000;
@@ -3295,7 +3286,7 @@ async function sb0(cfg,path,opt={}){
   if(res.status===401&&!opt._retry&&SESS){
     const r=await sessRefresh();
     if(r===true) return sb0(cfg,path,Object.assign({},opt,{_retry:1}));
-    if(r===false) forceLogin('Sesi berakhir, silakan masuk lagi.');
+    if(r===false) forceLogin('Sesi berakhir. Buka kembali dari PDP.');
   }
   const txt=await res.text(); let data=null;
   try{ data=txt?JSON.parse(txt):null; }catch(e){ data=txt; }
