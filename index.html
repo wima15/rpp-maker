@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d9488">
 <title>Penyusun RPM &amp; ATP – Perangkat Pembelajaran Mendalam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;600&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600&family=Noto+Sans+Javanese:wght@400;600&display=swap" rel="stylesheet">
@@ -760,6 +761,83 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
 .wk .lbl{flex:1;font-size:14px}
 .wkw .wkket{display:none;width:100%;box-sizing:border-box;margin:0 0 6px}
 .wkw.off .wkket{display:block}
+
+/* ===== MODE MOBILE (HP & tablet kecil): menu bawah, input nyaman disentuh, tabel bisa digeser ===== */
+@media screen and (max-width:900px){
+  html{-webkit-text-size-adjust:100%;scroll-padding-bottom:80px}
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));overflow-x:hidden}
+  header{padding:10px 14px 10px;gap:8px 12px}
+  header p{display:none}
+  .brand{gap:10px;flex-wrap:nowrap}
+  .logos{padding:4px 8px;gap:8px}
+  h1{font-size:19px}
+  .hdr-right{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .whoami{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px}
+  /* menu utama pindah ke bar bawah */
+  .sidebar{position:fixed!important;left:0;right:0;bottom:0;top:auto;height:auto;z-index:50;flex-direction:row;align-items:stretch;justify-content:space-around;gap:2px;padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));border-right:0;border-bottom:0;border-top:1px solid var(--line);overflow:visible;box-shadow:0 -6px 18px rgba(0,0,0,.10)}
+  .sb-head,.sb-grp,.sb-usage,.sb-link .sn{display:none!important}
+  .sb-link,.sb-link.sb-sub,body[data-sb] .sb-link{flex:1 1 0;min-width:0;width:auto;margin:0;flex-direction:column;justify-content:center;gap:2px;padding:6px 2px;font-size:10px;line-height:1.15;text-align:center;white-space:normal;border-radius:10px}
+  .sb-link svg{width:20px;height:20px}
+  .sb-link .lbl,body[data-sb] .sb-link .lbl{display:block!important}
+  .sb-link[aria-current="page"]{box-shadow:none}
+  #sb_show,body[data-sb="hidden"] #sb_show{display:none!important}
+  body[data-sb="hidden"] .sidebar{display:flex}
+  /* tata letak */
+  main{padding:12px 12px 24px;gap:14px}
+  .view-saved{padding:12px 12px 24px}
+  .panel{padding:14px;border-radius:12px}
+  fieldset{padding:10px 12px 12px;margin-bottom:12px}
+  .wfbar{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .wfbar::-webkit-scrollbar{display:none}
+  .wfstep{flex:0 0 auto;padding:7px 10px}
+  .wfstep small{display:none}
+  .dualtabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .dualtabs button{flex:none;white-space:nowrap}
+  .stepbar span{font-size:12px;padding:4px 10px}
+  /* formulir: input 16px agar iOS tidak zoom sendiri, tinggi minimal 44px */
+  input,select,textarea{font-size:16px;min-height:44px;padding:10px 12px}
+  textarea{min-height:88px}
+  input[type=checkbox],input[type=radio]{min-height:0;width:20px;height:20px;flex:none}
+  .inline{font-size:14px;gap:10px;padding:4px 0;align-items:flex-start}
+  .dims label{padding:10px;font-size:14px}
+  label{font-size:13.5px}
+  .hint{font-size:12.5px}
+  button{min-height:44px;font-size:14.5px}
+  .gen{font-size:15.5px;min-height:50px}
+  .row{grid-template-columns:1fr;gap:0}
+  /* toolbar hasil */
+  .toolbar{grid-template-columns:1fr}
+  .toolbar button,.hist .item button{min-height:40px;padding:8px 12px;font-size:13.5px}
+  .tbtns button{flex:1 1 calc(50% - 6px)}
+  .hist .item{flex-wrap:wrap;align-items:flex-start}
+  .hist .item .acts{width:100%}
+  .hist .item .acts button{flex:1}
+  #atpsteps{padding:10px}
+  #atpsteps .tbtns button,#atpsteps button{flex:1 1 100%}
+  /* dokumen: hemat ruang, tabel bisa digeser ke samping */
+  #doc,#lkpd,#asesmen,#lampiran,#atpdoc,#ppdoc{font-size:13px;padding-left:12px!important;padding-right:12px!important}
+  #doc table:not(.kop):not(.idt),#lkpd table:not(.kop):not(.idt),#asesmen table:not(.kop):not(.idt),#lampiran table:not(.kop):not(.idt),#atpdoc table:not(.kop):not(.idt){display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  #doc table:not(.kop):not(.idt) th,#doc table:not(.kop):not(.idt) td,#lkpd table:not(.kop):not(.idt) th,#lkpd table:not(.kop):not(.idt) td,#asesmen table:not(.kop):not(.idt) th,#asesmen table:not(.kop):not(.idt) td,#lampiran table:not(.kop):not(.idt) th,#lampiran table:not(.kop):not(.idt) td,#atpdoc table:not(.kop):not(.idt) th,#atpdoc table:not(.kop):not(.idt) td{min-width:84px}
+  #doc table.idt,#lkpd table.idt,#asesmen table.idt,#lampiran table.idt,#atpdoc table.idt,#ppdoc table.idt{width:100%}
+  #doc table.kop td.kl,#doc table.kop td.kr,#lkpd table.kop td.kl,#lkpd table.kop td.kr,#asesmen table.kop td.kl,#asesmen table.kop td.kr,#lampiran table.kop td.kl,#lampiran table.kop td.kr,#atpdoc table.kop td.kl,#atpdoc table.kop td.kr,#ppdoc table.kop td.kl,#ppdoc table.kop td.kr{width:56px}
+  #doc .kop h1,#lkpd .kop h1,#asesmen .kop h1,#lampiran .kop h1,#atpdoc .kop h1,#ppdoc .kop h1{font-size:14px}
+  #ppdoc .pp-sec{-webkit-overflow-scrolling:touch}
+  /* panel pop-up & admin */
+  .adm{padding:0;align-items:stretch}
+  .adm .box{width:100%;min-height:100%;border-radius:0;padding:16px 14px}
+  .adm .tabs{flex-wrap:nowrap;overflow-x:auto}
+  .adm .tabs button{flex:none;white-space:nowrap;min-height:40px}
+  .ovl>*{max-width:calc(100vw - 16px)}
+  .loader.live{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .keyov,.resov{padding:10px;align-items:flex-end}
+  .keyov>*,.resov>*{max-width:100%;max-height:92vh;overflow-y:auto}
+  #imgbar{left:8px!important;right:8px;max-width:none}
+}
+@media screen and (max-width:420px){
+  .logos img,.logos img.l-sek{height:28px}
+  h1{font-size:17px}
+  .tbtns button{flex:1 1 100%}
+}
 </style>
 </head>
 <body>
