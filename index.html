@@ -1211,8 +1211,8 @@ else{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.re
       <div><label for="atp_fase">Fase / kelas</label><select id="atp_fase"></select></div>
     </div>
     <div id="atpdualbox" hidden>
-      <label class="inline" style="margin-top:0"><input type="checkbox" id="atp_dual" checked> Fase F: susun Kelas XI dan Kelas XII sekaligus (dua file)</label>
-      <p class="hint">Kelas XI dikerjakan dulu, lalu Kelas XII melanjutkannya (tidak mengulang materi XI). Hasilnya dua ATP terpisah, masing-masing bisa diunduh, dicetak, dan disimpan.</p>
+      <label class="inline" style="margin-top:0"><input type="checkbox" id="atp_dual" checked> Fase F: susun Kelas XI (2 semester) dan Kelas XII (1 semester) sekaligus, dua file</label>
+      <p class="hint">Kelas XI dikerjakan dulu (Semester Ganjil + Genap), lalu Kelas XII melanjutkannya (hanya Semester Ganjil, tidak mengulang materi XI). Pilihan Cakupan diabaikan untuk Fase F. Hasilnya dua ATP terpisah, masing-masing bisa diunduh, dicetak, dan disimpan.</p>
     </div>
     <div class="row">
       <div><label for="atp_cakupan">Cakupan</label><select id="atp_cakupan"><option value="Satu tahun (Ganjil dan Genap)">Satu tahun</option><option>Ganjil</option><option>Genap</option></select></div>
@@ -4344,6 +4344,7 @@ function splitCpKelas(txt,n){
   const pick=k=>marks.map((m,j)=>m.k===k?lines.slice(m.i,marks[j+1]?marks[j+1].i:lines.length).join('\n').trim():'').filter(Boolean).join('\n');
   return {umum:lines.slice(0,marks[0].i).join('\n').trim(), xi:pick(11), xii:pick(12)};
 }
+let DUAL=null, DUAL_RUN=false;
 const CPHINT0=$('atp_cphint').textContent;
 const dualOn=()=>faseKode()==='F'&&!!$('atp_dual')&&$('atp_dual').checked;
 function dualUI(){
@@ -4356,7 +4357,7 @@ function cpHint(){
   dualUI();
   if(!isFaseF2()){ h.textContent=CPHINT0; return; }
   const k=atpKelas(), sp=splitCpKelas(v('atp_cp'),k.n);
-  if(dualOn()){ h.textContent='Fase F, dua file: ATP Kelas XI dan Kelas XII disusun berurutan dari satu CP.'+(sp?' Penanda kelas ditemukan di teks CP, jadi bagian tiap kelas diambil dari situ.':' CP dibagi otomatis oleh AI (XI = dasar dan penguatan, XII = lanjutan dan capaian akhir fase). Agar tepat, beri penanda "Kelas XI" dan "Kelas XII" di awal baris pada teks CP, atau tulis pembagian materi di Catatan tambahan.'); return; }
+  if(dualOn()){ h.textContent='Fase F, dua file: ATP Kelas XI dan Kelas XII disusun berurutan dari satu CP.'+(sp?' Penanda kelas ditemukan di teks CP, jadi bagian tiap kelas diambil dari situ.':' CP dibagi otomatis oleh AI menurut jumlah semester (XI = 2 semester: dasar dan penguatan, sekitar 2/3 CP; XII = 1 semester Ganjil: lanjutan dan capaian akhir fase, sekitar 1/3 CP). Agar tepat, beri penanda "Kelas XI" dan "Kelas XII" di awal baris pada teks CP, atau tulis pembagian materi di Catatan tambahan.'); return; }
   h.textContent=sp
     ?'Fase F · Kelas '+k.rom+': penanda kelas ditemukan di teks CP. ATP ini hanya memakai bagian Kelas '+k.rom+'.'
     :'Fase F · Kelas '+k.rom+': CP Fase F berlaku untuk Kelas XI dan XII. ATP ini hanya memuat bagian Kelas '+k.rom+'; AI membagi CP secara bertahap (XI = dasar dan penguatan, XII = lanjutan dan capaian akhir fase). Agar tepat, beri penanda "Kelas XI" dan "Kelas XII" di awal baris pada teks CP, atau tulis pembagian materi di Catatan tambahan.';
@@ -4369,7 +4370,8 @@ function autoCP(){
 }
 ['atp_mapel','atp_fase'].forEach(id=>{ $(id).addEventListener('input',autoCP); $(id).addEventListener('change',autoCP); });
 $('atp_cp').addEventListener('input',cpHint);
-$('atp_dual').addEventListener('change',cpHint);
+$('atp_dual').addEventListener('change',()=>{ cpHint(); mggInfo(); try{ sumUI(); }catch(e){} });
+$('atp_fase').addEventListener('change',()=>{ try{ mggInfo(); sumUI(); }catch(e){} });
 
 /* ---- sinkron identitas dengan formulir RPM (satu sumber data guru/sekolah/tanda tangan) ---- */
 function pull(){
@@ -4391,13 +4393,25 @@ function onAtpGuru(){
 $('atp_guru').addEventListener('change',onAtpGuru);
 $('atp_guru').addEventListener('input',()=>{ const n=v('atp_guru').toLowerCase(); if(GURUS.some(g=>g.nama.toLowerCase()===n)) onAtpGuru(); });
 window.atpEnter=function(){ pull(); mggInfo(); loadMinggu(); cpHint(); };
+/* Skema Fase F: Kelas XI = 2 semester (Ganjil + Genap), Kelas XII = 1 semester (hanya Ganjil). Total Fase F = 3 semester. */
 function mggPlan(){
-  const c=$('atp_cakupan').value, setahun=/Satu tahun/.test(c), g=(window.MGG||{}).ganjil||18, n=(window.MGG||{}).genap||18;
+  const g=(window.MGG||{}).ganjil||18, n=(window.MGG||{}).genap||18;
+  if(isFaseF2()){
+    const k=atpKelas().n;
+    if(k===12) return {setahun:false,sems:[['Ganjil',g]],total:g};
+    if(DUAL_RUN||dualOn()) return {setahun:true,sems:[['Ganjil',g],['Genap',n]],total:g+n};
+  }
+  const c=$('atp_cakupan').value, setahun=/Satu tahun/.test(c);
   const sems=setahun?[['Ganjil',g],['Genap',n]]:[[c,/Genap/.test(c)?n:g]];
   return {setahun,sems,total:sems.reduce((a,x)=>a+x[1],0)};
 }
+const atpCak=()=>{ const p=mggPlan(); return p.setahun?'Satu tahun (Ganjil dan Genap)':p.sems[0][0]; };
 function mggInfo(){
-  const p=mggPlan(); $('atp_mgginfo').textContent='Minggu efektif (diatur admin): '+p.sems.map(x=>'Semester '+x[0]+' = '+x[1]+' minggu').join(', ')+'.';
+  const p=mggPlan(), g=(window.MGG||{}).ganjil||18, n=(window.MGG||{}).genap||18;
+  let t='Minggu efektif (diatur admin): '+p.sems.map(x=>'Semester '+x[0]+' = '+x[1]+' minggu').join(', ')+'.';
+  if(dualOn()) t='Fase F (3 semester): Kelas XI = Semester Ganjil '+g+' + Genap '+n+' minggu; Kelas XII = Semester Ganjil saja, '+g+' minggu. Isian Cakupan diabaikan untuk Fase F dua file.';
+  else if(isFaseF2()&&atpKelas().n===12) t+=' Kelas XII Fase F hanya memakai Semester Ganjil (cakupan otomatis).';
+  $('atp_mgginfo').textContent=t;
 }
 window.atpMggRefresh=mggInfo;
 $('atp_cakupan').addEventListener('change',mggInfo);
@@ -4478,20 +4492,20 @@ function faseFBlok(){
   if(!isFaseF2()) return '';
   const k=atpKelas(), lain=k.n===11?'XII':'XI', sp=splitCpKelas(v('atp_cp'),k.n);
   const peran=k.n===11
-    ?'Kelas XI adalah TAHUN PERTAMA Fase F: isi dengan bagian CP yang bersifat dasar, prasyarat, pengenalan, dan penguatan. Kompetensi tingkat lanjut, penerapan mandiri, dan capaian puncak akhir fase ditinggalkan untuk Kelas XII.'
-    :'Kelas XII adalah TAHUN KEDUA dan TERAKHIR Fase F: isi dengan bagian CP yang bersifat lanjutan, tingkat lanjut, penerapan mandiri atau proyek, dan pencapaian CP akhir fase. Anggap peserta didik sudah menuntaskan bagian dasar di Kelas XI; jangan mengulang materi dasar Kelas XI kecuali sebagai penguatan singkat.';
+    ?'Kelas XI adalah TAHUN PERTAMA Fase F dan berlangsung 2 SEMESTER (Ganjil dan Genap), sekitar DUA PERTIGA beban Fase F: isi dengan bagian CP yang bersifat dasar, prasyarat, pengenalan, dan penguatan. Kompetensi tingkat lanjut, penerapan mandiri, dan capaian puncak akhir fase ditinggalkan untuk Kelas XII.'
+    :'Kelas XII adalah TAHUN KEDUA dan TERAKHIR Fase F dan hanya berlangsung 1 SEMESTER (Semester Ganjil saja; semester Genap Kelas XII tidak dipakai untuk pembelajaran reguler), sekitar SEPERTIGA beban Fase F, sehingga ATP-nya padat, fokus, dan hanya SATU semester (tulis satu bagian "SEMESTER Ganjil", jangan menulis semester Genap): isi dengan bagian CP yang bersifat lanjutan, tingkat lanjut, penerapan mandiri atau proyek, dan pencapaian CP akhir fase. Anggap peserta didik sudah menuntaskan bagian dasar di Kelas XI; jangan mengulang materi dasar Kelas XI kecuali sebagai penguatan singkat.';
   const ref=(k.n===12&&window.ATP_REF_XI)?String(window.ATP_REF_XI).slice(0,45000):'';
   const deteksi0=sp
     ?`Teks CP di atas SUDAH memuat penanda kelas. Gunakan hanya bagian Kelas ${k.rom} sebagai cakupan TP; bagian Kelas ${lain} jangan dijadikan TP.\n${sp.umum?'Bagian umum (berlaku untuk kedua kelas):\n'+sp.umum+'\n':''}BAGIAN KELAS ${k.rom}:\n${k.n===11?sp.xi:sp.xii}\nBAGIAN KELAS ${lain} (di luar cakupan ATP ini):\n${k.n===11?sp.xii:sp.xi}`
-    :`Teks CP tidak menandai kelas, jadi Anda yang membaginya: bagi CP Fase F menjadi bagian Kelas XI dan bagian Kelas XII secara masuk akal, berurutan dari dasar ke lanjut, dan seimbang. Satu elemen CP boleh dibagi dua dengan kedalaman berbeda. Gabungan Kelas XI dan XII harus mencakup seluruh CP Fase F tanpa ada yang terlewat dan tanpa tumpang tindih.`;
+    :`Teks CP tidak menandai kelas, jadi Anda yang membaginya: bagi CP Fase F menjadi bagian Kelas XI dan bagian Kelas XII secara masuk akal dan berurutan dari dasar ke lanjut, dengan porsi sesuai jumlah semester: Kelas XI (2 semester) sekitar dua pertiga CP, Kelas XII (1 semester) sekitar sepertiga CP, yaitu bagian lanjutan dan capaian akhir fase. Satu elemen CP boleh dibagi dua dengan kedalaman berbeda. Gabungan Kelas XI dan XII harus mencakup seluruh CP Fase F tanpa ada yang terlewat dan tanpa tumpang tindih.`;
   const deteksi=(ref&&!sp)?'Pembagian CP sudah ditetapkan pada ATP Kelas XI di bawah ini (lihat tabel Analisis CP dan kolom Cakupan Kelas). Kelas XII mengerjakan SEMUA bagian CP yang ditunda atau belum tercakup di Kelas XI, lalu menuntaskan CP akhir Fase F.':deteksi0;
-  const lanjut=ref?`\nATP KELAS XI YANG SUDAH TERSUSUN (acuan, JANGAN ditulis ulang):\n<<<ATP_XI\n${ref}\nATP_XI>>>\nATURAN LANJUTAN KELAS XII: jangan mengulang TP dan materi yang sudah ada di ATP Kelas XI (boleh penguatan singkat); naikkan kedalaman, kompleksitas, dan kemandirian; kode TP dan nomor unit Kelas XII mulai dari 1; pada akhir Kelas XII seluruh CP Fase F harus sudah tuntas.`:(window.ATP_DUAL_XI?'\nCATATAN: ATP Kelas XII akan disusun terpisah SETELAH ini dan melanjutkan ATP Kelas XI. Karena itu tulis pembagian CP dengan tegas pada tabel Analisis CP (kolom Cakupan Kelas), dan jangan menghabiskan seluruh CP di Kelas XI.':'');
+  const lanjut=ref?`\nATP KELAS XI YANG SUDAH TERSUSUN (acuan, JANGAN ditulis ulang):\n<<<ATP_XI\n${ref}\nATP_XI>>>\nATURAN LANJUTAN KELAS XII: jangan mengulang TP dan materi yang sudah ada di ATP Kelas XI (boleh penguatan singkat); naikkan kedalaman, kompleksitas, dan kemandirian; kode TP dan nomor unit Kelas XII mulai dari 1; pada akhir Kelas XII seluruh CP Fase F harus sudah tuntas.`:(window.ATP_DUAL_XI?'\nCATATAN: ATP Kelas XII akan disusun terpisah SETELAH ini dan melanjutkan ATP Kelas XI. Karena itu tulis pembagian CP dengan tegas pada tabel Analisis CP (kolom Cakupan Kelas), dan jangan menghabiskan seluruh CP di Kelas XI (Kelas XI hanya 2 dari 3 semester Fase F; sisa sepertiga CP dan capaian akhir fase untuk Kelas XII yang hanya 1 semester).':'');
   return `\nKELAS DAN PEMBAGIAN CP FASE F (WAJIB DIPATUHI):\nATP ini disusun HANYA untuk KELAS ${k.rom} (Fase F). CP Fase F berlaku untuk dua tahun (Kelas XI dan XII) dan bunyinya tidak menyebut kelas, sehingga TP yang Anda tulis HARUS hanya milik Kelas ${k.rom}. ${peran}\n${deteksi}\nJelaskan pembagian CP Kelas XI dan XII ini singkat pada paragraf ringkasan bagian A, dan tulis \"Kelas ${k.rom}\" pada identitas. Bila Catatan guru menyebut pembagian materi, ikuti catatan itu.${lanjut}`;
 }
 function atpData(c){
-  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')}${isFaseF2()?' (ATP khusus Kelas '+atpKelas().rom+')':''} | Tahun ajaran ${v('tahun')}\nCakupan: ${$('atp_cakupan').value}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}${materiBlok()}${faseFBlok()}`;
+  return `Satuan pendidikan: ${v('sekolah')}\nMata pelajaran: ${v('mapel')} | ${v('fase')}${isFaseF2()?' (ATP khusus Kelas '+atpKelas().rom+')':''} | Tahun ajaran ${v('tahun')}\nCakupan: ${atpCak()}${isFaseF2()?(atpKelas().n===12?' (Fase F Kelas XII: hanya Semester Ganjil)':' (Fase F Kelas XI: Semester Ganjil dan Genap)'):''}\nAlokasi: ${c.jp} JP per minggu; ${c.mggTxt}. Total ${c.tot} JP untuk cakupan ini. ${c.sumTxt} Jumlah JP semua unit ditambah JP asesmen sumatif HARUS tepat ${c.tot}, dan per semester harus sesuai JP semester tersebut.\nCAPAIAN PEMBELAJARAN (CP):\n${c.cp}\n${v('atp_catatan')?'Catatan guru: '+v('atp_catatan'):''}${materiBlok()}${faseFBlok()}`;
 }
-const atpAturan=()=>`ATURAN:\n1. ${(materiMode()==='guru'&&v('atp_materi'))?'Susun unit menurut daftar MATERI YANG DIAJARKAN dari guru (lihat bagian data), bukan memecah CP sendiri; urutan dan judul unit mengikuti daftar itu.':'Pecah CP menjadi 6–10 unit per tahun (3–5 per semester) yang berurutan dari yang mudah ke yang kompleks.'}\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.\n6. ANALISIS CP: baca CP kalimat demi kalimat. Setiap elemen atau sub-elemen dan setiap kompetensi dalam bunyi CP harus terwakili oleh minimal satu TP; jangan ada bagian CP yang terlewat dan jangan menambah kompetensi di luar CP.\n7. Tulis bunyi CP per elemen SELENGKAPNYA seperti aslinya (jangan diringkas dan jangan diparafrase berlebihan).\n8. ASESMEN SUMATIF (bila ada): tiap baris asesmen sumatif WAJIB menyebut unit, materi, dan kode TP yang dicakup, serta bentuk asesmennya; jangan menulis baris asesmen yang hanya berjudul "Asesmen Sumatif" tanpa cakupan.\n9. Tulis selengkap dan serinci mungkin: jangan meringkas, jangan memakai "dan seterusnya", dan jangan menyisakan kolom kosong. 10. JP DAN MINGGU: JP mengalir berurutan sepanjang minggu efektif dan satu minggu bisa memuat lebih dari satu baris. Asesmen sumatif TIDAK memakai satu minggu penuh: bila JP per minggu lebih besar dari JP asesmen (mis. 5 JP per minggu dan sumatif tes tertulis 2 JP), sisa JP minggu itu (3 JP) dipakai untuk pembelajaran (KBM) unit di minggu yang sama. Jadi jangan membuat JP unit seolah-olah berhenti di batas minggu dan jangan menyisakan JP yang tidak terpakai; yang wajib tepat hanyalah jumlah seluruh JP unit ditambah JP sumatif sama dengan total JP semester. Namun satu asesmen sumatif TIDAK BOLEH terbelah ke dua minggu: atur JP unit sebelumnya agar sumatif muat di sisa minggu atau mulai di awal minggu baru (sisa minggu tidak boleh dibiarkan kosong, isi dengan KBM unit berikutnya).${isFaseF2()?'\n11. KHUSUS FASE F KELAS '+atpKelas().rom+': semua unit dan TP hanya untuk Kelas '+atpKelas().rom+'. Pada aturan 6, "tidak boleh ada bagian CP yang terlewat" berlaku untuk bagian CP yang menjadi cakupan Kelas '+atpKelas().rom+'; bagian CP kelas lain tidak dibuatkan TP. Aturan 7 tetap berlaku: bunyi CP Fase F ditulis utuh di bagian A. Pada tabel Analisis CP tambahkan kolom "Cakupan Kelas" (isi XI, XII, atau XI–XII) sehingga terlihat bagian CP mana yang dikerjakan di kelas ini dan mana yang ditunda ke kelas lain. Kode TP dan nomor unit dimulai dari 1 untuk kelas ini.':''}`;
+const atpAturan=()=>`ATURAN:\n1. ${(materiMode()==='guru'&&v('atp_materi'))?'Susun unit menurut daftar MATERI YANG DIAJARKAN dari guru (lihat bagian data), bukan memecah CP sendiri; urutan dan judul unit mengikuti daftar itu.':(mggPlan().sems.length===1?'Pecah CP menjadi 3–5 unit untuk satu semester':'Pecah CP menjadi 6–10 unit per tahun (3–5 per semester)')+' yang berurutan dari yang mudah ke yang kompleks.'}\n2. Setiap unit memuat judul, materi pokok atau jenis teks, unsur kebahasaan atau konsep kunci (bila relevan), alokasi JP, dan 2–3 Tujuan Pembelajaran (TP).\n3. Setiap TP berformat \"Peserta didik mampu …\", memakai kata kerja operasional yang dapat diukur, memuat kompetensi dan konten, serta diberi kode (mis. 1.1, 1.2). Sebarkan TP ke seluruh elemen CP mapel ini.\n4. Kaitkan tiap unit dengan 2–3 dari 8 Dimensi Profil Lulusan (${DIMS.join(', ')}) dan prinsip Pembelajaran Mendalam (berkesadaran, bermakna, menggembirakan), lalu tulis teknik asesmennya.\n5. Bahasa Indonesia baku. Istilah bidang studi boleh tetap asing.\n6. ANALISIS CP: baca CP kalimat demi kalimat. Setiap elemen atau sub-elemen dan setiap kompetensi dalam bunyi CP harus terwakili oleh minimal satu TP; jangan ada bagian CP yang terlewat dan jangan menambah kompetensi di luar CP.\n7. Tulis bunyi CP per elemen SELENGKAPNYA seperti aslinya (jangan diringkas dan jangan diparafrase berlebihan).\n8. ASESMEN SUMATIF (bila ada): tiap baris asesmen sumatif WAJIB menyebut unit, materi, dan kode TP yang dicakup, serta bentuk asesmennya; jangan menulis baris asesmen yang hanya berjudul "Asesmen Sumatif" tanpa cakupan.\n9. Tulis selengkap dan serinci mungkin: jangan meringkas, jangan memakai "dan seterusnya", dan jangan menyisakan kolom kosong. 10. JP DAN MINGGU: JP mengalir berurutan sepanjang minggu efektif dan satu minggu bisa memuat lebih dari satu baris. Asesmen sumatif TIDAK memakai satu minggu penuh: bila JP per minggu lebih besar dari JP asesmen (mis. 5 JP per minggu dan sumatif tes tertulis 2 JP), sisa JP minggu itu (3 JP) dipakai untuk pembelajaran (KBM) unit di minggu yang sama. Jadi jangan membuat JP unit seolah-olah berhenti di batas minggu dan jangan menyisakan JP yang tidak terpakai; yang wajib tepat hanyalah jumlah seluruh JP unit ditambah JP sumatif sama dengan total JP semester. Namun satu asesmen sumatif TIDAK BOLEH terbelah ke dua minggu: atur JP unit sebelumnya agar sumatif muat di sisa minggu atau mulai di awal minggu baru (sisa minggu tidak boleh dibiarkan kosong, isi dengan KBM unit berikutnya).${isFaseF2()?'\n11. KHUSUS FASE F KELAS '+atpKelas().rom+': semua unit dan TP hanya untuk Kelas '+atpKelas().rom+'. Pada aturan 6, "tidak boleh ada bagian CP yang terlewat" berlaku untuk bagian CP yang menjadi cakupan Kelas '+atpKelas().rom+'; bagian CP kelas lain tidak dibuatkan TP. Aturan 7 tetap berlaku: bunyi CP Fase F ditulis utuh di bagian A. Pada tabel Analisis CP tambahkan kolom "Cakupan Kelas" (isi XI, XII, atau XI–XII) sehingga terlihat bagian CP mana yang dikerjakan di kelas ini dan mana yang ditunda ke kelas lain. Kode TP dan nomor unit dimulai dari 1 untuk kelas ini.':''}`;
 
 /* ---- prompt mode Sekaligus ---- */
 function buildAtp(){
@@ -4531,7 +4545,7 @@ function buildAtpStep(n,prev){
 const btn=['atpcopy','atpword','atpprint','atpregen','atpsave','atpedit','atpclear'];
 function render(t,partial){
   const d=$('atpdoc'); d.innerHTML=md(t)+(partial?'':signHTML()); styleDoc(d,'atp');
-  const sub=['Tahun Ajaran '+v('atp_tahun'),/Satu tahun/.test($('atp_cakupan').value)?'':'Semester '+$('atp_cakupan').value].filter(Boolean).join(' · ');
+  const sub=['Tahun Ajaran '+v('atp_tahun'),mggPlan().setahun?'':'Semester '+mggPlan().sems[0][0]].filter(Boolean).join(' · ');
   d.querySelectorAll('table.kop .sub').forEach(x=>{ x.textContent=sub; });
   d.hidden=false; $('atpempty').hidden=true; btn.forEach(id=>$(id).disabled=false);
 }
@@ -4550,7 +4564,7 @@ try{ if(localStorage.getItem('atp_mode')==='all') document.querySelector('input[
 document.querySelectorAll('input[name="atp_mode"]').forEach(r=>r.addEventListener('change',()=>{ try{ localStorage.setItem('atp_mode',atpMode()); }catch(e){} if(!atpBusy) $('atpgen').textContent=atpGenLabel(); }));
 $('atpgen').textContent=atpGenLabel();
 /* isian yang menentukan isi ATP; bila berubah di tengah langkah, hasil langkah berikutnya tidak akan cocok */
-const atpSig=()=>JSON.stringify([v('atp_mapel'),v('atp_fase'),$('atp_cakupan').value,v('atp_tahun'),v('atp_jp'),v('atp_sum'),v('atp_cp'),mggPlan().total,materiMode(),materiMode()==='guru'?v('atp_materi')+'¦'+v('atp_materi12'):'',$('atp_materilengkap').checked,JSON.stringify(sumBentukPlan())]);
+const atpSig=()=>JSON.stringify([v('atp_mapel'),v('atp_fase'),atpCak(),v('atp_tahun'),v('atp_jp'),v('atp_sum'),v('atp_cp'),mggPlan().total,materiMode(),materiMode()==='guru'?v('atp_materi')+'¦'+v('atp_materi12'):'',$('atp_materilengkap').checked,JSON.stringify(sumBentukPlan())]);
 const ATP_LOAD=[
   ['Langkah 1 dari 3: menyusun kerangka ATP…','Membaca CP dan memecahnya menjadi unit…','Menghitung alokasi JP per unit…','Hampir selesai, mohon tunggu…'],
   ['Langkah 2 dari 3: merumuskan tujuan pembelajaran…','Menyusun TP setiap unit sesuai kerangka…','Mengaitkan dimensi profil dan asesmen…','Hampir selesai, mohon tunggu…'],
@@ -4585,7 +4599,6 @@ async function atpGenerate(){
 
 
 /* ===== Fase F: dua file sekaligus (Kelas XI lalu Kelas XII) ===== */
-let DUAL=null, DUAL_RUN=false;
 window.ATP_REF_XI=''; window.ATP_DUAL_XI=false;
 function dualTabsUI(){
   const box=$('atpdualtabs'); if(!DUAL){ box.hidden=true; box.innerHTML=''; return; }
@@ -4761,7 +4774,7 @@ async function atpSave(auto){
   const oldImg=await oldImgPaths('atp_hasil',atpId,['atp_html']);
   const c=stripLogos($('atpdoc')); c.querySelectorAll('.sign img').forEach(i=>i.remove());
   const body={nama_guru:v('atp_guru'),kepala_sekolah:$('kepsek').value.trim(),satuan_pendidikan:$('sekolah').value.trim(),mata_pelajaran:v('atp_mapel'),
-    fase:v('atp_fase'),semester:$('atp_cakupan').value,tahun_ajaran:v('atp_tahun'),model:modelDipakai(),atp_markdown:atpText,atp_html:c.innerHTML};
+    fase:v('atp_fase'),semester:atpCak(),tahun_ajaran:v('atp_tahun'),model:modelDipakai(),atp_markdown:atpText,atp_html:c.innerHTML};
   const b=$('atpsave'); b.disabled=true;
   try{
     let row=null;
@@ -5283,7 +5296,7 @@ function applyUnit(u){
   const g=id=>$(id);
   g('mapel').value=g('atp_mapel').value.trim(); g('fase').value=g('atp_fase').value;
   g('tahun').value=g('atp_tahun').value.trim();
-  const cak=g('atp_cakupan').value; const sem=u.sem||(/^(Ganjil|Genap)$/.test(cak)?cak:'');
+  const cak=(typeof atpCak==='function')?atpCak():g('atp_cakupan').value; const sem=u.sem||(/^(Ganjil|Genap)$/.test(cak)?cak:'');
   if(sem) g('semester').value=sem;
   g('topik').value=u.topik;
   const tps=u.tps.map(t=>`${t.kode?t.kode+' ':''}${t.tp}${t.jp?' ('+t.jp+' JP)':''}`).join('\n');
