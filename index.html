@@ -838,6 +838,15 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
   h1{font-size:17px}
   .tbtns button{flex:1 1 100%}
 }
+.beta{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#f59e0b;color:#451a03;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;line-height:1.5}
+#view-soal .sq-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+#view-soal .sq-row{display:flex;gap:8px;margin-bottom:6px;align-items:center}
+#view-soal .sq-row input[type=number]{width:90px;flex:none}
+#view-soal .sq-q{border-top:1px solid var(--line);padding:14px 0}
+#view-soal .sq-warn{color:#b45309;font-size:12.5px;margin:4px 0 0}
+#view-soal table{width:100%;border-collapse:collapse;margin-top:6px}
+#view-soal td,#view-soal th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;font-size:13.5px}
+@media print{#view-soal .sq-noprint{display:none!important}}
 </style>
 </head>
 <body>
@@ -958,6 +967,11 @@ else{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.re
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16"/><path d="M9 14h6"/></svg>
     <span class="lbl">RPP Tersimpan</span>
   </button>
+  <div class="sb-grp">Alat bantu</div>
+  <button type="button" class="sb-link" id="nav-soal" data-view="soal" title="Penyusun Soal (Beta)">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8"/><path d="M12 17h.01"/></svg>
+    <span class="lbl">Penyusun Soal<span class="beta">Beta</span></span>
+  </button>
   <div class="sb-usage" id="keyusage" aria-live="polite">
     <h4>Pemakaian API Key</h4>
     <div class="u-total"><b id="u_total">0</b><span>klik hari ini (semua guru)</span></div>
@@ -968,6 +982,82 @@ else{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.re
 <button type="button" id="sb_show" title="Tampilkan menu" aria-label="Tampilkan menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
 <div class="content">
 <nav class="wfbar" id="wfbar" aria-label="Alur kerja"></nav>
+
+<main id="view-soal" hidden>
+<div class="panel" id="sq_panel">
+  <div class="sq-tabs sq-noprint" id="sq_tabs">
+    <button type="button" class="ghost on" data-sq="1">1. Identitas</button>
+    <button type="button" class="ghost" data-sq="2">2. Asesmen &amp; Materi</button>
+    <button type="button" class="ghost" data-sq="3">3. Hasil</button>
+    <span class="beta" style="align-self:center">Beta</span>
+  </div>
+
+  <div id="sq_p1" class="sq-noprint">
+    <fieldset>
+      <legend>Model AI</legend>
+      <label for="sq_model" style="margin-top:0">Model</label>
+      <select id="sq_model"></select>
+      <p class="hint" id="sq_modelhint">Pilihan model diatur admin (sama dengan menu lain). API key dipilih saat menekan Generate Soal.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Identitas</legend>
+      <label for="sq_guru" style="margin-top:0">Nama guru</label><input id="sq_guru" list="gurulist" placeholder="Pilih dari daftar atau ketik nama">
+      <div class="row">
+        <div><label for="sq_mapel">Mata pelajaran</label><input id="sq_mapel" list="mapellist" placeholder="mis. Bahasa Inggris"></div>
+        <div><label for="sq_fase">Fase / kelas</label><select id="sq_fase"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="sq_tahun">Tahun ajaran</label><input id="sq_tahun"></div>
+        <div><label for="sq_sek">Satuan pendidikan</label><input id="sq_sek"></div>
+      </div>
+      <p class="hint">Terisi otomatis dari menu Buat RPP bila sudah diisi. Boleh diubah di sini.</p>
+    </fieldset>
+    <div class="btns"><button type="button" data-sqgo="2">Lanjut: Asesmen &amp; Materi →</button></div>
+  </div>
+
+  <div id="sq_p2" class="sq-noprint" hidden>
+    <fieldset>
+      <legend>Asesmen</legend>
+      <label for="sq_jenis" style="margin-top:0">Jenis asesmen</label>
+      <select id="sq_jenis"><option>Asesmen Sumatif Lingkup Materi</option><option>Asesmen Sumatif Tengah Semester</option><option>Asesmen Sumatif Akhir Semester</option><option>Asesmen Sumatif Akhir Tahun</option><option>Asesmen Sumatif Akhir Jenjang</option></select>
+      <label for="sq_cp">Capaian Pembelajaran (CP)</label>
+      <textarea id="sq_cp" rows="4" placeholder="Tempel CP atau tujuan pembelajaran yang diuji"></textarea>
+    </fieldset>
+    <fieldset>
+      <legend>Materi &amp; jumlah soal per materi</legend>
+      <div id="sq_mat"></div>
+      <button type="button" class="ghost sm" id="sq_addmat">+ Tambah materi</button>
+    </fieldset>
+    <fieldset>
+      <legend>Level kognitif</legend>
+      <div class="inline" style="flex-wrap:wrap;gap:14px">
+        <label class="inline" style="margin:0"><input type="checkbox" class="sq-lv" value="L1" checked> L1 (C1–C2)</label>
+        <label class="inline" style="margin:0"><input type="checkbox" class="sq-lv" value="L2" checked> L2 (C3)</label>
+        <label class="inline" style="margin:0"><input type="checkbox" class="sq-lv" value="L3" checked> L3 (C4–C6)</label>
+      </div>
+      <p class="hint">Level dibagi bergiliran ke seluruh soal sesuai yang dicentang.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Bentuk soal &amp; jumlahnya</legend>
+      <div id="sq_ben"></div>
+      <button type="button" class="ghost sm" id="sq_addben">+ Tambah bentuk</button>
+    </fieldset>
+    <p class="hint" id="sq_tot"></p>
+    <div class="btns"><button type="button" id="sq_go">Generate Soal</button></div>
+  </div>
+
+  <div class="status sq-noprint" id="sq_status"></div>
+
+  <div id="sq_p3" hidden>
+    <div class="sq-tabs sq-noprint" id="sq_sub"></div>
+    <div id="sq_out"><div class="empty"><strong>Soal Anda akan muncul di sini</strong>Lengkapi tab 1 dan 2, lalu tekan Generate Soal.</div></div>
+    <div class="btns sq-noprint" style="margin-top:14px">
+      <button type="button" class="ghost" id="sq_print" disabled>Cetak / PDF</button>
+      <button type="button" class="ghost" id="sq_copy" disabled>Salin teks</button>
+    </div>
+  </div>
+</div>
+</main>
 
 <main id="view-make" hidden>
 <form class="panel" id="f" autocomplete="off">
@@ -1628,7 +1718,7 @@ function modelDipakai(){
 function fillModelSelects(){
   const aktif=MODELCFG.models.filter(m=>m.aktif);
   let pref=''; try{ pref=localStorage.getItem('rpm_model')||''; }catch(e){}
-  ['model','atp_model'].forEach(id=>{
+  ['model','atp_model','sq_model'].forEach(id=>{
     const el=$(id); if(!el) return;
     const cur=(el.value||'').trim().toLowerCase();
     el.innerHTML=aktif.map(m=>`<option value="${esc(m.id)}">${esc(modelNama(m))}${m.id===MODELCFG.default?' (default)':''}</option>`).join('');
@@ -1637,7 +1727,7 @@ function fillModelSelects(){
 }
 /* setelah memulihkan draf/riwayat yang menyimpan model lama: kembalikan ke default bila modelnya sudah tidak ada */
 function fixModelSel(){
-  ['model','atp_model'].forEach(id=>{ const el=$(id); if(el&&!el.value) el.value=MODELCFG.default; });
+  ['model','atp_model','sq_model'].forEach(id=>{ const el=$(id); if(el&&!el.value) el.value=MODELCFG.default; });
 }
 async function loadModelAI(){
   try{
@@ -3563,18 +3653,20 @@ const WF=[
 function wfRender(v){
   const bar=$('wfbar'); if(!bar) return;
   const i=WF.findIndex(x=>x.views.includes(v)), nx=WF[i+1];
+  if(i<0){ bar.innerHTML=''; return; }   // menu di luar alur kerja (mis. Penyusun Soal)
   bar.innerHTML=WF.map((x,j)=>`<button type="button" class="wfstep" data-wf="${x.k}"${j===i?' aria-current="step"':''}><span class="n">${j+1}</span><span><b>${x.t}</b><small>${x.d}</small></span></button>`).join('')
     +(nx?`<button type="button" class="ghost wfnext" data-wf="${nx.k}">Lanjut: ${nx.t} →</button>`:'');
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-wf]'); if(b) showView(b.dataset.wf); });
 function showView(v){
   wfRender(v);
-  ['make','saved','atp','atpsaved','prota'].forEach(n=>{ const m=$('view-'+n), b=$('nav-'+n); if(m) m.hidden=n!==v; if(b) b.setAttribute('aria-current',n===v?'page':'false'); });
+  ['make','saved','atp','atpsaved','prota','soal'].forEach(n=>{ const m=$('view-'+n), b=$('nav-'+n); if(m) m.hidden=n!==v; if(b) b.setAttribute('aria-current',n===v?'page':'false'); });
   if(v==='saved') showList();
   else if(v==='make'){ mountPanel(false); $('savedviewer').hidden=true; }
   else if(v==='atp'&&window.atpEnter) window.atpEnter();
   else if(v==='atpsaved'&&window.atpList) window.atpList();
   else if(v==='prota'&&window.protaEnter) window.protaEnter();
+  else if(v==='soal'&&window.soalEnter) window.soalEnter();
   window.scrollTo({top:0});
 }
 function syncPrintChecks(){
@@ -5319,6 +5411,246 @@ $('pp_saved').addEventListener('click',async e=>{
 })();
 
 </script>
+<script>
+/* ===== MODUL PENYUSUN SOAL (Beta) – memakai ulang mesin RPM: gemini-proxy, pilih API key, pemuat, tombol Hentikan ===== */
+(function(){
+const BENTUK=['Pilihan Ganda','Pilihan Ganda Kompleks','Isian Singkat','Uraian'];
+const LV_TXT={L1:'L1 (C1–C2: mengingat, memahami)',L2:'L2 (C3: menerapkan)',L3:'L3 (C4–C6: menganalisis, mengevaluasi, mencipta / HOTS)'};
+const BATCH=5;
+let items=[], slots=[], busy=false, keyOk=false, view='kartu', modelTouched=false;
+const e=s=>esc(String(s==null?'':s)), br=s=>e(s).replace(/\n/g,'<br>');
+const val=id=>$(id).value.trim();
+
+/* ---- tab dalam menu ---- */
+function tab(n){
+  [1,2,3].forEach(i=>{ $('sq_p'+i).hidden=i!==n; });
+  document.querySelectorAll('#sq_tabs [data-sq]').forEach(b=>b.classList.toggle('on',+b.dataset.sq===n));
+  window.scrollTo({top:0});
+}
+document.querySelectorAll('#sq_tabs [data-sq]').forEach(b=>b.addEventListener('click',()=>tab(+b.dataset.sq)));
+document.querySelectorAll('[data-sqgo]').forEach(b=>b.addEventListener('click',()=>tab(+b.dataset.sqgo)));
+
+/* ---- baris materi & bentuk ---- */
+function rowDel(){ return '<button type="button" class="ghost sm" data-del title="Hapus">×</button>'; }
+function addMat(n,c){
+  const d=document.createElement('div'); d.className='sq-row sq-mrow';
+  d.innerHTML='<input placeholder="Nama materi" value="'+e(n||'')+'" style="flex:1"><input type="number" min="1" max="60" value="'+(c||5)+'" title="Jumlah soal">'+rowDel();
+  $('sq_mat').appendChild(d); tot();
+}
+function addBen(b,c){
+  const d=document.createElement('div'); d.className='sq-row sq-brow';
+  d.innerHTML='<select style="flex:1">'+BENTUK.map(x=>'<option'+(x===b?' selected':'')+'>'+x+'</option>').join('')+'</select><input type="number" min="1" max="60" value="'+(c||5)+'" title="Jumlah soal">'+rowDel();
+  $('sq_ben').appendChild(d); tot();
+}
+const rows=cls=>[...document.querySelectorAll(cls)].map(r=>[r.children[0].value.trim(),parseInt(r.children[1].value)||0]).filter(x=>x[0]&&x[1]>0);
+function tot(){
+  const a=rows('.sq-mrow').reduce((s,x)=>s+x[1],0), b=rows('.sq-brow').reduce((s,x)=>s+x[1],0);
+  $('sq_tot').innerHTML='Total per materi: <b>'+a+'</b> soal · total per bentuk: <b>'+b+'</b> soal'+(a!==b?' <span class="sq-warn">— harus sama sebelum Generate</span>':'');
+}
+['sq_mat','sq_ben'].forEach(id=>{
+  $(id).addEventListener('input',tot);
+  $(id).addEventListener('click',ev=>{ const b=ev.target.closest('[data-del]'); if(b){ b.parentNode.remove(); tot(); } });
+});
+$('sq_addmat').addEventListener('click',()=>addMat());
+$('sq_addben').addEventListener('click',()=>addBen());
+addMat('',12); addBen('Pilihan Ganda',10); addBen('Uraian',2);
+$('sq_model').addEventListener('change',()=>{ modelTouched=true; });
+$('sq_fase').innerHTML=$('fase').innerHTML;
+
+/* ---- masuk menu: isi dari menu Buat RPP, pilih Gemini 3.8 Flash bila tersedia ---- */
+window.soalEnter=function(){
+  const cp=(id,src)=>{ if(!val(id)&&$(src)&&$(src).value) $(id).value=$(src).value; };
+  cp('sq_guru','guru'); cp('sq_mapel','mapel'); cp('sq_tahun','tahun'); cp('sq_sek','sekolah');
+  if($('fase').value) $('sq_fase').value=$('fase').value;
+  const opt=[...$('sq_model').options].find(o=>/gemini-3\.8-flash(?![\w.-])/i.test(o.value));
+  if(opt&&!modelTouched) $('sq_model').value=opt.value;
+  $('sq_modelhint').textContent=opt?'Gemini 3.8 Flash tersedia dan dipilih otomatis. API key dipilih saat menekan Generate Soal.'
+    :'Gemini 3.8 Flash belum ada di daftar. Admin dapat menambahkan ID modelnya di Portal Admin > Model AI, lalu muat ulang halaman. Sementara ini dipakai model yang dipilih di atas.';
+  tot();
+};
+
+/* ---- rencana butir: materi, bentuk, level dibagi rata ---- */
+function plan(){
+  const ms=rows('.sq-mrow').flatMap(([n,c])=>Array(c).fill(n));
+  const bs=rows('.sq-brow').flatMap(([n,c])=>Array(c).fill(n));
+  const lv=[...document.querySelectorAll('.sq-lv:checked')].map(x=>x.value); if(!lv.length) lv.push('L2');
+  return bs.map((b,i)=>({materi:ms[i],bentuk:b,level:lv[i%lv.length]}));
+}
+
+/* ---- prompt: kaidah penulisan soal ---- */
+const KAIDAH=`KAIDAH PENULISAN SOAL (wajib dipatuhi):
+UMUM
+- Setiap butir mengukur satu indikator dan satu level kognitif sesuai permintaan; level L3 harus benar-benar menuntut analisis/evaluasi/kreasi, bukan hafalan.
+- Bahasa Indonesia baku, ringkas, jelas, tidak ambigu, sesuai jenjang dan konteks SMK; tidak bias SARA/gender; tidak menyinggung.
+- Butir berdiri sendiri (tidak bergantung butir lain) dan tidak memberi petunjuk jawaban butir lain. Hindari kata mutlak ("selalu", "tidak pernah") tanpa alasan.
+- Untuk L2-L3 gunakan stimulus kontekstual (kasus, data, teks pendek, situasi kerja) yang relevan; stimulus harus diperlukan untuk menjawab. L1 boleh tanpa stimulus.
+- Materi yang diuji sesuai CP dan materi yang diminta, tidak keluar dari cakupan.
+PILIHAN GANDA (4 opsi A-D)
+- Pokok soal (stem) dirumuskan lengkap sehingga dapat dijawab tanpa melihat opsi; tidak memuat pernyataan yang tidak diperlukan; hindari negatif ganda; bila memakai kata negatif ("bukan", "kecuali"), tulis dengan huruf kapital.
+- Opsi homogen (jenis, tata bahasa, tingkat kerincian), logis, panjangnya relatif sama; opsi angka/urutan diurutkan; tidak ada petunjuk gramatikal menuju kunci.
+- Hanya satu kunci yang benar-benar benar; pengecoh masuk akal dan berasal dari miskonsepsi atau kesalahan umum siswa.
+- DILARANG: "semua jawaban benar", "semua jawaban salah", "tidak ada jawaban yang benar", "A dan B benar". Kunci disebar acak di A-D, jangan berpola.
+PILIHAN GANDA KOMPLEKS (5 opsi A-E)
+- Pokok soal menyebut jelas jumlah jawaban benar yang harus dipilih (2 atau 3); opsi benar dan salah seimbang; kunci berupa daftar huruf, mis. "A,C".
+ISIAN SINGKAT
+- Satu jawaban pasti dan singkat (kata, istilah, atau angka dengan satuan); tempat kosong ditulis "........" pada akhir kalimat; maksimal satu titik kosong; tidak ada jawaban lain yang mungkin benar. Cantumkan variasi jawaban yang diterima di kunci bila ada.
+URAIAN
+- Gunakan kata kerja operasional sesuai level (jelaskan, hitung, analisis, bandingkan, rancang, evaluasi); batas jawaban jelas; sertakan jawaban model dan rubrik bertahap (skor per langkah/kriteria) yang jumlahnya sama dengan skor maksimum butir.`;
+const FORMAT=`FORMAT KELUARAN: HANYA array JSON valid (tanpa markdown, tanpa komentar). Tiap elemen:
+{"no":1,"indikator":"Peserta didik dapat <kata kerja operasional> ... (rumusan ABCD: audience, behavior, condition, degree)","stimulus":"teks stimulus atau string kosong","pertanyaan":"pokok soal","opsi":["isi opsi A","isi opsi B",...],"kunci":"B","pembahasan":"mengapa kunci benar dan mengapa pengecoh salah","skor":1,"rubrik":[{"uraian":"kriteria","skor":2}]}
+- "opsi" hanya untuk Pilihan Ganda dan PG Kompleks, ditulis TANPA huruf di depannya; selain itu gunakan [].
+- "kunci": huruf untuk PG ("B"), daftar huruf untuk PG Kompleks ("A,C"), jawaban singkat untuk Isian Singkat, jawaban model lengkap untuk Uraian.
+- "rubrik" hanya untuk Uraian; selain itu [].
+- "skor": PG dan Isian 1; PG Kompleks 2; Uraian = jumlah skor rubrik.`;
+const ctx=()=>`KONTEKS
+Satuan pendidikan: ${val('sq_sek')||'SMK'} · Mata pelajaran: ${val('sq_mapel')} · Fase/Kelas: ${val('sq_fase')} · Tahun ajaran: ${val('sq_tahun')}
+Jenis asesmen: ${val('sq_jenis')}
+Capaian Pembelajaran:
+${val('sq_cp')}`;
+const slotTxt=(s,n)=>`${n}. materi: ${s.materi}; bentuk: ${s.bentuk}; level: ${LV_TXT[s.level]}`;
+function promptBatch(idx){
+  const lain=items.filter((x,i)=>x&&!idx.includes(i)).map(x=>x.pertanyaan).slice(-25).join(' | ');
+  return `Anda adalah penulis soal asesmen profesional Kurikulum Merdeka.\n\n${KAIDAH}\n\n${ctx()}\n\nBuat ${idx.length} butir soal baru, urut sesuai daftar:\n${idx.map((i,k)=>slotTxt(slots[i],k+1)).join('\n')}\n${lain?'\nJangan mirip dengan soal yang sudah ada: '+lain+'\n':''}\n${FORMAT}`;
+}
+
+/* ---- panggil AI lewat mesin RPM ---- */
+function useModel(){ const m=val('sq_model'); if(m){ $('model').value=m; try{ localStorage.setItem('rpm_model',m); }catch(x){} } }
+function parseJ(t){
+  t=String(t).replace(/^\s*```(?:json)?\s*|\s*```\s*$/g,'');
+  const a=t.indexOf('['), b=t.lastIndexOf(']');
+  if(a<0||b<a) throw new Error('Format hasil AI tidak valid. Coba lagi.');
+  try{ return JSON.parse(t.slice(a,b+1)); }catch(x){ throw new Error('Hasil AI terpotong atau bukan JSON valid. Coba lagi atau kurangi jumlah soal.'); }
+}
+function clean(x,s){
+  const o=Object.assign({},s,x||{});
+  o.opsi=(Array.isArray(o.opsi)?o.opsi:[]).map(p=>String(p).replace(/^\s*[A-Ea-e][.)]\s+/,'').trim());
+  o.rubrik=Array.isArray(o.rubrik)?o.rubrik:[]; o.skor=Number(o.skor)||(o.bentuk==='Uraian'?o.rubrik.reduce((t,r)=>t+(+r.skor||0),0):1);
+  o.kunci=String(o.kunci==null?'':o.kunci).trim(); o.stimulus=String(o.stimulus||'').trim();
+  o.pertanyaan=String(o.pertanyaan||'').trim(); o.indikator=String(o.indikator||'').trim(); o.pembahasan=String(o.pembahasan||'').trim();
+  o.materi=s.materi; o.bentuk=s.bentuk; o.level=s.level;
+  return o;
+}
+async function run(idx,tag){
+  useModel();
+  const out=parseJ(await ask(promptBatch(idx),'Soal:'+tag+':'+Date.now()));
+  idx.forEach((i,k)=>{ if(out[k]) items[i]=clean(out[k],slots[i]); });
+  if(!idx.every(i=>items[i])) throw new Error('AI hanya mengembalikan sebagian butir. Coba lagi untuk butir yang belum jadi.');
+}
+async function generate(){
+  if(busy) return;
+  if(!val('sq_cp')||!rows('.sq-mrow').length||!rows('.sq-brow').length) return notify(false,'Isi CP, materi, dan bentuk soal terlebih dahulu.');
+  const a=rows('.sq-mrow').reduce((s,x)=>s+x[1],0), b=rows('.sq-brow').reduce((s,x)=>s+x[1],0);
+  if(a!==b) return notify(false,'Total soal per materi ('+a+') harus sama dengan total per bentuk ('+b+').');
+  if(!(await pickKey('Soal'))) return;
+  keyOk=true; busy=true; $('sq_go').disabled=true; $('sq_go').textContent='Menyusun…';
+  slots=plan(); items=slots.map(()=>null);
+  showLoader(['Menyusun soal Anda…','Merumuskan indikator soal…','Menulis stimulus dan pokok soal…','Menyusun pengecoh dan kunci…','Menyusun pedoman penskoran…']);
+  let fail='';
+  try{
+    for(let s=0;s<slots.length;s+=BATCH){
+      const idx=slots.slice(s,s+BATCH).map((_,k)=>s+k);
+      setStatus('Menyusun soal '+(s+1)+'–'+(idx[idx.length-1]+1)+' dari '+slots.length+'…');
+      await run(idx,'g'+s);
+    }
+  }catch(x){ fail=x.aborted?'Dihentikan.':x.message; }
+  finally{ hideLoader(); busy=false; $('sq_go').disabled=false; $('sq_go').textContent='Generate Soal'; }
+  const n=items.filter(Boolean).length;
+  render(); tab(3);
+  if(fail){ setStatus((n?n+' dari '+slots.length+' soal selesai. ':'')+'Gagal: '+fail+' Soal yang belum jadi bisa dibuat dengan tombol Generate ulang.',true); if(!/Dihentikan/.test(fail)) notify(false,'Penyusunan soal terhenti: '+fail); }
+  else{ setStatus('Selesai: '+n+' soal tersusun. Periksa tanda ⚠ pada Kartu Soal, lalu generate ulang butir yang kurang pas.'); notify(true,n+' soal berhasil disusun. Periksa Kartu Soal, lalu cetak atau salin.'); }
+}
+async function regen(i){
+  if(busy) return;
+  if(!keyOk){ if(!(await pickKey('Soal'))) return; keyOk=true; }
+  busy=true; showLoader(['Menyusun ulang soal '+(i+1)+'…','Memeriksa kaidah penulisan…']);
+  let fail='';
+  try{ const old=items[i]; items[i]=null; try{ await run([i],'r'+i); }catch(x){ items[i]=old; throw x; } }
+  catch(x){ fail=x.aborted?'':x.message; }
+  finally{ hideLoader(); busy=false; }
+  render(); setStatus(fail?'Gagal menyusun ulang soal '+(i+1)+': '+fail:'Soal '+(i+1)+' disusun ulang.',!!fail);
+}
+
+/* ---- pemeriksaan otomatis terhadap kaidah ---- */
+function lint(x){
+  const w=[], o=x.opsi||[];
+  if(/^Pilihan Ganda/.test(x.bentuk)){
+    const n=x.bentuk==='Pilihan Ganda'?4:5;
+    if(o.length!==n) w.push('jumlah opsi '+o.length+', seharusnya '+n);
+    if(o.some(p=>/semua (jawaban )?(di atas )?(benar|salah)|tidak ada (satupun )?jawaban|[A-E] dan [A-E] (benar|salah)/i.test(p))) w.push('opsi memakai "semua/tidak ada jawaban benar"');
+    const L=o.map(p=>p.length), mx=Math.max(...L), mn=Math.min(...L); if(mn>0&&mx/mn>2.2) w.push('panjang opsi tidak seimbang');
+    if(new Set(o.map(p=>p.toLowerCase())).size<o.length) w.push('ada opsi yang sama');
+    const k=x.kunci.replace(/\s/g,'').split(',');
+    const okF=x.bentuk==='Pilihan Ganda'?/^[A-D]$/.test(x.kunci):k.length>=2&&k.every(c=>/^[A-E]$/.test(c));
+    if(!okF) w.push('format kunci tidak valid');
+    if(/\b(tidak|bukan|kecuali)\b.*\b(tidak|bukan|kecuali)\b/i.test(x.pertanyaan)) w.push('periksa kemungkinan negatif ganda');
+    if(/\b(bukan|kecuali|tidak)\b/.test(x.pertanyaan)&&!/\b(BUKAN|KECUALI|TIDAK)\b/.test(x.pertanyaan)) w.push('kata negatif sebaiknya huruf kapital');
+  }
+  if(x.bentuk==='Isian Singkat'&&((x.pertanyaan.match(/\.{4,}|_{3,}/g)||[]).length!==1)) w.push('harus tepat satu titik kosong');
+  if(x.bentuk==='Uraian'){
+    if(!x.rubrik.length) w.push('rubrik kosong');
+    else if(x.rubrik.reduce((t,r)=>t+(+r.skor||0),0)!==x.skor) w.push('jumlah skor rubrik tidak sama dengan skor butir');
+  }
+  if(!x.pertanyaan) w.push('pokok soal kosong');
+  if(x.level==='L3'&&!x.stimulus) w.push('soal L3 sebaiknya memakai stimulus');
+  if(!/^Peserta didik/i.test(x.indikator)) w.push('indikator belum berawalan "Peserta didik dapat"');
+  return w;
+}
+function dist(){
+  const pg=items.filter(x=>x&&x.bentuk==='Pilihan Ganda'); if(pg.length<5) return '';
+  const c={}; pg.forEach(x=>{ c[x.kunci]=(c[x.kunci]||0)+1; });
+  const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+  return top[1]/pg.length>0.45?'Sebaran kunci PG tidak merata ('+Object.entries(c).sort().map(a=>a[0]+':'+a[1]).join(', ')+'). Generate ulang beberapa butir.':'';
+}
+
+/* ---- tampilan hasil ---- */
+const VIEWS=[['indikator','Indikator'],['kartu','Kartu Soal'],['naskah','Naskah'],['kunci','Kunci Jawaban'],['skor','Pedoman Penskoran']];
+const L=['A','B','C','D','E'];
+const optHtml=x=>(x.opsi||[]).map((p,i)=>'<div>'+L[i]+'. '+e(p)+'</div>').join('');
+function head(){ return '<div style="text-align:center;margin-bottom:12px"><b>'+e(val('sq_jenis')).toUpperCase()+'</b><br>'+e(val('sq_sek'))+'<br>'+e(val('sq_mapel'))+' · '+e(val('sq_fase'))+' · TA '+e(val('sq_tahun'))+(val('sq_guru')?'<br>Guru: '+e(val('sq_guru')):'')+'</div>'; }
+function render(){
+  const done=items.filter(Boolean).length;
+  $('sq_print').disabled=$('sq_copy').disabled=!done;
+  $('sq_sub').innerHTML=VIEWS.map(([k,l])=>'<button type="button" class="ghost'+(view===k?' on':'')+'" data-v="'+k+'">'+l+'</button>').join('');
+  if(!items.length){ return; }
+  let h=head();
+  const miss=i=>'<div class="sq-q"><b>Soal '+(i+1)+'</b> belum tersusun. <button type="button" class="ghost sm sq-noprint" data-rg="'+i+'">Generate ulang</button></div>';
+  if(view==='indikator') h+='<table><tr><th>No</th><th>Materi</th><th>Level</th><th>Bentuk</th><th>Indikator soal</th></tr>'+items.map((x,i)=>x?'<tr><td>'+(i+1)+'</td><td>'+e(x.materi)+'</td><td>'+x.level+'</td><td>'+e(x.bentuk)+'</td><td>'+e(x.indikator)+'</td></tr>':'').join('')+'</table>';
+  if(view==='kartu'){
+    const d=dist(); if(d) h+='<p class="sq-warn sq-noprint">⚠ '+e(d)+'</p>';
+    h+=items.map((x,i)=>{ if(!x) return miss(i); const w=lint(x);
+      return '<div class="sq-q"><b>Soal '+(i+1)+'</b> <span class="hint">'+e(x.materi)+' · '+x.level+' · '+e(x.bentuk)+'</span> <button type="button" class="ghost sm sq-noprint" data-rg="'+i+'">Generate ulang</button>'
+      +'<p class="hint">Indikator: '+e(x.indikator)+'</p>'+(x.stimulus?'<p><i>'+br(x.stimulus)+'</i></p>':'')+'<p>'+br(x.pertanyaan)+'</p>'+optHtml(x)
+      +'<p><b>Kunci:</b> '+br(x.kunci)+' · <b>Skor:</b> '+x.skor+'</p>'+(x.rubrik.length?'<p class="hint">Rubrik: '+x.rubrik.map(r=>e(r.uraian)+' ('+r.skor+')').join('; ')+'</p>':'')
+      +'<p class="hint">Pembahasan: '+br(x.pembahasan)+'</p>'+(w.length?'<p class="sq-warn sq-noprint">⚠ '+w.map(e).join('; ')+'</p>':'')+'</div>'; }).join('');
+  }
+  if(view==='naskah'){
+    BENTUK.forEach((b,bi)=>{
+      const g=items.map((x,i)=>[x,i]).filter(p=>p[0]&&p[0].bentuk===b); if(!g.length) return;
+      h+='<h4 style="margin:16px 0 6px">'+String.fromCharCode(65+BENTUK.slice(0,bi).filter(z=>items.some(x=>x&&x.bentuk===z)).length)+'. '+b+'</h4>';
+      h+=g.map(([x,i])=>'<div class="sq-q" style="border:0;padding:6px 0">'+(x.stimulus?'<p><i>'+br(x.stimulus)+'</i></p>':'')+'<p>'+(i+1)+'. '+br(x.pertanyaan)+'</p>'+optHtml(x)+'</div>').join('');
+    });
+  }
+  if(view==='kunci') h+='<table><tr><th>No</th><th>Bentuk</th><th>Kunci / jawaban</th></tr>'+items.map((x,i)=>x?'<tr><td>'+(i+1)+'</td><td>'+e(x.bentuk)+'</td><td>'+br(x.kunci)+'</td></tr>':'').join('')+'</table>';
+  if(view==='skor'){
+    h+='<table><tr><th>No</th><th>Kriteria / rubrik</th><th>Skor</th></tr>'+items.map((x,i)=>x?'<tr><td>'+(i+1)+'</td><td>'+(x.rubrik.length?x.rubrik.map(r=>e(r.uraian)+' ('+r.skor+')').join('<br>'):'Benar sesuai kunci = '+x.skor+'; salah = 0')+'</td><td>'+x.skor+'</td></tr>':'').join('')+'</table>';
+    const mx=items.reduce((t,x)=>t+(x?x.skor:0),0); h+='<p><b>Skor maksimum: '+mx+'</b> · Nilai = (skor perolehan ÷ '+mx+') × 100</p>';
+  }
+  $('sq_out').innerHTML=h;
+}
+$('sq_sub').addEventListener('click',ev=>{ const b=ev.target.closest('[data-v]'); if(b){ view=b.dataset.v; render(); } });
+$('sq_out').addEventListener('click',ev=>{ const b=ev.target.closest('[data-rg]'); if(b) regen(+b.dataset.rg); });
+$('sq_go').addEventListener('click',generate);
+$('sq_print').addEventListener('click',()=>window.print());
+$('sq_copy').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText($('sq_out').innerText); setStatus('Teks disalin.'); }
+  catch(x){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); }
+});
+
+/* status proses ikut tampil di menu ini */
+const _ss=setStatus; setStatus=function(t,er){ _ss(t,er); const a=$('sq_status'); if(a){ a.textContent=t||''; a.className='status sq-noprint'+(er?' err':''); } };
+})();
+</script>
+
 <script>window.atpEnter&&window.atpEnter();</script>
 <div class="keyov" id="unitov" role="dialog" aria-modal="true" aria-labelledby="unitttl">
   <div class="keybox">
