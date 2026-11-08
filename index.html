@@ -839,6 +839,10 @@ html:not([data-auth]) .app,html:not([data-auth]) header{display:none!important}
   .tbtns button{flex:1 1 100%}
 }
 .beta{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#f59e0b;color:#451a03;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;line-height:1.5}
+#view-soal{display:block;padding:24px clamp(16px,3vw,36px) 48px}
+#view-soal .sq-panel-w{max-width:1100px}
+@media (max-width:960px){#view-soal{padding:12px 12px 24px}}
+@media print{#view-soal{padding:0}}
 #view-soal .sq-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 #view-soal .sq-row{display:flex;gap:8px;margin-bottom:6px;align-items:center}
 #view-soal .sq-row input[type=number]{width:90px;flex:none}
@@ -984,7 +988,7 @@ else{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.re
 <nav class="wfbar" id="wfbar" aria-label="Alur kerja"></nav>
 
 <main id="view-soal" hidden>
-<div class="panel" id="sq_panel">
+<div class="panel sq-panel-w" id="sq_panel">
   <div class="sq-tabs sq-noprint" id="sq_tabs">
     <button type="button" class="ghost on" data-sq="1">1. Identitas</button>
     <button type="button" class="ghost" data-sq="2">2. Asesmen &amp; Materi</button>
