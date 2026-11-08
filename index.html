@@ -1027,15 +1027,16 @@ else{var __s=JSON.parse(localStorage.getItem('rpm_auth')||'null');if(__s&&__s.re
       <legend>Materi &amp; jumlah soal per materi</legend>
       <div id="sq_mat"></div>
       <button type="button" class="ghost sm" id="sq_addmat">+ Tambah materi</button>
+      <p class="hint">Boleh dikosongkan. Bila nama materi tidak diisi, AI menentukan materi dari CP dan membaginya sesuai cakupan, dengan total soal mengikuti jumlah pada bentuk soal.</p>
     </fieldset>
     <fieldset>
-      <legend>Level kognitif</legend>
-      <div class="inline" style="flex-wrap:wrap;gap:14px">
-        <label class="inline" style="margin:0"><input type="checkbox" class="sq-lv" value="L1" checked> L1 (C1–C2)</label>
-        <label class="inline" style="margin:0"><input type="checkbox" class="sq-lv" value="L2" checked> L2 (C3)</label>
-        <label class="inline" style="margin:0"><input type="checkbox" class="sq-lv" value="L3" checked> L3 (C4–C6)</label>
+      <legend>Level kognitif (persentase)</legend>
+      <div class="sq-row" style="flex-wrap:wrap;gap:14px">
+        <label class="inline" style="margin:0">L1 (C1–C2) <input type="number" id="sq_pl1" min="0" max="100" value="30" style="width:80px"> %</label>
+        <label class="inline" style="margin:0">L2 (C3) <input type="number" id="sq_pl2" min="0" max="100" value="40" style="width:80px"> %</label>
+        <label class="inline" style="margin:0">L3 (C4–C6) <input type="number" id="sq_pl3" min="0" max="100" value="30" style="width:80px"> %</label>
       </div>
-      <p class="hint">Level dibagi bergiliran ke seluruh soal sesuai yang dicentang.</p>
+      <p class="hint" id="sq_pltot"></p>
     </fieldset>
     <fieldset>
       <legend>Bentuk soal &amp; jumlahnya</legend>
@@ -5443,15 +5444,33 @@ function addBen(b,c){
   $('sq_ben').appendChild(d); tot();
 }
 const rows=cls=>[...document.querySelectorAll(cls)].map(r=>[r.children[0].value.trim(),parseInt(r.children[1].value)||0]).filter(x=>x[0]&&x[1]>0);
+const lvPct=()=>[1,2,3].map(i=>Math.max(0,parseInt($('sq_pl'+i).value)||0));
+/* bagi n butir ke tiga level menurut persentase (sisa pembulatan ke pecahan terbesar) */
+function alloc(n,p){
+  const sm=(p[0]+p[1]+p[2])||1, raw=p.map(x=>n*x/sm), c=raw.map(Math.floor);
+  let left=n-c.reduce((t,x)=>t+x,0);
+  raw.map((r,i)=>[r-c[i],i]).sort((x,y)=>y[0]-x[0]).slice(0,left).forEach(x=>{ c[x[1]]++; });
+  return c;
+}
+/* urutan berselang-seling (bukan berkelompok) agar tiap bentuk soal mendapat campuran materi/level */
+function spread(labels,counts){
+  const c=counts.slice(), n=c.reduce((t,x)=>t+x,0), out=[];
+  for(let i=0;i<n;i++){ let best=-1,bv=-1; c.forEach((r,k)=>{ const v=r/(n-i); if(r>0&&v>bv){ bv=v; best=k; } }); c[best]--; out.push(labels[best]); }
+  return out;
+}
 function tot(){
-  const a=rows('.sq-mrow').reduce((s,x)=>s+x[1],0), b=rows('.sq-brow').reduce((s,x)=>s+x[1],0);
-  $('sq_tot').innerHTML='Total per materi: <b>'+a+'</b> soal · total per bentuk: <b>'+b+'</b> soal'+(a!==b?' <span class="sq-warn">— harus sama sebelum Generate</span>':'');
+  const a=rows('.sq-mrow').reduce((s,x)=>s+x[1],0), b=rows('.sq-brow').reduce((s,x)=>s+x[1],0), auto=!rows('.sq-mrow').length;
+  $('sq_tot').innerHTML=auto?'Materi kosong: AI menentukan materi dari CP. Total soal: <b>'+b+'</b>'
+    :'Total per materi: <b>'+a+'</b> soal · total per bentuk: <b>'+b+'</b> soal'+(a!==b?' <span class="sq-warn">— harus sama sebelum Generate</span>':'');
+  const p=lvPct(), sm=p[0]+p[1]+p[2], c=alloc(b,p);
+  $('sq_pltot').innerHTML='Jumlah persentase: <b>'+sm+'%</b>'+(sm!==100?' <span class="sq-warn">— harus 100%</span>':(b?' · dari '+b+' soal: L1 '+c[0]+', L2 '+c[1]+', L3 '+c[2]:''));
 }
 ['sq_mat','sq_ben'].forEach(id=>{
   $(id).addEventListener('input',tot);
   $(id).addEventListener('click',ev=>{ const b=ev.target.closest('[data-del]'); if(b){ b.parentNode.remove(); tot(); } });
 });
 $('sq_addmat').addEventListener('click',()=>addMat());
+['sq_pl1','sq_pl2','sq_pl3'].forEach(id=>$(id).addEventListener('input',tot));
 $('sq_addben').addEventListener('click',()=>addBen());
 addMat('',12); addBen('Pilihan Ganda',10); addBen('Uraian',2);
 $('sq_model').addEventListener('change',()=>{ modelTouched=true; });
@@ -5469,12 +5488,11 @@ window.soalEnter=function(){
   tot();
 };
 
-/* ---- rencana butir: materi, bentuk, level dibagi rata ---- */
-function plan(){
-  const ms=rows('.sq-mrow').flatMap(([n,c])=>Array(c).fill(n));
+/* ---- rencana butir: materi dan level disebar merata ke semua bentuk soal ---- */
+function plan(mt){
   const bs=rows('.sq-brow').flatMap(([n,c])=>Array(c).fill(n));
-  const lv=[...document.querySelectorAll('.sq-lv:checked')].map(x=>x.value); if(!lv.length) lv.push('L2');
-  return bs.map((b,i)=>({materi:ms[i],bentuk:b,level:lv[i%lv.length]}));
+  const ms=spread(mt.map(x=>x[0]),mt.map(x=>x[1])), lv=spread(['L1','L2','L3'],alloc(bs.length,lvPct()));
+  return bs.map((b,i)=>({materi:ms[i],bentuk:b,level:lv[i]}));
 }
 
 /* ---- prompt: kaidah penulisan soal ---- */
@@ -5497,7 +5515,7 @@ ISIAN SINGKAT
 URAIAN
 - Gunakan kata kerja operasional sesuai level (jelaskan, hitung, analisis, bandingkan, rancang, evaluasi); batas jawaban jelas; sertakan jawaban model dan rubrik bertahap (skor per langkah/kriteria) yang jumlahnya sama dengan skor maksimum butir.`;
 const FORMAT=`FORMAT KELUARAN: HANYA array JSON valid (tanpa markdown, tanpa komentar). Tiap elemen:
-{"no":1,"indikator":"Peserta didik dapat <kata kerja operasional> ... (rumusan ABCD: audience, behavior, condition, degree)","stimulus":"teks stimulus atau string kosong","pertanyaan":"pokok soal","opsi":["isi opsi A","isi opsi B",...],"kunci":"B","pembahasan":"mengapa kunci benar dan mengapa pengecoh salah","skor":1,"rubrik":[{"uraian":"kriteria","skor":2}]}
+{"no":1,"materi":"nama materi sesuai daftar","indikator":"Peserta didik dapat <kata kerja operasional> ... (rumusan ABCD: audience, behavior, condition, degree)","stimulus":"teks stimulus atau string kosong","pertanyaan":"pokok soal","opsi":["isi opsi A","isi opsi B",...],"kunci":"B","pembahasan":"mengapa kunci benar dan mengapa pengecoh salah","skor":1,"rubrik":[{"uraian":"kriteria","skor":2}]}
 - "opsi" hanya untuk Pilihan Ganda dan PG Kompleks, ditulis TANPA huruf di depannya; selain itu gunakan [].
 - "kunci": huruf untuk PG ("B"), daftar huruf untuk PG Kompleks ("A,C"), jawaban singkat untuk Isian Singkat, jawaban model lengkap untuk Uraian.
 - "rubrik" hanya untuk Uraian; selain itu [].
@@ -5527,7 +5545,7 @@ function clean(x,s){
   o.rubrik=Array.isArray(o.rubrik)?o.rubrik:[]; o.skor=Number(o.skor)||(o.bentuk==='Uraian'?o.rubrik.reduce((t,r)=>t+(+r.skor||0),0):1);
   o.kunci=String(o.kunci==null?'':o.kunci).trim(); o.stimulus=String(o.stimulus||'').trim();
   o.pertanyaan=String(o.pertanyaan||'').trim(); o.indikator=String(o.indikator||'').trim(); o.pembahasan=String(o.pembahasan||'').trim();
-  o.materi=s.materi; o.bentuk=s.bentuk; o.level=s.level;
+  o.materi=s.materi||String((x&&x.materi)||'').trim(); o.bentuk=s.bentuk; o.level=s.level;
   return o;
 }
 async function run(idx,tag){
@@ -5536,17 +5554,32 @@ async function run(idx,tag){
   idx.forEach((i,k)=>{ if(out[k]) items[i]=clean(out[k],slots[i]); });
   if(!idx.every(i=>items[i])) throw new Error('AI hanya mengembalikan sebagian butir. Coba lagi untuk butir yang belum jadi.');
 }
+/* materi kosong: AI memecah CP menjadi materi beserta jumlah soalnya */
+async function deriveMateri(n){
+  useModel();
+  const pr=`${ctx()}\n\nTentukan materi pokok yang diujikan dari Capaian Pembelajaran di atas untuk asesmen berisi ${n} soal. Pecah CP menjadi 3 sampai 8 materi/cakupan yang berbeda dan mewakili seluruh CP secara proporsional (cakupan lebih luas = soal lebih banyak). Nama materi singkat dan spesifik. Jumlah soal seluruh materi harus tepat ${n}.\nKeluaran: HANYA array JSON valid, contoh: [{"materi":"nama materi","jumlah":3}]`;
+  const r=parseJ(await ask(pr,'Soal:m:'+Date.now()));
+  const mt=r.map(x=>[String((x&&x.materi)||'').trim(),Math.max(0,parseInt(x&&x.jumlah)||0)]).filter(x=>x[0]&&x[1]);
+  if(!mt.length) throw new Error('AI gagal menentukan materi dari CP. Coba lagi atau isi materi secara manual.');
+  let d=n-mt.reduce((t,x)=>t+x[1],0), k=0;
+  while(d!==0&&k<1000){ const j=k++%mt.length; if(d>0){ mt[j][1]++; d--; } else if(mt[j][1]>1){ mt[j][1]--; d++; } }
+  return mt;
+}
 async function generate(){
   if(busy) return;
-  if(!val('sq_cp')||!rows('.sq-mrow').length||!rows('.sq-brow').length) return notify(false,'Isi CP, materi, dan bentuk soal terlebih dahulu.');
-  const a=rows('.sq-mrow').reduce((s,x)=>s+x[1],0), b=rows('.sq-brow').reduce((s,x)=>s+x[1],0);
-  if(a!==b) return notify(false,'Total soal per materi ('+a+') harus sama dengan total per bentuk ('+b+').');
+  const mt0=rows('.sq-mrow'), nb=rows('.sq-brow').reduce((t,x)=>t+x[1],0), pl=lvPct();
+  if(!val('sq_cp')||!nb) return notify(false,'Isi CP dan bentuk soal terlebih dahulu.');
+  if(mt0.length){ const a=mt0.reduce((t,x)=>t+x[1],0); if(a!==nb) return notify(false,'Total soal per materi ('+a+') harus sama dengan total per bentuk ('+nb+').'); }
+  if(pl[0]+pl[1]+pl[2]!==100) return notify(false,'Jumlah persentase level kognitif harus 100% (sekarang '+(pl[0]+pl[1]+pl[2])+'%).');
   if(!(await pickKey('Soal'))) return;
   keyOk=true; busy=true; $('sq_go').disabled=true; $('sq_go').textContent='Menyusun…';
-  slots=plan(); items=slots.map(()=>null);
+  slots=[]; items=[];
   showLoader(['Menyusun soal Anda…','Merumuskan indikator soal…','Menulis stimulus dan pokok soal…','Menyusun pengecoh dan kunci…','Menyusun pedoman penskoran…']);
   let fail='';
   try{
+    let mt=mt0;
+    if(!mt.length){ setStatus('Menentukan materi dari CP…'); mt=await deriveMateri(nb); }
+    slots=plan(mt); items=slots.map(()=>null);
     for(let s=0;s<slots.length;s+=BATCH){
       const idx=slots.slice(s,s+BATCH).map((_,k)=>s+k);
       setStatus('Menyusun soal '+(s+1)+'–'+(idx[idx.length-1]+1)+' dari '+slots.length+'…');
@@ -5555,8 +5588,8 @@ async function generate(){
   }catch(x){ fail=x.aborted?'Dihentikan.':x.message; }
   finally{ hideLoader(); busy=false; $('sq_go').disabled=false; $('sq_go').textContent='Generate Soal'; }
   const n=items.filter(Boolean).length;
-  render(); tab(3);
-  if(fail){ setStatus((n?n+' dari '+slots.length+' soal selesai. ':'')+'Gagal: '+fail+' Soal yang belum jadi bisa dibuat dengan tombol Generate ulang.',true); if(!/Dihentikan/.test(fail)) notify(false,'Penyusunan soal terhenti: '+fail); }
+  render(); if(slots.length) tab(3);
+  if(fail){ setStatus((n?n+' dari '+slots.length+' soal selesai. ':'')+'Gagal: '+fail+(slots.length?' Soal yang belum jadi bisa dibuat dengan tombol Generate ulang.':''),true); if(!/Dihentikan/.test(fail)) notify(false,'Penyusunan soal terhenti: '+fail); }
   else{ setStatus('Selesai: '+n+' soal tersusun. Periksa tanda ⚠ pada Kartu Soal, lalu generate ulang butir yang kurang pas.'); notify(true,n+' soal berhasil disusun. Periksa Kartu Soal, lalu cetak atau salin.'); }
 }
 async function regen(i){
