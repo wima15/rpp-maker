@@ -2196,13 +2196,21 @@ $('copy').addEventListener('click',async()=>{
   catch(e){ setStatus('Tidak bisa menyalin otomatis. Blok teks lalu salin manual.',true); }
 });
 let _titleAsli=null;
+let RPM_UNIT='';   // nomor unit dari ATP (mis. '1'); dikosongkan saat formulir baru
+function unitCetak(){
+  if(RPM_UNIT) return 'Unit '+RPM_UNIT;
+  const m=(($('topik')&&$('topik').value)||'').trim().match(/^Unit\s*(\d+)/i);   // cadangan: topik diketik manual berawalan "Unit n"
+  return m?'Unit '+m[1]:'';
+}
 function namaCetak(w){
   const v=id=>($(id)&&$(id).value||'').trim();
   const awal={doc:'RPM',lkpd:'LKPD',ases:'Asesmen',both:'RPM+LKPD',all:'RPM-LKPD-Asesmen-Lampiran',lamp:'Lampiran',sel:'RPM'}[w]||'RPM';
   const sel=(document.body.dataset.sel||'').split(' ').filter(Boolean);
   const pref=w==='sel'?{doc:'RPM',lkpd:'LKPD',ases:'Asesmen',lamp:'Lampiran'}[sel[0]]&&sel.map(k=>({doc:'RPM',lkpd:'LKPD',ases:'Asesmen',lamp:'Lampiran'}[k])).join('-'):awal;
   const bersih=t=>t.replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,'_').replace(/^_+|_+$/g,'');
-  return [pref||awal,v('mapel'),v('topik'),v('guru')].map(bersih).filter(Boolean).join('_').slice(0,140);
+  const nama=[pref||awal,v('mapel'),v('topik'),v('guru')].map(bersih).filter(Boolean).join('_');
+  const un=unitCetak();
+  return (un?un+'_':'')+nama.slice(0,140);
 }
 function printOnly(w){
   document.body.dataset.p=w;
@@ -3571,6 +3579,8 @@ let curId=null;
 function dbPayload(){
   const c=stripLogos(document.getElementById('doc'));
   c.querySelectorAll('.sign img').forEach(i=>i.remove()); // gambar tanda tangan tidak ikut disimpan
+  c.querySelectorAll('[data-unit]').forEach(i=>i.remove());
+  if(RPM_UNIT){ const mk=document.createElement('span'); mk.setAttribute('data-unit',RPM_UNIT); mk.hidden=true; c.insertBefore(mk,c.firstChild); }   // agar nomor unit ikut tersimpan
   return {
     nama_guru:$('guru').value.trim(), kepala_sekolah:$('kepsek').value.trim(),
     satuan_pendidikan:$('sekolah').value.trim(), mata_pelajaran:$('mapel').value.trim(),
@@ -3715,7 +3725,7 @@ function closeProject(){
   ['doc','lkpd','asesmen','lampiran'].forEach(id=>{ const el=$(id); el.innerHTML=''; el.hidden=true; });
   $('empty').hidden=false; lastText=''; curId=null; PROJ=null; RECOMPOSE=null; pageSet('rpm:baru',null); hideResume();
   ['copy','word','print','regen','lkpdbtn','asesbtn','lampbtn','savedb','editbtn','lkpdword','lkpdprint','printboth','asesword','asesprint','printall','lampword','lampprint'].forEach(id=>$(id).disabled=true);
-  $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('menitjp').value='45'; $('jptotal').value=''; $('jpbagi').value=''; syncAtpBox(); $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
+  RPM_UNIT=''; $('topik').value=''; $('cp').value=''; $('pertemuan').value='2'; $('jpmgg').value=''; $('menitjp').value='45'; $('jptotal').value=''; $('jpbagi').value=''; syncAtpBox(); $('waktu').value='2 × 45 menit'; $('siswa').value=''; $('pedagogi').value=''; $('catatan').value='';
   document.querySelectorAll('#dims input:checked').forEach(i=>{ i.checked=false; });
   lastText='';
   if(inViewer()) showList(); else{ showView('make'); }
@@ -3778,7 +3788,8 @@ $('histlist').addEventListener('click',async e=>{
     set('mapel',r.mata_pelajaran); set('fase',r.fase); set('semester',r.semester); set('tahun',r.tahun_ajaran);
     set('topik',r.topik); set('pertemuan',r.jumlah_pertemuan);
     lastText=r.rpm_markdown||'';
-    const doc=$('doc'); doc.innerHTML=r.rpm_html||(md(lastText)+signHTML()); styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true; applySigs();
+    const doc=$('doc'); doc.innerHTML=r.rpm_html||(md(lastText)+signHTML());
+    { const mk=doc.querySelector('[data-unit]'); RPM_UNIT=mk?mk.getAttribute('data-unit'):''; if(mk) mk.remove(); } styleDoc(doc,'rpm'); doc.hidden=false; $('empty').hidden=true; applySigs();
     const lk=$('lkpd');
     if(r.lkpd_html){ lk.innerHTML=r.lkpd_html; styleDoc(lk,'lkpd'); lk.hidden=false; $('lkpdword').disabled=false; $('lkpdprint').disabled=false; $('printboth').disabled=false; }
     else{ lk.innerHTML=''; lk.hidden=true; $('lkpdword').disabled=true; $('lkpdprint').disabled=true; $('printboth').disabled=true; }
@@ -5745,7 +5756,7 @@ function applyUnit(u){
   g('tahun').value=g('atp_tahun').value.trim();
   const cak=(typeof atpCak==='function')?atpCak():g('atp_cakupan').value; const sem=u.sem||(/^(Ganjil|Genap)$/.test(cak)?cak:'');
   if(sem) g('semester').value=sem;
-  g('topik').value=u.topik;
+  g('topik').value=u.topik; RPM_UNIT=((u.judul||'').match(/^Unit\s*(\d+)/i)||[])[1]||'';
   const tps=u.tps.map(t=>`${t.kode?t.kode+' ':''}${t.tp}${t.jp?' ('+t.jp+' JP)':''}`).join('\n');
   g('cp').value=`[Berdasarkan ATP] ${u.judul}${u.info?'\nMateri: '+u.info:''}\nTujuan Pembelajaran pada ATP:\n${tps||'(lihat ATP)'}\nSusun RPM yang selaras dengan ATP ini: tujuan pembelajaran RPM harus mencakup dan merinci tujuan di atas.`;
   g('jpmgg').value=String(parseInt($('atp_jp').value)||3);
